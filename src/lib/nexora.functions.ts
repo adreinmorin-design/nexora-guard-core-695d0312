@@ -6,18 +6,6 @@ import { inspect, redact, maskPreview, type Detection } from "./nexora/dlp";
 import { evaluate, type GovAction, type PolicyRecord } from "./nexora/policy-engine";
 import { SEED_MODELS, SEED_POLICIES, SEED_PROVIDERS } from "./nexora/catalog";
 
-type Ctx = {
-  supabase: Awaited<ReturnType<typeof getSupabase>>;
-  userId: string;
-};
-
-// Small helper only used for the type above.
-async function getSupabase() {
-  throw new Error("unreachable");
-  // eslint-disable-next-line no-unreachable
-  return null as never;
-}
-
 const GOV_ROLES = ["platform_admin", "org_admin", "governance_admin", "security_admin"];
 
 type Workspace = {
@@ -936,5 +924,3 @@ async function blockedResponse(
     requestId: req?.id ?? null,
   };
 }
-
-export type { Ctx };
