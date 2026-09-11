@@ -10,33 +10,122 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedOverviewRouteImport } from './routes/_authenticated/overview'
+import { Route as AuthenticatedGatewayModelsRouteImport } from './routes/_authenticated/gateway.models'
+import { Route as AuthenticatedGatewayPlaygroundRouteImport } from './routes/_authenticated/gateway.playground'
+import { Route as AuthenticatedGatewayProvidersRouteImport } from './routes/_authenticated/gateway.providers'
+import { Route as AuthenticatedGatewayRequestsRouteImport } from './routes/_authenticated/gateway.requests'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedOverviewRoute = AuthenticatedOverviewRouteImport.update({
+  id: '/overview',
+  path: '/overview',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedGatewayModelsRoute =
+  AuthenticatedGatewayModelsRouteImport.update({
+    id: '/gateway/models',
+    path: '/gateway/models',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedGatewayPlaygroundRoute =
+  AuthenticatedGatewayPlaygroundRouteImport.update({
+    id: '/gateway/playground',
+    path: '/gateway/playground',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedGatewayProvidersRoute =
+  AuthenticatedGatewayProvidersRouteImport.update({
+    id: '/gateway/providers',
+    path: '/gateway/providers',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedGatewayRequestsRoute =
+  AuthenticatedGatewayRequestsRouteImport.update({
+    id: '/gateway/requests',
+    path: '/gateway/requests',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/overview': typeof AuthenticatedOverviewRoute
+  '/gateway/models': typeof AuthenticatedGatewayModelsRoute
+  '/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
+  '/gateway/providers': typeof AuthenticatedGatewayProvidersRoute
+  '/gateway/requests': typeof AuthenticatedGatewayRequestsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/overview': typeof AuthenticatedOverviewRoute
+  '/gateway/models': typeof AuthenticatedGatewayModelsRoute
+  '/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
+  '/gateway/providers': typeof AuthenticatedGatewayProvidersRoute
+  '/gateway/requests': typeof AuthenticatedGatewayRequestsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/overview': typeof AuthenticatedOverviewRoute
+  '/_authenticated/gateway/models': typeof AuthenticatedGatewayModelsRoute
+  '/_authenticated/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
+  '/_authenticated/gateway/providers': typeof AuthenticatedGatewayProvidersRoute
+  '/_authenticated/gateway/requests': typeof AuthenticatedGatewayRequestsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/overview'
+    | '/gateway/models'
+    | '/gateway/playground'
+    | '/gateway/providers'
+    | '/gateway/requests'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/overview'
+    | '/gateway/models'
+    | '/gateway/playground'
+    | '/gateway/providers'
+    | '/gateway/requests'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/overview'
+    | '/_authenticated/gateway/models'
+    | '/_authenticated/gateway/playground'
+    | '/_authenticated/gateway/providers'
+    | '/_authenticated/gateway/requests'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +137,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/overview': {
+      id: '/_authenticated/overview'
+      path: '/overview'
+      fullPath: '/overview'
+      preLoaderRoute: typeof AuthenticatedOverviewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/gateway/models': {
+      id: '/_authenticated/gateway/models'
+      path: '/gateway/models'
+      fullPath: '/gateway/models'
+      preLoaderRoute: typeof AuthenticatedGatewayModelsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/gateway/playground': {
+      id: '/_authenticated/gateway/playground'
+      path: '/gateway/playground'
+      fullPath: '/gateway/playground'
+      preLoaderRoute: typeof AuthenticatedGatewayPlaygroundRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/gateway/providers': {
+      id: '/_authenticated/gateway/providers'
+      path: '/gateway/providers'
+      fullPath: '/gateway/providers'
+      preLoaderRoute: typeof AuthenticatedGatewayProvidersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/gateway/requests': {
+      id: '/_authenticated/gateway/requests'
+      path: '/gateway/requests'
+      fullPath: '/gateway/requests'
+      preLoaderRoute: typeof AuthenticatedGatewayRequestsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedOverviewRoute: typeof AuthenticatedOverviewRoute
+  AuthenticatedGatewayModelsRoute: typeof AuthenticatedGatewayModelsRoute
+  AuthenticatedGatewayPlaygroundRoute: typeof AuthenticatedGatewayPlaygroundRoute
+  AuthenticatedGatewayProvidersRoute: typeof AuthenticatedGatewayProvidersRoute
+  AuthenticatedGatewayRequestsRoute: typeof AuthenticatedGatewayRequestsRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedOverviewRoute: AuthenticatedOverviewRoute,
+  AuthenticatedGatewayModelsRoute: AuthenticatedGatewayModelsRoute,
+  AuthenticatedGatewayPlaygroundRoute: AuthenticatedGatewayPlaygroundRoute,
+  AuthenticatedGatewayProvidersRoute: AuthenticatedGatewayProvidersRoute,
+  AuthenticatedGatewayRequestsRoute: AuthenticatedGatewayRequestsRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
