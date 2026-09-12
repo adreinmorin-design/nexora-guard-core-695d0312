@@ -12,11 +12,20 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedApprovalsRouteImport } from './routes/_authenticated/approvals'
+import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedOverviewRouteImport } from './routes/_authenticated/overview'
+import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedGatewayModelsRouteImport } from './routes/_authenticated/gateway.models'
 import { Route as AuthenticatedGatewayPlaygroundRouteImport } from './routes/_authenticated/gateway.playground'
 import { Route as AuthenticatedGatewayProvidersRouteImport } from './routes/_authenticated/gateway.providers'
 import { Route as AuthenticatedGatewayRequestsRouteImport } from './routes/_authenticated/gateway.requests'
+import { Route as AuthenticatedGovernanceBudgetsRouteImport } from './routes/_authenticated/governance.budgets'
+import { Route as AuthenticatedGovernanceDlpRouteImport } from './routes/_authenticated/governance.dlp'
+import { Route as AuthenticatedGovernancePoliciesRouteImport } from './routes/_authenticated/governance.policies'
+import { Route as AuthenticatedModuleSlugRouteImport } from './routes/_authenticated/module.$slug'
+import { Route as AuthenticatedObservabilityUsageRouteImport } from './routes/_authenticated/observability.usage'
+import { Route as AuthenticatedSecurityFindingsRouteImport } from './routes/_authenticated/security.findings'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -32,9 +41,24 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedApprovalsRoute = AuthenticatedApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedOverviewRoute = AuthenticatedOverviewRouteImport.update({
   id: '/overview',
   path: '/overview',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedGatewayModelsRoute =
@@ -61,65 +85,154 @@ const AuthenticatedGatewayRequestsRoute =
     path: '/gateway/requests',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedGovernanceBudgetsRoute =
+  AuthenticatedGovernanceBudgetsRouteImport.update({
+    id: '/governance/budgets',
+    path: '/governance/budgets',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedGovernanceDlpRoute =
+  AuthenticatedGovernanceDlpRouteImport.update({
+    id: '/governance/dlp',
+    path: '/governance/dlp',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedGovernancePoliciesRoute =
+  AuthenticatedGovernancePoliciesRouteImport.update({
+    id: '/governance/policies',
+    path: '/governance/policies',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedModuleSlugRoute = AuthenticatedModuleSlugRouteImport.update({
+  id: '/module/$slug',
+  path: '/module/$slug',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedObservabilityUsageRoute =
+  AuthenticatedObservabilityUsageRouteImport.update({
+    id: '/observability/usage',
+    path: '/observability/usage',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSecurityFindingsRoute =
+  AuthenticatedSecurityFindingsRouteImport.update({
+    id: '/security/findings',
+    path: '/security/findings',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/approvals': typeof AuthenticatedApprovalsRoute
+  '/audit': typeof AuthenticatedAuditRoute
   '/overview': typeof AuthenticatedOverviewRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/gateway/models': typeof AuthenticatedGatewayModelsRoute
   '/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
   '/gateway/providers': typeof AuthenticatedGatewayProvidersRoute
   '/gateway/requests': typeof AuthenticatedGatewayRequestsRoute
+  '/governance/budgets': typeof AuthenticatedGovernanceBudgetsRoute
+  '/governance/dlp': typeof AuthenticatedGovernanceDlpRoute
+  '/governance/policies': typeof AuthenticatedGovernancePoliciesRoute
+  '/module/$slug': typeof AuthenticatedModuleSlugRoute
+  '/observability/usage': typeof AuthenticatedObservabilityUsageRoute
+  '/security/findings': typeof AuthenticatedSecurityFindingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/approvals': typeof AuthenticatedApprovalsRoute
+  '/audit': typeof AuthenticatedAuditRoute
   '/overview': typeof AuthenticatedOverviewRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/gateway/models': typeof AuthenticatedGatewayModelsRoute
   '/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
   '/gateway/providers': typeof AuthenticatedGatewayProvidersRoute
   '/gateway/requests': typeof AuthenticatedGatewayRequestsRoute
+  '/governance/budgets': typeof AuthenticatedGovernanceBudgetsRoute
+  '/governance/dlp': typeof AuthenticatedGovernanceDlpRoute
+  '/governance/policies': typeof AuthenticatedGovernancePoliciesRoute
+  '/module/$slug': typeof AuthenticatedModuleSlugRoute
+  '/observability/usage': typeof AuthenticatedObservabilityUsageRoute
+  '/security/findings': typeof AuthenticatedSecurityFindingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/approvals': typeof AuthenticatedApprovalsRoute
+  '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/overview': typeof AuthenticatedOverviewRoute
+  '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/gateway/models': typeof AuthenticatedGatewayModelsRoute
   '/_authenticated/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
   '/_authenticated/gateway/providers': typeof AuthenticatedGatewayProvidersRoute
   '/_authenticated/gateway/requests': typeof AuthenticatedGatewayRequestsRoute
+  '/_authenticated/governance/budgets': typeof AuthenticatedGovernanceBudgetsRoute
+  '/_authenticated/governance/dlp': typeof AuthenticatedGovernanceDlpRoute
+  '/_authenticated/governance/policies': typeof AuthenticatedGovernancePoliciesRoute
+  '/_authenticated/module/$slug': typeof AuthenticatedModuleSlugRoute
+  '/_authenticated/observability/usage': typeof AuthenticatedObservabilityUsageRoute
+  '/_authenticated/security/findings': typeof AuthenticatedSecurityFindingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
+    | '/approvals'
+    | '/audit'
     | '/overview'
+    | '/admin/users'
     | '/gateway/models'
     | '/gateway/playground'
     | '/gateway/providers'
     | '/gateway/requests'
+    | '/governance/budgets'
+    | '/governance/dlp'
+    | '/governance/policies'
+    | '/module/$slug'
+    | '/observability/usage'
+    | '/security/findings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/approvals'
+    | '/audit'
     | '/overview'
+    | '/admin/users'
     | '/gateway/models'
     | '/gateway/playground'
     | '/gateway/providers'
     | '/gateway/requests'
+    | '/governance/budgets'
+    | '/governance/dlp'
+    | '/governance/policies'
+    | '/module/$slug'
+    | '/observability/usage'
+    | '/security/findings'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/approvals'
+    | '/_authenticated/audit'
     | '/_authenticated/overview'
+    | '/_authenticated/admin/users'
     | '/_authenticated/gateway/models'
     | '/_authenticated/gateway/playground'
     | '/_authenticated/gateway/providers'
     | '/_authenticated/gateway/requests'
+    | '/_authenticated/governance/budgets'
+    | '/_authenticated/governance/dlp'
+    | '/_authenticated/governance/policies'
+    | '/_authenticated/module/$slug'
+    | '/_authenticated/observability/usage'
+    | '/_authenticated/security/findings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -151,11 +264,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/approvals': {
+      id: '/_authenticated/approvals'
+      path: '/approvals'
+      fullPath: '/approvals'
+      preLoaderRoute: typeof AuthenticatedApprovalsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/audit': {
+      id: '/_authenticated/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuthenticatedAuditRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/overview': {
       id: '/_authenticated/overview'
       path: '/overview'
       fullPath: '/overview'
       preLoaderRoute: typeof AuthenticatedOverviewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/users': {
+      id: '/_authenticated/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/gateway/models': {
@@ -186,23 +320,83 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGatewayRequestsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/governance/budgets': {
+      id: '/_authenticated/governance/budgets'
+      path: '/governance/budgets'
+      fullPath: '/governance/budgets'
+      preLoaderRoute: typeof AuthenticatedGovernanceBudgetsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/governance/dlp': {
+      id: '/_authenticated/governance/dlp'
+      path: '/governance/dlp'
+      fullPath: '/governance/dlp'
+      preLoaderRoute: typeof AuthenticatedGovernanceDlpRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/governance/policies': {
+      id: '/_authenticated/governance/policies'
+      path: '/governance/policies'
+      fullPath: '/governance/policies'
+      preLoaderRoute: typeof AuthenticatedGovernancePoliciesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/module/$slug': {
+      id: '/_authenticated/module/$slug'
+      path: '/module/$slug'
+      fullPath: '/module/$slug'
+      preLoaderRoute: typeof AuthenticatedModuleSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/observability/usage': {
+      id: '/_authenticated/observability/usage'
+      path: '/observability/usage'
+      fullPath: '/observability/usage'
+      preLoaderRoute: typeof AuthenticatedObservabilityUsageRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/security/findings': {
+      id: '/_authenticated/security/findings'
+      path: '/security/findings'
+      fullPath: '/security/findings'
+      preLoaderRoute: typeof AuthenticatedSecurityFindingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedApprovalsRoute: typeof AuthenticatedApprovalsRoute
+  AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedOverviewRoute: typeof AuthenticatedOverviewRoute
+  AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedGatewayModelsRoute: typeof AuthenticatedGatewayModelsRoute
   AuthenticatedGatewayPlaygroundRoute: typeof AuthenticatedGatewayPlaygroundRoute
   AuthenticatedGatewayProvidersRoute: typeof AuthenticatedGatewayProvidersRoute
   AuthenticatedGatewayRequestsRoute: typeof AuthenticatedGatewayRequestsRoute
+  AuthenticatedGovernanceBudgetsRoute: typeof AuthenticatedGovernanceBudgetsRoute
+  AuthenticatedGovernanceDlpRoute: typeof AuthenticatedGovernanceDlpRoute
+  AuthenticatedGovernancePoliciesRoute: typeof AuthenticatedGovernancePoliciesRoute
+  AuthenticatedModuleSlugRoute: typeof AuthenticatedModuleSlugRoute
+  AuthenticatedObservabilityUsageRoute: typeof AuthenticatedObservabilityUsageRoute
+  AuthenticatedSecurityFindingsRoute: typeof AuthenticatedSecurityFindingsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedApprovalsRoute: AuthenticatedApprovalsRoute,
+  AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedOverviewRoute: AuthenticatedOverviewRoute,
+  AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedGatewayModelsRoute: AuthenticatedGatewayModelsRoute,
   AuthenticatedGatewayPlaygroundRoute: AuthenticatedGatewayPlaygroundRoute,
   AuthenticatedGatewayProvidersRoute: AuthenticatedGatewayProvidersRoute,
   AuthenticatedGatewayRequestsRoute: AuthenticatedGatewayRequestsRoute,
+  AuthenticatedGovernanceBudgetsRoute: AuthenticatedGovernanceBudgetsRoute,
+  AuthenticatedGovernanceDlpRoute: AuthenticatedGovernanceDlpRoute,
+  AuthenticatedGovernancePoliciesRoute: AuthenticatedGovernancePoliciesRoute,
+  AuthenticatedModuleSlugRoute: AuthenticatedModuleSlugRoute,
+  AuthenticatedObservabilityUsageRoute: AuthenticatedObservabilityUsageRoute,
+  AuthenticatedSecurityFindingsRoute: AuthenticatedSecurityFindingsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
