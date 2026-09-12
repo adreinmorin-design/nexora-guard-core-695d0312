@@ -17,6 +17,10 @@ import { Route as AuthenticatedGatewayModelsRouteImport } from './routes/_authen
 import { Route as AuthenticatedGatewayPlaygroundRouteImport } from './routes/_authenticated/gateway.playground'
 import { Route as AuthenticatedGatewayProvidersRouteImport } from './routes/_authenticated/gateway.providers'
 import { Route as AuthenticatedGatewayRequestsRouteImport } from './routes/_authenticated/gateway.requests'
+import { Route as AuthenticatedGovernanceBudgetsRouteImport } from './routes/_authenticated/governance.budgets'
+import { Route as AuthenticatedGovernanceDlpRouteImport } from './routes/_authenticated/governance.dlp'
+import { Route as AuthenticatedGovernancePoliciesRouteImport } from './routes/_authenticated/governance.policies'
+import { Route as AuthenticatedSecurityFindingsRouteImport } from './routes/_authenticated/security.findings'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -61,6 +65,30 @@ const AuthenticatedGatewayRequestsRoute =
     path: '/gateway/requests',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedGovernanceBudgetsRoute =
+  AuthenticatedGovernanceBudgetsRouteImport.update({
+    id: '/governance/budgets',
+    path: '/governance/budgets',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedGovernanceDlpRoute =
+  AuthenticatedGovernanceDlpRouteImport.update({
+    id: '/governance/dlp',
+    path: '/governance/dlp',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedGovernancePoliciesRoute =
+  AuthenticatedGovernancePoliciesRouteImport.update({
+    id: '/governance/policies',
+    path: '/governance/policies',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSecurityFindingsRoute =
+  AuthenticatedSecurityFindingsRouteImport.update({
+    id: '/security/findings',
+    path: '/security/findings',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -70,6 +98,10 @@ export interface FileRoutesByFullPath {
   '/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
   '/gateway/providers': typeof AuthenticatedGatewayProvidersRoute
   '/gateway/requests': typeof AuthenticatedGatewayRequestsRoute
+  '/governance/budgets': typeof AuthenticatedGovernanceBudgetsRoute
+  '/governance/dlp': typeof AuthenticatedGovernanceDlpRoute
+  '/governance/policies': typeof AuthenticatedGovernancePoliciesRoute
+  '/security/findings': typeof AuthenticatedSecurityFindingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -79,6 +111,10 @@ export interface FileRoutesByTo {
   '/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
   '/gateway/providers': typeof AuthenticatedGatewayProvidersRoute
   '/gateway/requests': typeof AuthenticatedGatewayRequestsRoute
+  '/governance/budgets': typeof AuthenticatedGovernanceBudgetsRoute
+  '/governance/dlp': typeof AuthenticatedGovernanceDlpRoute
+  '/governance/policies': typeof AuthenticatedGovernancePoliciesRoute
+  '/security/findings': typeof AuthenticatedSecurityFindingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -90,6 +126,10 @@ export interface FileRoutesById {
   '/_authenticated/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
   '/_authenticated/gateway/providers': typeof AuthenticatedGatewayProvidersRoute
   '/_authenticated/gateway/requests': typeof AuthenticatedGatewayRequestsRoute
+  '/_authenticated/governance/budgets': typeof AuthenticatedGovernanceBudgetsRoute
+  '/_authenticated/governance/dlp': typeof AuthenticatedGovernanceDlpRoute
+  '/_authenticated/governance/policies': typeof AuthenticatedGovernancePoliciesRoute
+  '/_authenticated/security/findings': typeof AuthenticatedSecurityFindingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +141,10 @@ export interface FileRouteTypes {
     | '/gateway/playground'
     | '/gateway/providers'
     | '/gateway/requests'
+    | '/governance/budgets'
+    | '/governance/dlp'
+    | '/governance/policies'
+    | '/security/findings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -110,6 +154,10 @@ export interface FileRouteTypes {
     | '/gateway/playground'
     | '/gateway/providers'
     | '/gateway/requests'
+    | '/governance/budgets'
+    | '/governance/dlp'
+    | '/governance/policies'
+    | '/security/findings'
   id:
     | '__root__'
     | '/'
@@ -120,6 +168,10 @@ export interface FileRouteTypes {
     | '/_authenticated/gateway/playground'
     | '/_authenticated/gateway/providers'
     | '/_authenticated/gateway/requests'
+    | '/_authenticated/governance/budgets'
+    | '/_authenticated/governance/dlp'
+    | '/_authenticated/governance/policies'
+    | '/_authenticated/security/findings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -186,6 +238,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGatewayRequestsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/governance/budgets': {
+      id: '/_authenticated/governance/budgets'
+      path: '/governance/budgets'
+      fullPath: '/governance/budgets'
+      preLoaderRoute: typeof AuthenticatedGovernanceBudgetsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/governance/dlp': {
+      id: '/_authenticated/governance/dlp'
+      path: '/governance/dlp'
+      fullPath: '/governance/dlp'
+      preLoaderRoute: typeof AuthenticatedGovernanceDlpRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/governance/policies': {
+      id: '/_authenticated/governance/policies'
+      path: '/governance/policies'
+      fullPath: '/governance/policies'
+      preLoaderRoute: typeof AuthenticatedGovernancePoliciesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/security/findings': {
+      id: '/_authenticated/security/findings'
+      path: '/security/findings'
+      fullPath: '/security/findings'
+      preLoaderRoute: typeof AuthenticatedSecurityFindingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -195,6 +275,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGatewayPlaygroundRoute: typeof AuthenticatedGatewayPlaygroundRoute
   AuthenticatedGatewayProvidersRoute: typeof AuthenticatedGatewayProvidersRoute
   AuthenticatedGatewayRequestsRoute: typeof AuthenticatedGatewayRequestsRoute
+  AuthenticatedGovernanceBudgetsRoute: typeof AuthenticatedGovernanceBudgetsRoute
+  AuthenticatedGovernanceDlpRoute: typeof AuthenticatedGovernanceDlpRoute
+  AuthenticatedGovernancePoliciesRoute: typeof AuthenticatedGovernancePoliciesRoute
+  AuthenticatedSecurityFindingsRoute: typeof AuthenticatedSecurityFindingsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -203,6 +287,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGatewayPlaygroundRoute: AuthenticatedGatewayPlaygroundRoute,
   AuthenticatedGatewayProvidersRoute: AuthenticatedGatewayProvidersRoute,
   AuthenticatedGatewayRequestsRoute: AuthenticatedGatewayRequestsRoute,
+  AuthenticatedGovernanceBudgetsRoute: AuthenticatedGovernanceBudgetsRoute,
+  AuthenticatedGovernanceDlpRoute: AuthenticatedGovernanceDlpRoute,
+  AuthenticatedGovernancePoliciesRoute: AuthenticatedGovernancePoliciesRoute,
+  AuthenticatedSecurityFindingsRoute: AuthenticatedSecurityFindingsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
