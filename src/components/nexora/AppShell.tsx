@@ -73,9 +73,9 @@ export function AppShell({
   email,
 }: {
   children: ReactNode;
-  org?: string;
-  roles?: string[];
-  email?: string | null;
+  org?: string | undefined;
+  roles?: string[] | undefined;
+  email?: string | null | undefined;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
