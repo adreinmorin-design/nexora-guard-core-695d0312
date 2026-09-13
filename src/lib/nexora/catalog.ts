@@ -2,9 +2,12 @@
 
 export const SEED_PROVIDERS = [
   { name: "OpenAI", vendor: "openai", credential_state: "MANAGED", region: "global" },
-  { name: "Google", vendor: "google", credential_state: "MANAGED", region: "global" },
+  { name: "Google", vendor: "google", credential_state: "NOT_CONFIGURED", region: "global" },
   { name: "Anthropic", vendor: "anthropic", credential_state: "NOT_CONFIGURED", region: "global" },
 ] as const;
+
+/** Default model for new traffic: the lowest-cost supported OpenAI model. */
+export const DEFAULT_MODEL_KEY = "openai/gpt-4.1-mini";
 
 export const SEED_MODELS: Array<{
   vendor: string;
@@ -18,43 +21,43 @@ export const SEED_MODELS: Array<{
 }> = [
   {
     vendor: "openai",
-    model_key: "openai/gpt-5.4-mini",
-    display_name: "GPT-5.4 Mini",
-    context_window: 400000,
-    input_cost_per_1k: 0.00025,
-    output_cost_per_1k: 0.002,
+    model_key: "openai/gpt-4.1-mini",
+    display_name: "GPT-4.1 Mini",
+    context_window: 1047576,
+    input_cost_per_1k: 0.0004,
+    output_cost_per_1k: 0.0016,
     classification: "standard",
     status: "active",
   },
   {
     vendor: "openai",
-    model_key: "openai/gpt-5.5",
-    display_name: "GPT-5.5",
-    context_window: 400000,
-    input_cost_per_1k: 0.00125,
-    output_cost_per_1k: 0.01,
+    model_key: "openai/gpt-4o-mini",
+    display_name: "GPT-4o Mini",
+    context_window: 128000,
+    input_cost_per_1k: 0.00015,
+    output_cost_per_1k: 0.0006,
+    classification: "economy",
+    status: "active",
+  },
+  {
+    vendor: "openai",
+    model_key: "openai/gpt-4.1",
+    display_name: "GPT-4.1",
+    context_window: 1047576,
+    input_cost_per_1k: 0.002,
+    output_cost_per_1k: 0.008,
     classification: "frontier",
     status: "active",
   },
   {
     vendor: "google",
-    model_key: "google/gemini-3.8-flash",
-    display_name: "Gemini 3.8 Flash",
+    model_key: "google/gemini-2.5-flash",
+    display_name: "Gemini 2.5 Flash (not configured)",
     context_window: 1000000,
     input_cost_per_1k: 0.0003,
     output_cost_per_1k: 0.0025,
     classification: "standard",
-    status: "active",
-  },
-  {
-    vendor: "google",
-    model_key: "google/gemini-3.1-flash-lite",
-    display_name: "Gemini 3.1 Flash Lite",
-    context_window: 1000000,
-    input_cost_per_1k: 0.0001,
-    output_cost_per_1k: 0.0004,
-    classification: "economy",
-    status: "active",
+    status: "draft",
   },
 ];
 
