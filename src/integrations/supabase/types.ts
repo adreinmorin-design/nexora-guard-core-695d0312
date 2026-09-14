@@ -14,18 +14,117 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_capabilities: {
+        Row: {
+          agent_id: string
+          capability: string
+          created_at: string
+          granted_by: string
+          id: string
+          org_id: string
+        }
+        Insert: {
+          agent_id: string
+          capability: string
+          created_at?: string
+          granted_by: string
+          id?: string
+          org_id: string
+        }
+        Update: {
+          agent_id?: string
+          capability?: string
+          created_at?: string
+          granted_by?: string
+          id?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_capabilities_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_capabilities_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agents: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          last_used_at: string | null
+          name: string
+          org_id: string
+          owner_id: string
+          slug: string
+          status: Database["public"]["Enums"]["lifecycle_status"]
+          token_hash: string | null
+          token_prefix: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_used_at?: string | null
+          name: string
+          org_id: string
+          owner_id: string
+          slug: string
+          status?: Database["public"]["Enums"]["lifecycle_status"]
+          token_hash?: string | null
+          token_prefix?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          org_id?: string
+          owner_id?: string
+          slug?: string
+          status?: Database["public"]["Enums"]["lifecycle_status"]
+          token_hash?: string | null
+          token_prefix?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approvals: {
         Row: {
           action: string
           approver_id: string | null
+          consumed_at: string | null
           created_at: string
           decided_at: string | null
+          decision_token: string
           execution_result: string | null
           expires_at: string
           id: string
+          idempotency_key: string | null
           org_id: string
           payload: Json
           policy_id: string | null
+          policy_revalidated_at: string | null
           policy_version: number | null
           reason: string | null
           request_id: string | null
@@ -37,14 +136,18 @@ export type Database = {
         Insert: {
           action: string
           approver_id?: string | null
+          consumed_at?: string | null
           created_at?: string
           decided_at?: string | null
+          decision_token?: string
           execution_result?: string | null
           expires_at?: string
           id?: string
+          idempotency_key?: string | null
           org_id: string
           payload?: Json
           policy_id?: string | null
+          policy_revalidated_at?: string | null
           policy_version?: number | null
           reason?: string | null
           request_id?: string | null
@@ -56,14 +159,18 @@ export type Database = {
         Update: {
           action?: string
           approver_id?: string | null
+          consumed_at?: string | null
           created_at?: string
           decided_at?: string | null
+          decision_token?: string
           execution_result?: string | null
           expires_at?: string
           id?: string
+          idempotency_key?: string | null
           org_id?: string
           payload?: Json
           policy_id?: string | null
+          policy_revalidated_at?: string | null
           policy_version?: number | null
           reason?: string | null
           request_id?: string | null
@@ -201,6 +308,156 @@ export type Database = {
           },
         ]
       }
+      mcp_servers: {
+        Row: {
+          auth_mode: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          org_id: string
+          status: Database["public"]["Enums"]["lifecycle_status"]
+          transport: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          auth_mode?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          org_id: string
+          status?: Database["public"]["Enums"]["lifecycle_status"]
+          transport?: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          auth_mode?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          org_id?: string
+          status?: Database["public"]["Enums"]["lifecycle_status"]
+          transport?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_servers_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_tool_grants: {
+        Row: {
+          agent_id: string
+          created_at: string
+          granted_by: string
+          id: string
+          org_id: string
+          requires_approval: boolean
+          tool_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          granted_by: string
+          id?: string
+          org_id: string
+          requires_approval?: boolean
+          tool_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          granted_by?: string
+          id?: string
+          org_id?: string
+          requires_approval?: boolean
+          tool_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_tool_grants_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcp_tool_grants_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcp_tool_grants_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "mcp_tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_tools: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          org_id: string
+          required_capability: string
+          risk: Database["public"]["Enums"]["severity"]
+          server_id: string | null
+          status: Database["public"]["Enums"]["lifecycle_status"]
+          tool_name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          org_id: string
+          required_capability: string
+          risk?: Database["public"]["Enums"]["severity"]
+          server_id?: string | null
+          status?: Database["public"]["Enums"]["lifecycle_status"]
+          tool_name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          org_id?: string
+          required_capability?: string
+          risk?: Database["public"]["Enums"]["severity"]
+          server_id?: string | null
+          status?: Database["public"]["Enums"]["lifecycle_status"]
+          tool_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_tools_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcp_tools_server_id_fkey"
+            columns: ["server_id"]
+            isOneToOne: false
+            referencedRelation: "mcp_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       models: {
         Row: {
           classification: string
@@ -254,6 +511,53 @@ export type Database = {
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          org_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          org_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          org_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_invites_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -486,10 +790,12 @@ export type Database = {
       requests: {
         Row: {
           actor_type: string
+          agent_id: string | null
           cost_usd: number
           created_at: string
           decision: Database["public"]["Enums"]["gov_action"]
           id: string
+          idempotency_key: string | null
           input_tokens: number
           latency_ms: number
           matched_rules: Json
@@ -509,10 +815,12 @@ export type Database = {
         }
         Insert: {
           actor_type?: string
+          agent_id?: string | null
           cost_usd?: number
           created_at?: string
           decision: Database["public"]["Enums"]["gov_action"]
           id?: string
+          idempotency_key?: string | null
           input_tokens?: number
           latency_ms?: number
           matched_rules?: Json
@@ -532,10 +840,12 @@ export type Database = {
         }
         Update: {
           actor_type?: string
+          agent_id?: string | null
           cost_usd?: number
           created_at?: string
           decision?: Database["public"]["Enums"]["gov_action"]
           id?: string
+          idempotency_key?: string | null
           input_tokens?: number
           latency_ms?: number
           matched_rules?: Json
@@ -554,6 +864,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "requests_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "requests_org_id_fkey"
             columns: ["org_id"]
