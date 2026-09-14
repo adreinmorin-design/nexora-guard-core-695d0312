@@ -37,7 +37,8 @@ export const SUPPORTED_VENDORS = ["openai"] as const;
 
 function openAiKey(): string | undefined {
   // Read at call time; never at module scope, never logged.
-  const key = process.env["OPENAI_API_KEY"];
+  // Only OpenAI Platform credentials are accepted — LOVABLE_API_KEY is never substituted.
+  const key = process.env["OPENAI_API_KEY"] ?? process.env["OPEN_AI_PLATFORM_API_KEY"];
   return key && key.trim().length > 0 ? key : undefined;
 }
 
