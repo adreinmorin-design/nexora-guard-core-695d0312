@@ -77,11 +77,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "NEXORA — AI Security, Governance & Control Plane" },
+      {
+        name: "description",
+        content:
+          "NEXORA enforces deterministic security, governance, cost control and auditability across every AI model, application and autonomous agent your organization runs.",
+      },
+      { name: "author", content: "NEXORA" },
+      {
+        property: "og:title",
+        content: "NEXORA — AI Security, Governance & Control Plane",
+      },
+      {
+        property: "og:description",
+        content:
+          "Deterministic policy enforcement, data protection and audit for enterprise AI traffic.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
