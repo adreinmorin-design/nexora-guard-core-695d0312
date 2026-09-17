@@ -1,5 +1,8 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
-import { NotConfigured, PageHeader } from "@/components/nexora/primitives";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { DataTable, NotConfigured, PageHeader, Panel, Tag } from "@/components/nexora/primitives";
+import { listControlPlane } from "@/lib/nexora.functions";
 
 export const Route = createFileRoute("/_authenticated/module/$slug")({
   head: () => ({
@@ -45,6 +48,77 @@ function humanize(slug: string) {
 
 function ModulePage() {
   const { slug } = useParams({ from: "/_authenticated/module/$slug" });
+  const fn = useServerFn(listControlPlane);
+  const liveModules = new Set([
+    "agent-registry",
+    "agent-tools",
+    "mcp-gateway",
+    "threats",
+    "security-tests",
+    "attack-simulation",
+    "latency",
+    "errors",
+  ]);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["control-plane", slug],
+    queryFn: () => fn({ data: { module: slug } }),
+    enabled: liveModules.has(slug),
+    retry: false,
+  });
+  if (liveModules.has(slug) && !isLoading && !error && data) {
+    const rows = (data.rows ?? []) as any[];
+    const columns =
+      slug === "agent-registry"
+        ? ["Name", "Slug", "Status", "Created"]
+        : slug === "mcp-gateway"
+          ? ["Name", "Endpoint", "Transport", "Status"]
+          : slug === "latency" || slug === "errors"
+            ? ["Model", "Decision", "Status", "Latency"]
+            : ["Time", "Action", "Resource", "Result"];
+    return (
+      <div>
+        <PageHeader
+          title={humanize(slug)}
+          subtitle={NOTES[slug] ?? "Live tenant-scoped control-plane data."}
+        />
+        {rows.length === 0 ? (
+          <Panel>
+            <p className="text-sm text-muted-foreground">
+              No records yet. This module is connected and ready for data.
+            </p>
+          </Panel>
+        ) : (
+          <DataTable
+            columns={columns}
+            rows={rows.map((r) =>
+              slug === "agent-registry"
+                ? [
+                    r.name,
+                    <span className="font-mono text-xs">{r.slug}</span>,
+                    <Tag value={r.status} />,
+                    new Date(r.created_at).toLocaleString(),
+                  ]
+                : slug === "mcp-gateway"
+                  ? [
+                      r.name,
+                      <span className="font-mono text-xs">{r.url}</span>,
+                      r.transport,
+                      <Tag value={r.status} />,
+                    ]
+                  : slug === "latency" || slug === "errors"
+                    ? [
+                        r.model,
+                        <Tag value={r.decision} kind="decision" />,
+                        r.status,
+                        (r.latency_ms ?? 0) + " ms",
+                      ]
+                    : [new Date(r.created_at).toLocaleString(), r.action, r.resource, r.result],
+            )}
+          />
+        )}
+      </div>
+    );
+  }
   return (
     <div>
       <PageHeader

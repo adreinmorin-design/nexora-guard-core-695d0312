@@ -558,3 +558,73 @@ export const submitGatewayRequest = createServerFn({ method: "POST" })
     const { runConsoleRequest } = await import("./nexora/gateway.server");
     return runConsoleRequest(context, ws.orgId, data);
   });
+
+/* ------------------------------------------------------------------ */
+/* Control-plane registries                                            */
+/* ------------------------------------------------------------------ */
+
+export const listControlPlane = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ module: z.string().min(1) }).parse(input))
+  .handler(async ({ data, context }: { data: { module: string }; context: any }) => {
+    const ws = await resolveWorkspace(context);
+    const q = (table: string, columns = "*") =>
+      context.supabase.from(table).select(columns).eq("org_id", ws.orgId).limit(200);
+    const rows =
+      data.module === "agent-registry"
+        ? ((await q("agents")).data ?? [])
+        : data.module === "agent-tools"
+          ? ((await q("agent_capabilities")).data ?? [])
+          : data.module === "mcp-gateway"
+            ? ((await q("mcp_servers")).data ?? [])
+            : data.module === "threats" ||
+                data.module === "security-tests" ||
+                data.module === "attack-simulation"
+              ? ((await q("audit_events")).data ?? [])
+              : data.module === "latency" || data.module === "errors"
+                ? ((await q("requests")).data ?? [])
+                : [];
+    return { workspace: ws, module: data.module, rows };
+  });
+
+export const createAgent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        name: z.string().min(2).max(100),
+        slug: z
+          .string()
+          .regex(/^[a-z0-9-]+$/)
+          .max(80),
+        description: z.string().max(500).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }: { data: any; context: any }) => {
+    const ws = await resolveWorkspace(context);
+    if (!ws.roles.some((r) => ["platform_admin", "org_admin", "agent_admin"].includes(r))) {
+      throw new Error("Forbidden: agent administration role required.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: agent, error } = await (supabaseAdmin as any)
+      .from("agents")
+      .insert({
+        org_id: ws.orgId,
+        name: data.name,
+        slug: data.slug,
+        description: data.description ?? null,
+        owner_id: context.userId,
+      })
+      .select("id, name, slug, status, created_at")
+      .single();
+    if (error) throw new Error("Agent could not be created.");
+    await writeAudit(context, ws.orgId, {
+      action: "agent.created",
+      resource: "agent",
+      resource_id: agent.id,
+      risk: "medium",
+      metadata: { slug: agent.slug },
+    });
+    return agent;
+  });
