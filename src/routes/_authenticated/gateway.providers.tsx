@@ -31,20 +31,25 @@ function Providers() {
     <div>
       <PageHeader
         title="Providers"
-        subtitle="Credential status is checked on the server. CONFIGURED means a key is present, not that provider access has been verified. Submit a governed request in Playground to verify execution."
+        subtitle="OpenAI, Anthropic and Google use native adapters. Other vendors use the OpenAI-compatible adapter when a base URL and server credential are configured."
       />
       {isLoading && <p role="status">Loading provider status…</p>}
       {error && <p role="alert">{error.message}</p>}
       <DataTable
-        columns={["Provider", "Vendor", "Credentials", "Region", "Status"]}
+        columns={["Provider", "Vendor", "Adapter", "Credentials", "Server variable", "Status"]}
         rows={providers.map((p) => [
           p.name,
           <span className="font-mono text-xs">{p.vendor}</span>,
+          p.adapter,
           <Tag value={p.credential_state} />,
-          p.region ?? "—",
+          <span className="font-mono text-[10px]">{p.credential_variable}</span>,
           <Tag value={p.status} />,
         ])}
       />
+      <p className="mt-4 text-xs text-muted-foreground">
+        CONFIGURED means the server can see a credential, not that the provider accepted it or that
+        a model is entitled. Run a governed request after configuring a model.
+      </p>
     </div>
   );
 }
