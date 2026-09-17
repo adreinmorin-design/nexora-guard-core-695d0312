@@ -27,13 +27,12 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       "INSERT INTO organizations(id,name,slug,created_by) VALUES($1,'a','a',$3),($2,'b','b',$3)",
       [org, other, user],
     );
-    await db.query(
-      "INSERT INTO budgets(org_id,name,limit_usd) VALUES($1,'cap',1),($2,'cap',1)",
-      [org, other],
-    );
+    await db.query("INSERT INTO budgets(org_id,name,limit_usd) VALUES($1,'cap',1),($2,'cap',1)", [
+      org,
+      other,
+    ]);
     const reserve = async (id, key, cost) =>
-      (await db.query("SELECT nexora_reserve($1,$2,$3) AS r", [id, key, cost]))
-        .rows[0].r;
+      (await db.query("SELECT nexora_reserve($1,$2,$3) AS r", [id, key, cost])).rows[0].r;
     assert.equal((await reserve(org, "one", 0.7)).admitted, true);
     assert.equal((await reserve(org, "two", 0.7)).admitted, false);
     assert.equal((await reserve(other, "one", 0.7)).admitted, true);
@@ -46,39 +45,23 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
     await db.query("SELECT nexora_settle($1,'one')", [org]);
     assert.equal((await reserve(org, "three", 0.7)).admitted, true);
     assert.equal((await reserve(org, "four", 0.2)).admitted, false);
-    await db.query(
-      "INSERT INTO org_members(org_id,user_id,role) VALUES($1,$2,'org_admin')",
-      [org, approver],
-    );
+    await db.query("INSERT INTO org_members(org_id,user_id,role) VALUES($1,$2,'org_admin')", [
+      org,
+      approver,
+    ]);
     await db.query(
       "INSERT INTO approvals(id,org_id,requester_id,action) VALUES($1,$2,$3,'gateway.execute')",
       [approval, org, user],
     );
     await assert.rejects(
-      db.query("SELECT nexora_decide_approval($1,$2,$3,'approved')", [
-        org,
-        approval,
-        user,
-      ]),
+      db.query("SELECT nexora_decide_approval($1,$2,$3,'approved')", [org, approval, user]),
     );
     await assert.rejects(
-      db.query("SELECT nexora_decide_approval($1,$2,$3,'approved')", [
-        other,
-        approval,
-        approver,
-      ]),
+      db.query("SELECT nexora_decide_approval($1,$2,$3,'approved')", [other, approval, approver]),
     );
-    await db.query("SELECT nexora_decide_approval($1,$2,$3,'approved')", [
-      org,
-      approval,
-      approver,
-    ]);
+    await db.query("SELECT nexora_decide_approval($1,$2,$3,'approved')", [org, approval, approver]);
     await assert.rejects(
-      db.query("SELECT nexora_decide_approval($1,$2,$3,'approved')", [
-        org,
-        approval,
-        approver,
-      ]),
+      db.query("SELECT nexora_decide_approval($1,$2,$3,'approved')", [org, approval, approver]),
     );
     const privileges = await db.query(`SELECT
       has_function_privilege('authenticated','nexora_reserve(uuid,text,numeric)','EXECUTE') AS reserve,
@@ -129,10 +112,10 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
     assert.equal(exchange.rows[0].result.scope, "requests:read");
     assert.equal(
       (
-        await db.query(
-          "SELECT nexora_exchange_connection($1,$2,'nxr_1234567') AS result",
-          [deviceHash, tokenHash],
-        )
+        await db.query("SELECT nexora_exchange_connection($1,$2,'nxr_1234567') AS result", [
+          deviceHash,
+          tokenHash,
+        ])
       ).rows[0].result.error,
       "invalid_grant",
     );
@@ -150,24 +133,14 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       "INSERT INTO requests(org_id,agent_id,idempotency_key,decision,status,cost_usd,input_tokens,output_tokens) VALUES($1,$2,'agent-usage','LOG','completed',0.125,10,20)",
       [org, agent],
     );
-    const usage = (
-      await db.query("SELECT * FROM nexora_agent_usage($1)", [org])
-    ).rows[0];
+    const usage = (await db.query("SELECT * FROM nexora_agent_usage($1)", [org])).rows[0];
     assert.equal(usage.agent_id, agent);
     assert.equal(Number(usage.request_count), 1);
     assert.equal(Number(usage.cost_usd), 0.125);
     await assert.rejects(
-      db.query("SELECT nexora_claim_agent($1,$2,$3,NULL)", [
-        agent,
-        key,
-        tokenHash,
-      ]),
+      db.query("SELECT nexora_claim_agent($1,$2,$3,NULL)", [agent, key, tokenHash]),
     );
-    await db.query("SELECT nexora_revoke_connection($1,$2,$3)", [
-      org,
-      agent,
-      approver,
-    ]);
+    await db.query("SELECT nexora_revoke_connection($1,$2,$3)", [org, agent, approver]);
 
     const applied = await db.query(
       "SELECT nexora_apply_paddle_event($1,$2,$3,$4,true,'team','active','ctm_1','sub_1',NULL,NULL,false) AS result",

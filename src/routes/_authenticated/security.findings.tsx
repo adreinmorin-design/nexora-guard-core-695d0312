@@ -30,9 +30,7 @@ function Findings() {
   const fn = useServerFn(listFindings);
   const [severity, setSeverity] = useState("ALL");
   const { data } = useQuery({ queryKey: ["findings"], queryFn: () => fn({}) });
-  const rows = ((data ?? []) as any[]).filter(
-    (f) => severity === "ALL" || f.severity === severity,
-  );
+  const rows = ((data ?? []) as any[]).filter((f) => severity === "ALL" || f.severity === severity);
 
   return (
     <div>
@@ -52,25 +50,14 @@ function Findings() {
         }
       />
       <DataTable
-        columns={[
-          "Time",
-          "Severity",
-          "Finding",
-          "Resource",
-          "Status",
-          "Remediation",
-        ]}
+        columns={["Time", "Severity", "Finding", "Resource", "Status", "Remediation"]}
         rows={rows.map((f) => [
-          <span className="font-mono text-xs">
-            {new Date(f.created_at).toLocaleString()}
-          </span>,
+          <span className="font-mono text-xs">{new Date(f.created_at).toLocaleString()}</span>,
           <Tag value={f.severity} kind="severity" />,
           f.title,
           <span className="font-mono text-xs">{f.affected_resource}</span>,
           <Tag value={f.status} />,
-          <span className="text-xs text-muted-foreground">
-            {f.remediation}
-          </span>,
+          <span className="text-xs text-muted-foreground">{f.remediation}</span>,
         ])}
       />
     </div>

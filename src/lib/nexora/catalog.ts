@@ -79,8 +79,7 @@ export const SEED_MODELS: Array<{
 export const SEED_POLICIES = [
   {
     name: "Restricted Data Protection",
-    description:
-      "Blocks government and payment identifiers from leaving the tenant boundary.",
+    description: "Blocks government and payment identifiers from leaving the tenant boundary.",
     priority: 10,
     action: "BLOCK" as const,
     scope: "organization",
@@ -94,8 +93,7 @@ export const SEED_POLICIES = [
   },
   {
     name: "Secret Egress Prevention",
-    description:
-      "Blocks credentials, keys and connection strings in prompts and responses.",
+    description: "Blocks credentials, keys and connection strings in prompts and responses.",
     priority: 20,
     action: "BLOCK" as const,
     scope: "organization",
@@ -103,20 +101,13 @@ export const SEED_POLICIES = [
       {
         field: "detection_category",
         op: "in",
-        value: [
-          "api_key",
-          "private_key",
-          "connection_string",
-          "jwt",
-          "password",
-        ],
+        value: ["api_key", "private_key", "connection_string", "jwt", "password"],
       },
     ],
   },
   {
     name: "Prompt Injection Containment",
-    description:
-      "Routes suspected injection and extraction attempts to human approval.",
+    description: "Routes suspected injection and extraction attempts to human approval.",
     priority: 30,
     action: "REQUIRE_APPROVAL" as const,
     scope: "organization",
@@ -124,18 +115,13 @@ export const SEED_POLICIES = [
       {
         field: "detection_category",
         op: "in",
-        value: [
-          "prompt_injection",
-          "system_prompt_extraction",
-          "data_exfiltration",
-        ],
+        value: ["prompt_injection", "system_prompt_extraction", "data_exfiltration"],
       },
     ],
   },
   {
     name: "PII Redaction",
-    description:
-      "Redacts contact-level personal data before provider execution.",
+    description: "Redacts contact-level personal data before provider execution.",
     priority: 50,
     action: "REDACT" as const,
     scope: "organization",
@@ -149,8 +135,7 @@ export const SEED_POLICIES = [
   },
   {
     name: "Frontier Model Spend Control",
-    description:
-      "Requires approval for frontier models once monthly spend passes the threshold.",
+    description: "Requires approval for frontier models once monthly spend passes the threshold.",
     priority: 60,
     action: "REQUIRE_APPROVAL" as const,
     scope: "organization",

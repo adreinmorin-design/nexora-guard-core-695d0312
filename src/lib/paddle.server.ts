@@ -44,23 +44,17 @@ function value(name: string): string | undefined {
 }
 
 export function paddleEnvironment(): "sandbox" | "production" {
-  return process.env["PADDLE_ENVIRONMENT"]?.trim().toLowerCase() ===
-    "production"
+  return process.env["PADDLE_ENVIRONMENT"]?.trim().toLowerCase() === "production"
     ? "production"
     : "sandbox";
 }
 
-export function paddlePriceId(
-  plan: CheckoutPlan,
-  interval: CheckoutInterval,
-): string | undefined {
+export function paddlePriceId(plan: CheckoutPlan, interval: CheckoutInterval): string | undefined {
   return value(PRICE_ENV[plan][interval]);
 }
 
 /** Keep this canonical representation stable; it is part of webhook security. */
-export function checkoutSigningPayload(
-  data: Omit<PaddleCheckoutData, "signature">,
-): string {
+export function checkoutSigningPayload(data: Omit<PaddleCheckoutData, "signature">): string {
   return [data.org_id, data.plan_key, data.interval, data.user_id].join(".");
 }
 
@@ -69,9 +63,7 @@ export function signCheckoutData(
   secret = value("PADDLE_CHECKOUT_SIGNING_SECRET"),
 ): string | undefined {
   if (!secret) return undefined;
-  return createHmac("sha256", secret)
-    .update(checkoutSigningPayload(data), "utf8")
-    .digest("hex");
+  return createHmac("sha256", secret).update(checkoutSigningPayload(data), "utf8").digest("hex");
 }
 
 export function verifyCheckoutData(
@@ -89,10 +81,7 @@ export function verifyCheckoutData(
     secret,
   );
   if (!expected || !/^[a-f0-9]{64}$/.test(data.signature)) return false;
-  return timingSafeEqual(
-    Buffer.from(expected, "hex"),
-    Buffer.from(data.signature, "hex"),
-  );
+  return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(data.signature, "hex"));
 }
 
 /**
@@ -114,22 +103,14 @@ export function verifyPaddleWebhook(
   );
   const timestamp = Number(parts.ts);
   const provided = parts.h1;
-  if (
-    !Number.isInteger(timestamp) ||
-    !provided ||
-    !/^[a-f0-9]{64}$/i.test(provided)
-  )
-    return false;
+  if (!Number.isInteger(timestamp) || !provided || !/^[a-f0-9]{64}$/i.test(provided)) return false;
   // Replay protection: Paddle retries legitimate events, but a signed body
   // older than five minutes should not be accepted by a public endpoint.
   if (Math.abs(nowMs - timestamp * 1000) > 5 * 60 * 1000) return false;
   const expected = createHmac("sha256", secret)
     .update(`${timestamp}:${rawBody}`, "utf8")
     .digest("hex");
-  return timingSafeEqual(
-    Buffer.from(expected, "hex"),
-    Buffer.from(provided, "hex"),
-  );
+  return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(provided, "hex"));
 }
 
 export function createCheckoutConfig(
@@ -181,22 +162,16 @@ export function resolvePaddleWebhookIdentity(
   const pricePlan = planFromPriceId(priceId);
   const hasAnyIdentity = Boolean(
     custom &&
-    (custom.org_id ||
-      custom.plan_key ||
-      custom.interval ||
-      custom.user_id ||
-      custom.signature),
+    (custom.org_id || custom.plan_key || custom.interval || custom.user_id || custom.signature),
   );
-  if (!hasAnyIdentity)
-    return { orgId: null, planKey: pricePlan, signedIdentity: false };
+  if (!hasAnyIdentity) return { orgId: null, planKey: pricePlan, signedIdentity: false };
   const complete =
     typeof custom?.org_id === "string" &&
     (custom?.plan_key === "solo" || custom?.plan_key === "team") &&
     (custom?.interval === "monthly" || custom?.interval === "annual") &&
     typeof custom?.user_id === "string" &&
     typeof custom?.signature === "string";
-  if (!complete || !verifyCheckoutData(custom as PaddleCheckoutData, secret))
-    return null;
+  if (!complete || !verifyCheckoutData(custom as PaddleCheckoutData, secret)) return null;
   if (pricePlan && pricePlan !== custom.plan_key) return null;
   return {
     orgId: custom.org_id,

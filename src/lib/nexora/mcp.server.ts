@@ -12,30 +12,21 @@ const allowedOrigins = () =>
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-export const mcpSecretName = (id: string) =>
-  "MCP_TOKEN_" + id.replaceAll("-", "_").toUpperCase();
+export const mcpSecretName = (id: string) => "MCP_TOKEN_" + id.replaceAll("-", "_").toUpperCase();
 export function mcpReadiness(server: any) {
   try {
     validateMcpEndpoint(server.url, allowedOrigins());
   } catch {
     return "ORIGIN_NOT_ALLOWED";
   }
-  if (
-    server.auth_mode !== "none" &&
-    !process.env[mcpSecretName(server.id)]?.trim()
-  )
+  if (server.auth_mode !== "none" && !process.env[mcpSecretName(server.id)]?.trim())
     return "CREDENTIAL_REQUIRED";
   return "READY";
 }
 function connect<T>(server: any, work: Parameters<typeof withMcp<T>>[1]) {
   if (mcpReadiness(server) !== "READY")
-    throw new Error(
-      "Configure this MCP server's trusted origin and server credential first.",
-    );
-  const token =
-    server.auth_mode === "none"
-      ? undefined
-      : process.env[mcpSecretName(server.id)];
+    throw new Error("Configure this MCP server's trusted origin and server credential first.");
+  const token = server.auth_mode === "none" ? undefined : process.env[mcpSecretName(server.id)];
   return withMcp(
     {
       endpoint: server.url,
@@ -53,8 +44,7 @@ async function listRemote(
   let cursor: string | undefined;
   for (let page = 0; page < 5; page++) {
     const result = await call("tools/list", cursor ? { cursor } : {});
-    if (!Array.isArray(result?.tools))
-      throw new Error("Invalid MCP tool list.");
+    if (!Array.isArray(result?.tools)) throw new Error("Invalid MCP tool list.");
     for (const tool of result.tools) {
       if (
         typeof tool.name !== "string" ||
@@ -64,8 +54,7 @@ async function listRemote(
         throw new Error("Unsupported MCP tool definition.");
       tools.push(tool);
     }
-    if (tools.length > 100)
-      throw new Error("MCP catalogue exceeds the 100 tool limit.");
+    if (tools.length > 100) throw new Error("MCP catalogue exceeds the 100 tool limit.");
     if (!result.nextCursor) return tools;
     if (typeof result.nextCursor !== "string" || result.nextCursor === cursor)
       throw new Error("Invalid MCP pagination.");
@@ -74,27 +63,14 @@ async function listRemote(
   throw new Error("MCP catalogue requires too many pages.");
 }
 
-export async function discoverMcp(
-  orgId: string,
-  serverId: string,
-  actor: string,
-) {
+export async function discoverMcp(orgId: string, serverId: string, actor: string) {
   const server = await checked(
-    db
-      .from("mcp_servers")
-      .select("*")
-      .eq("org_id", orgId)
-      .eq("id", serverId)
-      .single(),
+    db.from("mcp_servers").select("*").eq("org_id", orgId).eq("id", serverId).single(),
   );
   const definitions = await connect(server, listRemote);
   // Every refreshed definition must be explicitly enabled again by an administrator.
   await checked(
-    db
-      .from("mcp_tools")
-      .update({ status: "draft" })
-      .eq("org_id", orgId)
-      .eq("server_id", serverId),
+    db.from("mcp_tools").update({ status: "draft" }).eq("org_id", orgId).eq("server_id", serverId),
   );
   for (const tool of definitions) {
     await checked(
@@ -116,11 +92,7 @@ export async function discoverMcp(
     );
   }
   await checked(
-    db
-      .from("mcp_servers")
-      .update({ status: "active" })
-      .eq("org_id", orgId)
-      .eq("id", serverId),
+    db.from("mcp_servers").update({ status: "active" }).eq("org_id", orgId).eq("id", serverId),
   );
   await checked(
     db.from("audit_events").insert({
@@ -148,12 +120,7 @@ export async function executeTool(
 ) {
   const agent = await activeAgent(orgId, agentId);
   const tool = await checked(
-    db
-      .from("mcp_tools")
-      .select("*")
-      .eq("org_id", orgId)
-      .eq("id", input.toolId)
-      .single(),
+    db.from("mcp_tools").select("*").eq("org_id", orgId).eq("id", input.toolId).single(),
   );
   if (tool.status !== "active" || !tool.definition_hash || !tool.remote_name)
     throw new Error("Tool has not been approved for execution.");
@@ -171,20 +138,13 @@ export async function executeTool(
   if (approved && approved.definitionHash !== tool.definition_hash)
     throw new Error("Tool definition changed after approval.");
   const server = await checked(
-    db
-      .from("mcp_servers")
-      .select("*")
-      .eq("org_id", orgId)
-      .eq("id", tool.server_id)
-      .single(),
+    db.from("mcp_servers").select("*").eq("org_id", orgId).eq("id", tool.server_id).single(),
   );
   if (server.status !== "active") throw new Error("MCP server is inactive.");
   const policies = await checked(
     db
       .from("policies")
-      .select(
-        "id,name,description,priority,action,version,status,scope,conditions",
-      )
+      .select("id,name,description,priority,action,version,status,scope,conditions")
       .eq("org_id", orgId),
   );
   const evaluated = toolDecision(
@@ -246,8 +206,7 @@ export async function executeTool(
     return finish("blocked", "BLOCK", evaluated.decision.reason);
   if (
     evaluated.decision.action === "REQUIRE_APPROVAL" ||
-    (!approved &&
-      (grant.requires_approval || ["high", "critical"].includes(tool.risk)))
+    (!approved && (grant.requires_approval || ["high", "critical"].includes(tool.risk)))
   ) {
     const approval = await checked(
       db
@@ -295,13 +254,8 @@ export async function executeTool(
   );
   try {
     const result = await connect(server, async (call) => {
-      const remote = (await listRemote(call)).find(
-        (t) => t.name === tool.remote_name,
-      );
-      if (
-        !remote ||
-        (await hashCredential(canonicalJson(remote))) !== tool.definition_hash
-      )
+      const remote = (await listRemote(call)).find((t) => t.name === tool.remote_name);
+      if (!remote || (await hashCredential(canonicalJson(remote))) !== tool.definition_hash)
         throw new Error("Remote tool changed; rediscovery required.");
       // Recheck lifecycle and grants immediately before an external side effect.
       await activeAgent(orgId, agentId);
@@ -319,18 +273,11 @@ export async function executeTool(
         throw new Error("Tool grant changed.");
       return call("tools/call", {
         name: tool.remote_name,
-        arguments:
-          evaluated.decision.action === "REDACT"
-            ? evaluated.sanitized
-            : input.arguments,
+        arguments: evaluated.decision.action === "REDACT" ? evaluated.sanitized : input.arguments,
       });
     });
     if (result?.isError)
-      return finish(
-        "tool_error",
-        "BLOCK",
-        "Remote tool returned an error; details withheld.",
-      );
+      return finish("tool_error", "BLOCK", "Remote tool returned an error; details withheld.");
     const response = toolDecision(policies, result, tool.tool_name, "response");
     if (["BLOCK", "REQUIRE_APPROVAL"].includes(response.decision.action))
       return finish("response_blocked", "BLOCK", response.decision.reason);
@@ -349,11 +296,7 @@ export async function executeTool(
   }
 }
 
-export async function executeApprovedTool(
-  orgId: string,
-  approvalId: string,
-  payload: any,
-) {
+export async function executeApprovedTool(orgId: string, approvalId: string, payload: any) {
   if (
     !payload?.agentId ||
     !payload.toolId ||

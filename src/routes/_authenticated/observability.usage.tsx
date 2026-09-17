@@ -77,37 +77,22 @@ function Usage() {
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
         <Metric label="Requests" value={t?.requests ?? 0} />
-        <Metric
-          label="Spend"
-          value={`$${(t?.spend ?? 0).toFixed(4)}`}
-          tone="primary"
-        />
+        <Metric label="Spend" value={`$${(t?.spend ?? 0).toFixed(4)}`} tone="primary" />
         <Metric
           label="Tokens"
-          value={models
-            .reduce((s, m) => s + m.input + m.output, 0)
-            .toLocaleString()}
+          value={models.reduce((s, m) => s + m.input + m.output, 0).toLocaleString()}
         />
         <Metric label="Avg latency" value={`${t?.avgLatency ?? 0} ms`} />
       </div>
       <DataTable
-        columns={[
-          "Model",
-          "Calls",
-          "Input tokens",
-          "Output tokens",
-          "Cost",
-          "Avg latency",
-        ]}
+        columns={["Model", "Calls", "Input tokens", "Output tokens", "Cost", "Avg latency"]}
         rows={models.map((m) => [
           <span className="font-mono text-xs">{m.model}</span>,
           <span className="tabular-nums">{m.calls}</span>,
           <span className="tabular-nums">{m.input.toLocaleString()}</span>,
           <span className="tabular-nums">{m.output.toLocaleString()}</span>,
           <span className="tabular-nums">${m.cost.toFixed(6)}</span>,
-          <span className="tabular-nums">
-            {Math.round(m.latency / Math.max(1, m.calls))} ms
-          </span>,
+          <span className="tabular-nums">{Math.round(m.latency / Math.max(1, m.calls))} ms</span>,
         ])}
       />
     </div>

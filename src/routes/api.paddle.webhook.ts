@@ -8,11 +8,7 @@ const PaddleData = z
     customer_id: z.string().optional(),
     custom_data: z.record(z.string(), z.unknown()).nullable().optional(),
     items: z
-      .array(
-        z
-          .object({ price: z.object({ id: z.string() }).optional() })
-          .passthrough(),
-      )
+      .array(z.object({ price: z.object({ id: z.string() }).optional() }).passthrough())
       .optional(),
     current_billing_period: z
       .object({
@@ -21,10 +17,7 @@ const PaddleData = z
       })
       .nullable()
       .optional(),
-    scheduled_change: z
-      .object({ action: z.string().optional() })
-      .nullable()
-      .optional(),
+    scheduled_change: z.object({ action: z.string().optional() }).nullable().optional(),
   })
   .passthrough();
 
@@ -49,24 +42,17 @@ const ACCEPTED_SUBSCRIPTION_EVENTS = new Set([
 ]);
 
 function subscriptionStatus(eventType: string, upstream: string | undefined) {
-  if (
-    eventType === "subscription.canceled" ||
-    eventType === "subscription.paused"
-  )
+  if (eventType === "subscription.canceled" || eventType === "subscription.paused")
     return "canceled" as const;
   if (eventType === "subscription.past_due") return "past_due" as const;
   if (upstream === "trialing") return "trialing" as const;
   if (upstream === "active") return "active" as const;
   if (upstream === "past_due") return "past_due" as const;
-  if (upstream === "canceled" || upstream === "paused")
-    return "canceled" as const;
+  if (upstream === "canceled" || upstream === "paused") return "canceled" as const;
   return "incomplete" as const;
 }
 
-async function readLimitedText(
-  request: Request,
-  limit: number,
-): Promise<string> {
+async function readLimitedText(request: Request, limit: number): Promise<string> {
   if (!request.body) throw new Error("Request body required.");
   const reader = request.body.getReader();
   const decoder = new TextDecoder();
@@ -89,18 +75,14 @@ export const Route = createFileRoute("/api/paddle/webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        if (
-          !request.headers.get("content-type")?.startsWith("application/json")
-        )
+        if (!request.headers.get("content-type")?.startsWith("application/json"))
           return new Response("JSON body required", { status: 415 });
         let raw: string;
         try {
           raw = await readLimitedText(request, 1_000_000);
         } catch (error) {
           return new Response(
-            error instanceof RangeError
-              ? "Payload too large"
-              : "Invalid payload",
+            error instanceof RangeError ? "Payload too large" : "Invalid payload",
             {
               status: error instanceof RangeError ? 413 : 400,
             },
@@ -118,10 +100,7 @@ export const Route = createFileRoute("/api/paddle/webhook")({
           return new Response("Invalid event", { status: 400 });
         }
         if (!event.event_type.startsWith("subscription."))
-          return Response.json(
-            { received: true },
-            { headers: { "Cache-Control": "no-store" } },
-          );
+          return Response.json({ received: true }, { headers: { "Cache-Control": "no-store" } });
         if (!ACCEPTED_SUBSCRIPTION_EVENTS.has(event.event_type))
           return Response.json(
             { received: true, ignored: "unsupported_event" },
@@ -133,11 +112,9 @@ export const Route = createFileRoute("/api/paddle/webhook")({
           data.items?.[0]?.price?.id,
           data.custom_data as any,
         );
-        if (!identity)
-          return new Response("Invalid checkout metadata", { status: 400 });
+        if (!identity) return new Response("Invalid checkout metadata", { status: 400 });
 
-        const { supabaseAdmin } =
-          await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data: result, error } = await (supabaseAdmin as any).rpc(
           "nexora_apply_paddle_event",
           {
