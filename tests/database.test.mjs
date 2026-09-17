@@ -77,13 +77,19 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       has_column_privilege('authenticated','agents','token_hash','SELECT') AS secret,
       has_table_privilege('authenticated','agent_capabilities','INSERT') AS grant_capability,
       has_table_privilege('authenticated','agents','UPDATE') AS alter_agent,
-      has_table_privilege('anon','requests','TRUNCATE') AS truncate_requests`);
+      has_table_privilege('anon','requests','TRUNCATE') AS truncate_requests,
+      has_function_privilege('authenticated','nexora_provision_trial()','EXECUTE') AS provision_trial,
+      has_function_privilege('authenticated','nexora_enforce_plan_resource_limit()','EXECUTE') AS plan_trigger,
+      has_function_privilege('authenticated','nexora_enforce_seat_limit()','EXECUTE') AS seat_trigger`);
     assert.deepEqual(agentPrivileges.rows[0], {
       metadata: true,
       secret: false,
       grant_capability: false,
       alter_agent: false,
       truncate_requests: false,
+      provision_trial: false,
+      plan_trigger: false,
+      seat_trigger: false,
     });
 
     const deviceHash = "a".repeat(64);
@@ -167,6 +173,43 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       plan_key: "team",
       status: "active",
       last_event_id: "evt_new",
+    });
+
+    await assert.rejects(
+      db.query(
+        "SELECT nexora_apply_paddle_event($1,$2,$3,$4,true,'solo','active','ctm_1','sub_2',NULL,NULL,false)",
+        ["evt_replace_active", "2026-09-17T10:30:00Z", "subscription.created", org],
+      ),
+    );
+    await db.query(
+      "SELECT nexora_apply_paddle_event($1,$2,$3,$4,true,'team','canceled','ctm_1','sub_1',NULL,NULL,false)",
+      ["evt_canceled", "2026-09-17T11:00:00Z", "subscription.canceled", org],
+    );
+    await assert.rejects(
+      db.query(
+        "SELECT nexora_apply_paddle_event($1,$2,$3,$4,false,'solo','active','ctm_1','sub_2',NULL,NULL,false)",
+        ["evt_replace_unsigned", "2026-09-17T12:00:00Z", "subscription.created", org],
+      ),
+    );
+    const replacement = await db.query(
+      "SELECT nexora_apply_paddle_event($1,$2,$3,$4,true,'solo','active','ctm_1','sub_2',NULL,NULL,false) AS result",
+      ["evt_replace", "2026-09-17T12:00:00Z", "subscription.created", org],
+    );
+    assert.deepEqual(replacement.rows[0].result, {
+      result: "processed",
+      subscription_replaced: true,
+    });
+    const replaced = (
+      await db.query(
+        "SELECT plan_key,status,provider_subscription_id,last_event_id FROM billing_subscriptions WHERE org_id=$1",
+        [org],
+      )
+    ).rows[0];
+    assert.deepEqual(replaced, {
+      plan_key: "solo",
+      status: "active",
+      provider_subscription_id: "sub_2",
+      last_event_id: "evt_replace",
     });
 
     await assert.rejects(
