@@ -24,15 +24,17 @@ export const Route = createFileRoute("/_authenticated/gateway/providers")({
 
 function Providers() {
   const fn = useServerFn(listCatalog);
-  const { data } = useQuery({ queryKey: ["catalog"], queryFn: () => fn({}) });
+  const { data, error, isLoading } = useQuery({ queryKey: ["catalog"], queryFn: () => fn({}) });
   const providers = (data?.providers ?? []) as any[];
 
   return (
     <div>
       <PageHeader
         title="Providers"
-        subtitle="Provider credentials are never exposed to the browser, to logs or to audit records. Vendors without a configured credential posture are marked NOT_CONFIGURED and are refused at the gateway."
+        subtitle="Credential status is checked on the server. CONFIGURED means a key is present, not that provider access has been verified. Submit a governed request in Playground to verify execution."
       />
+      {isLoading && <p role="status">Loading provider status…</p>}
+      {error && <p role="alert">{error.message}</p>}
       <DataTable
         columns={["Provider", "Vendor", "Credentials", "Region", "Status"]}
         rows={providers.map((p) => [

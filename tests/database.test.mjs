@@ -11,6 +11,7 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid PRIMARY KEY);
       CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT null::uuid $$;
       CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql AS $$ SELECT '{}'::jsonb $$;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated;
     `);
     for (const name of (await readdir("supabase/migrations"))
       .filter((n) => n.endsWith(".sql"))
@@ -67,6 +68,19 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       has_table_privilege('authenticated','approvals','UPDATE') AS approval,
       has_table_privilege('authenticated','requests','INSERT') AS requests`);
     assert.deepEqual(privileges.rows[0], { reserve: false, approval: false, requests: false });
+    const agentPrivileges = await db.query(`SELECT
+      has_column_privilege('authenticated','agents','name','SELECT') AS metadata,
+      has_column_privilege('authenticated','agents','token_hash','SELECT') AS secret,
+      has_table_privilege('authenticated','agent_capabilities','INSERT') AS grant_capability,
+      has_table_privilege('authenticated','agents','UPDATE') AS alter_agent,
+      has_table_privilege('anon','requests','TRUNCATE') AS truncate_requests`);
+    assert.deepEqual(agentPrivileges.rows[0], {
+      metadata: true,
+      secret: false,
+      grant_capability: false,
+      alter_agent: false,
+      truncate_requests: false,
+    });
   } finally {
     await db.close();
   }

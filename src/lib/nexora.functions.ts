@@ -201,7 +201,7 @@ export const getOverview = createServerFn({ method: "POST" })
     const ws = await resolveWorkspace(context);
     const since = new Date(Date.now() - 30 * 864e5).toISOString();
 
-    const [requests, findings, approvals, policies, budgets, members] = await Promise.all([
+    const [requests, findings, approvals, policies, budgets, members, agents] = await Promise.all([
       context.supabase
         .from("requests")
         .select("decision, cost_usd, latency_ms, model, created_at, redacted")
@@ -216,7 +216,14 @@ export const getOverview = createServerFn({ method: "POST" })
       context.supabase.from("policies").select("id, status").eq("org_id", ws.orgId),
       context.supabase.from("budgets").select("limit_usd, period").eq("org_id", ws.orgId),
       context.supabase.from("org_members").select("user_id").eq("org_id", ws.orgId),
+      context.supabase
+        .from("agents")
+        .select("id", { count: "exact", head: true })
+        .eq("org_id", ws.orgId)
+        .eq("status", "active"),
     ]);
+    if ([requests, findings, approvals, policies, budgets, members, agents].some((r) => r.error))
+      throw new Error("Overview could not be loaded.");
 
     const rows = (requests.data ?? []) as any[];
     const spend = rows.reduce((sum, r) => sum + Number(r.cost_usd ?? 0), 0);
@@ -252,6 +259,7 @@ export const getOverview = createServerFn({ method: "POST" })
       workspace: ws,
       totals: {
         requests: rows.length,
+        activeAgents: agents.count ?? 0,
         blocked,
         redacted,
         violations,
@@ -302,9 +310,14 @@ export const listCatalog = createServerFn({ method: "POST" })
       context.supabase.from("providers").select("*").eq("org_id", ws.orgId).order("name"),
       context.supabase.from("models").select("*").eq("org_id", ws.orgId).order("display_name"),
     ]);
+    if (providers.error || models.error) throw new Error("Catalog could not be loaded.");
+    const { providerReadiness } = await import("./ai-gateway.server");
     return {
       workspace: ws,
-      providers: providers.data ?? [],
+      providers: (providers.data ?? []).map((p: any) => ({
+        ...p,
+        credential_state: providerReadiness(p.vendor),
+      })),
       models: models.data ?? [],
     };
   });
@@ -568,23 +581,68 @@ export const listControlPlane = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ module: z.string().min(1) }).parse(input))
   .handler(async ({ data, context }: { data: { module: string }; context: any }) => {
     const ws = await resolveWorkspace(context);
-    const q = (table: string, columns = "*") =>
-      context.supabase.from(table).select(columns).eq("org_id", ws.orgId).limit(200);
-    const rows =
-      data.module === "agent-registry"
-        ? ((await q("agents")).data ?? [])
-        : data.module === "agent-tools"
-          ? ((await q("agent_capabilities")).data ?? [])
-          : data.module === "mcp-gateway"
-            ? ((await q("mcp_servers")).data ?? [])
-            : data.module === "threats" ||
-                data.module === "security-tests" ||
-                data.module === "attack-simulation"
-              ? ((await q("audit_events")).data ?? [])
-              : data.module === "latency" || data.module === "errors"
-                ? ((await q("requests")).data ?? [])
-                : [];
-    return { workspace: ws, module: data.module, rows };
+    const q = (table: string, columns: string) =>
+      context.supabase
+        .from(table)
+        .select(columns)
+        .eq("org_id", ws.orgId)
+        .order("created_at", { ascending: false })
+        .limit(200);
+    let query: any;
+    switch (data.module) {
+      case "agent-registry":
+        query = q("agents", "id,name,slug,description,status,created_at");
+        break;
+      case "agent-tools":
+        query = q("agent_capabilities", "id,agent_id,capability,created_at,agents(name)");
+        break;
+      case "mcp-gateway":
+        query = q("mcp_servers", "id,name,url,transport,status,created_at");
+        break;
+      case "threats":
+        query = q("security_findings", "id,title,category,severity,status,created_at,request_id");
+        break;
+      case "security-tests":
+      case "attack-simulation":
+        query = q("audit_events", "id,action,result,metadata,created_at").eq(
+          "action",
+          data.module === "security-tests" ? "security.suite" : "security.simulation",
+        );
+        break;
+      case "latency":
+        query = q("requests", "id,model,decision,status,latency_ms,created_at");
+        break;
+      case "errors":
+        query = q("requests", "id,model,decision,status,latency_ms,created_at").in("status", [
+          "provider_error",
+          "error",
+          "failed",
+        ]);
+        break;
+      case "agent-tasks":
+        query = q("requests", "id,agent_id,model,decision,status,created_at").eq(
+          "actor_type",
+          "agent",
+        );
+        break;
+      case "integrations": {
+        const { providerReadiness } = await import("./ai-gateway.server");
+        const result = await q("providers", "id,name,vendor,status");
+        if (result.error) throw new Error("Integrations could not be loaded.");
+        return {
+          workspace: ws,
+          module: data.module,
+          rows: result.data.map((p: any) => ({ ...p, readiness: providerReadiness(p.vendor) })),
+        };
+      }
+      case "settings":
+        return { workspace: ws, module: data.module, rows: [] };
+      default:
+        throw new Error("Unknown module.");
+    }
+    const { data: rows, error } = await query;
+    if (error) throw new Error("Module data could not be loaded. Please retry.");
+    return { workspace: ws, module: data.module, rows: rows ?? [] };
   });
 
 export const createAgent = createServerFn({ method: "POST" })
@@ -603,7 +661,11 @@ export const createAgent = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }: { data: any; context: any }) => {
     const ws = await resolveWorkspace(context);
-    if (!ws.roles.some((r) => ["platform_admin", "org_admin", "agent_admin"].includes(r))) {
+    if (
+      !ws.roles.some((r) =>
+        ["platform_admin", "org_admin", "agent_admin", "security_admin"].includes(r),
+      )
+    ) {
       throw new Error("Forbidden: agent administration role required.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -615,6 +677,7 @@ export const createAgent = createServerFn({ method: "POST" })
         slug: data.slug,
         description: data.description ?? null,
         owner_id: context.userId,
+        status: "draft",
       })
       .select("id, name, slug, status, created_at")
       .single();
@@ -627,4 +690,160 @@ export const createAgent = createServerFn({ method: "POST" })
       metadata: { slug: agent.slug },
     });
     return agent;
+  });
+
+export const runSecurityTests = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ adversarial: z.boolean() }).parse(input))
+  .handler(async ({ data, context }: { data: { adversarial: boolean }; context: any }) => {
+    const ws = await resolveWorkspace(context);
+    if (!ws.roles.some((r) => GOV_ROLES.includes(r)))
+      throw new Error("Security administration role required.");
+    const { data: policies, error } = await context.supabase
+      .from("policies")
+      .select("*")
+      .eq("org_id", ws.orgId)
+      .eq("status", "active");
+    if (error) throw new Error("Policies could not be loaded.");
+    const { runSecuritySuite } = await import("./nexora/security-suite");
+    const cases = runSecuritySuite(policies ?? [], data.adversarial);
+    const passed = cases.filter((c) => c.passed).length;
+    await writeAudit(context, ws.orgId, {
+      action: data.adversarial ? "security.simulation" : "security.suite",
+      resource: "policy_suite",
+      result: passed === cases.length ? "passed" : "failed",
+      risk: passed === cases.length ? "info" : "high",
+      metadata: {
+        suiteVersion: 1,
+        scope: "deterministic_policy_only",
+        passed,
+        total: cases.length,
+        cases,
+        policies: (policies ?? []).map((p: any) => ({ id: p.id, version: p.version })),
+      },
+    });
+    return { cases, passed, total: cases.length };
+  });
+
+const controlMutation = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("agent-status"),
+    id: z.string().uuid(),
+    status: z.enum(["draft", "suspended", "archived"]),
+  }),
+  z.object({
+    action: z.literal("grant-capability"),
+    id: z.string().uuid(),
+    capability: z
+      .string()
+      .trim()
+      .min(2)
+      .max(100)
+      .regex(/^[a-z0-9:._-]+$/),
+  }),
+  z.object({ action: z.literal("revoke-capability"), id: z.string().uuid() }),
+  z.object({
+    action: z.literal("register-mcp"),
+    name: z.string().trim().min(2).max(100),
+    url: z
+      .string()
+      .url()
+      .max(2048)
+      .refine((s) => {
+        const u = new URL(s);
+        return u.protocol === "https:" && !u.username && !u.password && !u.search && !u.hash;
+      }, "Use an HTTPS URL without credentials or query parameters."),
+  }),
+  z.object({ action: z.literal("rename-organization"), name: z.string().trim().min(2).max(100) }),
+  z.object({
+    action: z.literal("finding-status"),
+    id: z.string().uuid(),
+    status: z.enum(["open", "resolved"]),
+  }),
+]);
+
+export type ControlMutation = z.infer<typeof controlMutation>;
+
+export const manageControlPlane = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => controlMutation.parse(input))
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const allowed =
+      data.action === "rename-organization"
+        ? ["platform_admin", "org_admin"]
+        : data.action === "finding-status"
+          ? ["platform_admin", "org_admin", "security_admin"]
+          : ["platform_admin", "org_admin", "security_admin", "agent_admin"];
+    if (!ws.roles.some((r) => allowed.includes(r)))
+      throw new Error("Administration role required.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as any;
+    let query: any;
+    switch (data.action) {
+      case "agent-status":
+        query = db
+          .from("agents")
+          .update({ status: data.status })
+          .eq("org_id", ws.orgId)
+          .eq("id", data.id);
+        break;
+      case "grant-capability": {
+        const agent = await db
+          .from("agents")
+          .select("id")
+          .eq("org_id", ws.orgId)
+          .eq("id", data.id)
+          .single();
+        if (agent.error || !agent.data) throw new Error("Agent not found in this organization.");
+        query = db
+          .from("agent_capabilities")
+          .upsert(
+            {
+              org_id: ws.orgId,
+              agent_id: data.id,
+              capability: data.capability,
+              granted_by: context.userId,
+            },
+            { onConflict: "agent_id,capability" },
+          );
+        break;
+      }
+      case "revoke-capability":
+        query = db.from("agent_capabilities").delete().eq("org_id", ws.orgId).eq("id", data.id);
+        break;
+      case "register-mcp":
+        query = db
+          .from("mcp_servers")
+          .insert({
+            org_id: ws.orgId,
+            name: data.name,
+            url: data.url,
+            status: "draft",
+            transport: "http",
+            auth_mode: "bearer",
+            created_by: context.userId,
+          });
+        break;
+      case "rename-organization":
+        query = db.from("organizations").update({ name: data.name }).eq("id", ws.orgId);
+        break;
+      case "finding-status":
+        query = db
+          .from("security_findings")
+          .update({ status: data.status })
+          .eq("org_id", ws.orgId)
+          .eq("id", data.id);
+        break;
+    }
+    const result = await query.select("id");
+    if (result.error || !result.data?.length)
+      throw new Error("Change could not be saved. The record may no longer exist.");
+    await writeAudit(context, ws.orgId, {
+      action: `control.${data.action}`,
+      resource: data.action,
+      resource_id: result.data[0].id,
+      result: "success",
+    });
+    return { saved: true };
   });

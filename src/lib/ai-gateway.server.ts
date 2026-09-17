@@ -119,9 +119,9 @@ async function runOpenAI(modelKey: string, prompt: string): Promise<ProviderResu
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   const started = Date.now();
 
-  let res: Response;
+  let json: unknown;
   try {
-    res = await fetch(OPENAI_RESPONSES_URL, {
+    const res = await fetch(OPENAI_RESPONSES_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -137,27 +137,19 @@ async function runOpenAI(modelKey: string, prompt: string): Promise<ProviderResu
       }),
       signal: controller.signal,
     });
+    if (!res.ok) {
+      await res.body?.cancel();
+      throw mapUpstreamStatus(res.status);
+    }
+    json = await res.json();
   } catch (error) {
-    clearTimeout(timer);
-    if ((error as { name?: string })?.name === "AbortError") {
+    if (error instanceof ProviderError) throw error;
+    if (controller.signal.aborted) {
       throw new ProviderError(504, "Provider request timed out after 30s.");
     }
     throw new ProviderError(502, "Provider request could not be completed.");
   } finally {
     clearTimeout(timer);
-  }
-
-  if (!res.ok) {
-    // Body intentionally discarded: upstream bodies can echo request content.
-    await res.text().catch(() => "");
-    throw mapUpstreamStatus(res.status);
-  }
-
-  let json: unknown;
-  try {
-    json = await res.json();
-  } catch {
-    throw new ProviderError(502, "Provider returned an unreadable response.");
   }
 
   const usage = parseUsage(json);

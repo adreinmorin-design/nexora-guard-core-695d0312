@@ -4,6 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "test:security": "node --import ./tests/resolve-ts.mjs --test tests/security-suite.test.mjs",
     "test:gateway": "node --import ./tests/resolve-ts.mjs --test tests/gateway.test.mjs",
     "test:database": "node --test tests/database.test.mjs",
     "dev": "vite dev",
