@@ -171,11 +171,13 @@ export function resolvePaddleWebhookIdentity(
     (custom?.interval === "monthly" || custom?.interval === "annual") &&
     typeof custom?.user_id === "string" &&
     typeof custom?.signature === "string";
-  if (!complete || !verifyCheckoutData(custom as PaddleCheckoutData, secret)) return null;
-  if (pricePlan && pricePlan !== custom.plan_key) return null;
+  if (!complete) return null;
+  const identity = custom as PaddleCheckoutData;
+  if (!verifyCheckoutData(identity, secret)) return null;
+  if (pricePlan && pricePlan !== identity.plan_key) return null;
   return {
-    orgId: custom.org_id,
-    planKey: pricePlan ?? custom.plan_key,
+    orgId: identity.org_id,
+    planKey: pricePlan ?? identity.plan_key,
     signedIdentity: true,
   };
 }
