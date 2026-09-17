@@ -17,8 +17,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
       # The Lovable checkout currently does not include a package-lock.json.
+      # Do not enable setup-node's npm cache until a lockfile is committed;
+      # setup-node fails before the install step when no lockfile exists.
       # Use npm install until the lockfile is committed so CI remains runnable.
       - run: npm install --ignore-scripts
       - run: npm run lint
