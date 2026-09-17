@@ -6,7 +6,9 @@ export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => ({
     next:
       typeof search["next"] === "string" &&
-      /^\/connect-agent(?:\?code=[A-Fa-f0-9]{10})?$/.test(search["next"])
+      /^(?:\/connect-agent(?:\?code=[A-Fa-f0-9]{10})?|\/admin\/billing(?:\?plan=(?:solo|team|enterprise))?)$/.test(
+        search["next"],
+      )
         ? search["next"]
         : "/overview",
   }),
