@@ -1,9 +1,24 @@
 /** Seed catalog for a newly provisioned NEXORA organization. */
 
 export const SEED_PROVIDERS = [
-  { name: "OpenAI", vendor: "openai", credential_state: "MANAGED", region: "global" },
-  { name: "Google", vendor: "google", credential_state: "NOT_CONFIGURED", region: "global" },
-  { name: "Anthropic", vendor: "anthropic", credential_state: "NOT_CONFIGURED", region: "global" },
+  {
+    name: "OpenAI",
+    vendor: "openai",
+    credential_state: "MANAGED",
+    region: "global",
+  },
+  {
+    name: "Google",
+    vendor: "google",
+    credential_state: "NOT_CONFIGURED",
+    region: "global",
+  },
+  {
+    name: "Anthropic",
+    vendor: "anthropic",
+    credential_state: "NOT_CONFIGURED",
+    region: "global",
+  },
 ] as const;
 
 /** Default model for new traffic: the lowest-cost supported OpenAI model. */
@@ -69,7 +84,11 @@ export const SEED_POLICIES = [
     action: "BLOCK" as const,
     scope: "organization",
     conditions: [
-      { field: "detection_category", op: "in", value: ["ssn", "credit_card", "iban"] },
+      {
+        field: "detection_category",
+        op: "in",
+        value: ["ssn", "credit_card", "iban"],
+      },
     ],
   },
   {
@@ -107,7 +126,11 @@ export const SEED_POLICIES = [
     action: "REDACT" as const,
     scope: "organization",
     conditions: [
-      { field: "detection_category", op: "in", value: ["email", "phone", "ip_address"] },
+      {
+        field: "detection_category",
+        op: "in",
+        value: ["email", "phone", "ip_address"],
+      },
     ],
   },
   {

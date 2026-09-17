@@ -31,7 +31,8 @@ async function openPaddleCheckout(config: PaddleCheckoutConfig): Promise<void> {
     script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
     script.async = true;
     script.dataset["nexoraPaddle"] = "true";
-    script.onload = () => (browser.Paddle ? resolve(browser.Paddle) : reject(new Error("Paddle failed to load.")));
+    script.onload = () =>
+      browser.Paddle ? resolve(browser.Paddle) : reject(new Error("Paddle failed to load."));
     script.onerror = () => reject(new Error("Paddle checkout could not load."));
     if (!existing) document.head.appendChild(script);
   });
@@ -59,7 +60,10 @@ function Billing() {
   const fn = useServerFn(getBillingState);
   const paddleFn = useServerFn(getPaddleCheckout);
   const [interval, setInterval] = useState<"monthly" | "annual">("monthly");
-  const { data, isLoading, error } = useQuery({ queryKey: ["billing"], queryFn: () => fn({}) });
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["billing"],
+    queryFn: () => fn({}),
+  });
   const current = planByKey(data?.subscription?.plan_key);
   const checkout = useMutation({
     mutationFn: async (plan: "solo" | "team") => {
@@ -114,7 +118,9 @@ function Billing() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="label-caps">Billing interval</div>
-          <p className="mt-1 text-xs text-muted-foreground">Annual billing includes two months free.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Annual billing includes two months free.
+          </p>
         </div>
         <div className="flex rounded-md border border-border p-1 text-xs">
           {(["monthly", "annual"] as const).map((value) => (
@@ -170,7 +176,10 @@ function Billing() {
                   : "Secure Paddle checkout uses a server-signed organization identity; entitlements change only after a verified webhook."}
               </div>
               {plan.key === "enterprise" ? (
-                <button disabled className="mt-4 w-full rounded-md border border-border px-3 py-2 text-sm opacity-60">
+                <button
+                  disabled
+                  className="mt-4 w-full rounded-md border border-border px-3 py-2 text-sm opacity-60"
+                >
                   Contact sales
                 </button>
               ) : (

@@ -8,27 +8,33 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      # The Lovable checkout currently does not include a package-lock.json.
-      # Do not enable setup-node's npm cache until a lockfile is committed;
-      # setup-node fails before the install step when no lockfile exists.
-      # Use npm install until the lockfile is committed so CI remains runnable.
-      - run: npm install --ignore-scripts
-      - run: npm run lint
-      - run: npm run test:gateway
-      - run: npm run test:security
-      - run: npm run test:agents
-      - run: npm run test:providers
-      - run: npm run test:paddle
-      - run: npm run test:billing
-      - run: npm run test:database
-      - run: npx tsc --noEmit
-      - run: npm run build
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: bun audit --audit-level=high
+      - run: bun run lint
+      - run: bun run format:check
+      - run: bun run test:gateway
+      - run: bun run test:security
+      - run: bun run test:agents
+      - run: bun run test:providers
+      - run: bun run test:paddle
+      - run: bun run test:billing
+      - run: bun run test:database
+      - run: bun run test:hardening
+      - run: bunx tsc --noEmit
+      - run: bun run build

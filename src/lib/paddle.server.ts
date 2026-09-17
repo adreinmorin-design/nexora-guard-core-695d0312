@@ -49,17 +49,12 @@ export function paddleEnvironment(): "sandbox" | "production" {
     : "sandbox";
 }
 
-export function paddlePriceId(
-  plan: CheckoutPlan,
-  interval: CheckoutInterval,
-): string | undefined {
+export function paddlePriceId(plan: CheckoutPlan, interval: CheckoutInterval): string | undefined {
   return value(PRICE_ENV[plan][interval]);
 }
 
 /** Keep this canonical representation stable; it is part of webhook security. */
-export function checkoutSigningPayload(
-  data: Omit<PaddleCheckoutData, "signature">,
-): string {
+export function checkoutSigningPayload(data: Omit<PaddleCheckoutData, "signature">): string {
   return [data.org_id, data.plan_key, data.interval, data.user_id].join(".");
 }
 
@@ -128,7 +123,12 @@ export function createCheckoutConfig(
   const priceId = paddlePriceId(plan, interval);
   const secret = value("PADDLE_CHECKOUT_SIGNING_SECRET");
   if (!clientToken || !priceId || !secret) return null;
-  const unsigned = { org_id: orgId, plan_key: plan, interval, user_id: userId } as const;
+  const unsigned = {
+    org_id: orgId,
+    plan_key: plan,
+    interval,
+    user_id: userId,
+  } as const;
   const signature = signCheckoutData(unsigned, secret);
   if (!signature) return null;
   return {
@@ -148,4 +148,36 @@ export function planFromPriceId(priceId: unknown): CheckoutPlan | undefined {
     }
   }
   return undefined;
+}
+
+export function resolvePaddleWebhookIdentity(
+  priceId: unknown,
+  custom: Partial<PaddleCheckoutData> | null | undefined,
+  secret = value("PADDLE_CHECKOUT_SIGNING_SECRET"),
+): {
+  orgId: string | null;
+  planKey: CheckoutPlan | undefined;
+  signedIdentity: boolean;
+} | null {
+  const pricePlan = planFromPriceId(priceId);
+  const hasAnyIdentity = Boolean(
+    custom &&
+    (custom.org_id || custom.plan_key || custom.interval || custom.user_id || custom.signature),
+  );
+  if (!hasAnyIdentity) return { orgId: null, planKey: pricePlan, signedIdentity: false };
+  const complete =
+    typeof custom?.org_id === "string" &&
+    (custom?.plan_key === "solo" || custom?.plan_key === "team") &&
+    (custom?.interval === "monthly" || custom?.interval === "annual") &&
+    typeof custom?.user_id === "string" &&
+    typeof custom?.signature === "string";
+  if (!complete) return null;
+  const identity = custom as PaddleCheckoutData;
+  if (!verifyCheckoutData(identity, secret)) return null;
+  if (pricePlan && pricePlan !== identity.plan_key) return null;
+  return {
+    orgId: identity.org_id,
+    planKey: pricePlan ?? identity.plan_key,
+    signedIdentity: true,
+  };
 }

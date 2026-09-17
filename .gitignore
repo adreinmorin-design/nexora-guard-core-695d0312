@@ -8,6 +8,11 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+
+# Environment files (commit only the documented template)
+.env
+.env.*
+!.env.example
 dist
 dist-ssr
 .output

@@ -18,8 +18,16 @@ test("security suite passes baseline protections in both stages", () => {
     JSON.stringify(results.filter((r) => !r.passed)),
   );
 });
-test("suite reports missing and malformed policies as failures", () => {
-  assert.ok(runSecuritySuite([]).every((r) => !r.passed));
+test("suite fails closed without policies and rejects malformed policies", () => {
+  assert.ok(
+    runSecuritySuite([]).every(
+      (r) =>
+        r.passed &&
+        r.actual === "BLOCK" &&
+        r.reason ===
+          "No active policy authorized this request; explicit policy coverage is required.",
+    ),
+  );
   assert.ok(
     runSecuritySuite([{ ...policies[0], action: "INVALID" }]).every(
       (r) => !r.passed && r.actual === "ERROR",

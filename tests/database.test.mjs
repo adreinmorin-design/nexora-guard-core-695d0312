@@ -67,7 +67,11 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       has_function_privilege('authenticated','nexora_reserve(uuid,text,numeric)','EXECUTE') AS reserve,
       has_table_privilege('authenticated','approvals','UPDATE') AS approval,
       has_table_privilege('authenticated','requests','INSERT') AS requests`);
-    assert.deepEqual(privileges.rows[0], { reserve: false, approval: false, requests: false });
+    assert.deepEqual(privileges.rows[0], {
+      reserve: false,
+      approval: false,
+      requests: false,
+    });
     const agentPrivileges = await db.query(`SELECT
       has_column_privilege('authenticated','agents','name','SELECT') AS metadata,
       has_column_privilege('authenticated','agents','token_hash','SELECT') AS secret,
@@ -137,6 +141,34 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       db.query("SELECT nexora_claim_agent($1,$2,$3,NULL)", [agent, key, tokenHash]),
     );
     await db.query("SELECT nexora_revoke_connection($1,$2,$3)", [org, agent, approver]);
+
+    const applied = await db.query(
+      "SELECT nexora_apply_paddle_event($1,$2,$3,$4,true,'team','active','ctm_1','sub_1',NULL,NULL,false) AS result",
+      ["evt_new", "2026-09-17T10:00:00Z", "subscription.updated", org],
+    );
+    assert.equal(applied.rows[0].result.result, "processed");
+    const duplicate = await db.query(
+      "SELECT nexora_apply_paddle_event($1,$2,$3,$4,true,'team','active','ctm_1','sub_1',NULL,NULL,false) AS result",
+      ["evt_new", "2026-09-17T10:00:00Z", "subscription.updated", org],
+    );
+    assert.equal(duplicate.rows[0].result.result, "duplicate");
+    const stale = await db.query(
+      "SELECT nexora_apply_paddle_event($1,$2,$3,$4,true,'solo','canceled','ctm_1','sub_1',NULL,NULL,false) AS result",
+      ["evt_old", "2026-09-16T10:00:00Z", "subscription.canceled", org],
+    );
+    assert.equal(stale.rows[0].result.result, "stale");
+    const subscription = (
+      await db.query(
+        "SELECT plan_key,status,last_event_id FROM billing_subscriptions WHERE org_id=$1",
+        [org],
+      )
+    ).rows[0];
+    assert.deepEqual(subscription, {
+      plan_key: "team",
+      status: "active",
+      last_event_id: "evt_new",
+    });
+
     await assert.rejects(
       db.query("SELECT nexora_claim_agent($1,$2,$3,NULL)", [
         agent,

@@ -184,8 +184,8 @@ export function evaluate(policies: PolicyRecord[], ctx: EvaluationContext): Deci
 
   if (matchedRules.length === 0) {
     return {
-      action: "ALLOW",
-      reason: "No policy matched this request.",
+      action: "BLOCK",
+      reason: "No active policy authorized this request; explicit policy coverage is required.",
       policyId: null,
       policyName: null,
       policyVersion: null,

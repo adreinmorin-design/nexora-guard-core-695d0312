@@ -28,7 +28,11 @@ function connect<T>(server: any, work: Parameters<typeof withMcp<T>>[1]) {
     throw new Error("Configure this MCP server's trusted origin and server credential first.");
   const token = server.auth_mode === "none" ? undefined : process.env[mcpSecretName(server.id)];
   return withMcp(
-    { endpoint: server.url, allowedOrigins: allowedOrigins(), ...(token ? { token } : {}) },
+    {
+      endpoint: server.url,
+      allowedOrigins: allowedOrigins(),
+      ...(token ? { token } : {}),
+    },
     work,
   );
 }
@@ -70,40 +74,36 @@ export async function discoverMcp(orgId: string, serverId: string, actor: string
   );
   for (const tool of definitions) {
     await checked(
-      db
-        .from("mcp_tools")
-        .upsert(
-          {
-            org_id: orgId,
-            server_id: serverId,
-            tool_name: `${serverId}.${tool.name}`,
-            remote_name: tool.name,
-            description: String(tool.description ?? "").slice(0, 2000),
-            input_schema: tool.inputSchema,
-            definition_hash: await hashCredential(canonicalJson(tool)),
-            required_capability: `mcp:${serverId}:${tool.name}`,
-            risk: "high",
-            status: "draft",
-          },
-          { onConflict: "org_id,tool_name" },
-        ),
+      db.from("mcp_tools").upsert(
+        {
+          org_id: orgId,
+          server_id: serverId,
+          tool_name: `${serverId}.${tool.name}`,
+          remote_name: tool.name,
+          description: String(tool.description ?? "").slice(0, 2000),
+          input_schema: tool.inputSchema,
+          definition_hash: await hashCredential(canonicalJson(tool)),
+          required_capability: `mcp:${serverId}:${tool.name}`,
+          risk: "high",
+          status: "draft",
+        },
+        { onConflict: "org_id,tool_name" },
+      ),
     );
   }
   await checked(
     db.from("mcp_servers").update({ status: "active" }).eq("org_id", orgId).eq("id", serverId),
   );
   await checked(
-    db
-      .from("audit_events")
-      .insert({
-        org_id: orgId,
-        actor_id: actor,
-        action: "mcp.discovered",
-        resource: "mcp_server",
-        resource_id: serverId,
-        result: "success",
-        metadata: { tools: definitions.length },
-      }),
+    db.from("audit_events").insert({
+      org_id: orgId,
+      actor_id: actor,
+      action: "mcp.discovered",
+      resource: "mcp_server",
+      resource_id: serverId,
+      result: "success",
+      metadata: { tools: definitions.length },
+    }),
   );
   return { discovered: definitions.length };
 }
@@ -111,7 +111,11 @@ export async function discoverMcp(orgId: string, serverId: string, actor: string
 export async function executeTool(
   orgId: string,
   agentId: string,
-  input: { toolId: string; arguments: Record<string, unknown>; idempotencyKey: string },
+  input: {
+    toolId: string;
+    arguments: Record<string, unknown>;
+    idempotencyKey: string;
+  },
   approved?: { policies: PolicyRecord[]; definitionHash: string },
 ) {
   const agent = await activeAgent(orgId, agentId);
@@ -177,19 +181,17 @@ export async function executeTool(
         .eq("id", invocation.id),
     );
     await checked(
-      db
-        .from("audit_events")
-        .insert({
-          org_id: orgId,
-          actor_type: "agent",
-          action: "mcp.call",
-          resource: "mcp_tool",
-          resource_id: tool.id,
-          decision,
-          result: status,
-          source: "mcp",
-          metadata: { agentId, invocationId: invocation.id },
-        }),
+      db.from("audit_events").insert({
+        org_id: orgId,
+        actor_type: "agent",
+        action: "mcp.call",
+        resource: "mcp_tool",
+        resource_id: tool.id,
+        decision,
+        result: status,
+        source: "mcp",
+        metadata: { agentId, invocationId: invocation.id },
+      }),
     );
     return {
       status,
@@ -239,18 +241,16 @@ export async function executeTool(
   }
   // Persist dispatch intent before touching the remote service. Failures are not retried.
   await checked(
-    db
-      .from("audit_events")
-      .insert({
-        org_id: orgId,
-        actor_type: "agent",
-        action: "mcp.dispatch",
-        resource: "mcp_tool",
-        resource_id: tool.id,
-        result: "dispatching",
-        source: "mcp",
-        metadata: { agentId, invocationId: invocation.id },
-      }),
+    db.from("audit_events").insert({
+      org_id: orgId,
+      actor_type: "agent",
+      action: "mcp.dispatch",
+      resource: "mcp_tool",
+      resource_id: tool.id,
+      result: "dispatching",
+      source: "mcp",
+      metadata: { agentId, invocationId: invocation.id },
+    }),
   );
   try {
     const result = await connect(server, async (call) => {
@@ -308,7 +308,11 @@ export async function executeApprovedTool(orgId: string, approvalId: string, pay
   return executeTool(
     orgId,
     payload.agentId,
-    { toolId: payload.toolId, arguments: payload.arguments, idempotencyKey: approvalId },
+    {
+      toolId: payload.toolId,
+      arguments: payload.arguments,
+      idempotencyKey: approvalId,
+    },
     { policies: payload.policies, definitionHash: payload.definitionHash },
   );
 }

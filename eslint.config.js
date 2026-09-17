@@ -31,7 +31,21 @@ export default tseslint.config(
           ],
         },
       ],
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      "react-refresh/only-export-components": [
+        "error",
+        {
+          allowConstantExport: true,
+          allowExportNames: [
+            "NAV",
+            "badgeVariants",
+            "buttonVariants",
+            "useFormField",
+            "navigationMenuTriggerStyle",
+            "useSidebar",
+            "toggleVariants",
+          ],
+        },
+      ],
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "prefer-const": "off",

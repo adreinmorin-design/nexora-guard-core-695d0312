@@ -465,7 +465,7 @@ const policyInput = z.object({
 
 export const savePolicy = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => policyInput.parse(input))
+  .validator((input: unknown) => policyInput.parse(input))
   .handler(async ({ data, context }: { data: any; context: any }) => {
     const ws = await resolveWorkspace(context);
     if (!ws.roles.some((r) => GOV_ROLES.includes(r))) {
@@ -550,7 +550,7 @@ export const savePolicy = createServerFn({ method: "POST" })
 
 export const decideApproval = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ id: z.string().uuid(), decision: z.enum(["approved", "rejected"]) }).parse(input),
   )
   .handler(async ({ data, context }: { data: any; context: any }) => {
@@ -569,7 +569,7 @@ export const decideApproval = createServerFn({ method: "POST" })
 
 export const submitGatewayRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         prompt: z.string().min(1).max(20000),
@@ -590,7 +590,7 @@ export const submitGatewayRequest = createServerFn({ method: "POST" })
 
 export const listControlPlane = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ module: z.string().min(1) }).parse(input))
+  .validator((input: unknown) => z.object({ module: z.string().min(1) }).parse(input))
   .handler(async ({ data, context }: { data: { module: string }; context: any }) => {
     const ws = await resolveWorkspace(context);
     const q = (table: string, columns: string) =>
@@ -670,7 +670,7 @@ export const listControlPlane = createServerFn({ method: "POST" })
 
 export const createAgent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         name: z.string().min(2).max(100),
@@ -717,7 +717,7 @@ export const createAgent = createServerFn({ method: "POST" })
 
 export const runSecurityTests = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ adversarial: z.boolean() }).parse(input))
+  .validator((input: unknown) => z.object({ adversarial: z.boolean() }).parse(input))
   .handler(async ({ data, context }: { data: { adversarial: boolean }; context: any }) => {
     const ws = await resolveWorkspace(context);
     if (!ws.roles.some((r) => GOV_ROLES.includes(r)))
@@ -790,7 +790,7 @@ export type ControlMutation = z.infer<typeof controlMutation>;
 
 export const manageControlPlane = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => controlMutation.parse(input))
+  .validator((input: unknown) => controlMutation.parse(input))
   .handler(async ({ data, context }) => {
     const ws = await resolveWorkspace(context);
     const allowed =
@@ -870,7 +870,7 @@ export const manageControlPlane = createServerFn({ method: "POST" })
 
 export const rotateAgentCredential = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const ws = await resolveWorkspace(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -934,7 +934,7 @@ export const getAgentWorkbench = createServerFn({ method: "POST" })
 
 export const executeAgentTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(async (input: unknown) => {
+  .validator(async (input: unknown) => {
     const { agentTaskInput } = await import("./nexora/agent-input");
     return z.object({ agentId: z.string().uuid(), task: agentTaskInput }).parse(input);
   })
@@ -981,7 +981,7 @@ const toolAdminInput = z.discriminatedUnion("action", [
 export type ToolAdminInput = z.infer<typeof toolAdminInput>;
 export const manageAgentTools = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => toolAdminInput.parse(input))
+  .validator((input: unknown) => toolAdminInput.parse(input))
   .handler(async ({ data, context }) => {
     const ws = await resolveWorkspace(context);
     if (
@@ -1071,7 +1071,7 @@ const connectionScope = z.enum([
 
 export const inspectAgentConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ code: z.string().regex(/^[A-F0-9]{10}$/) }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -1091,7 +1091,7 @@ export const inspectAgentConnection = createServerFn({ method: "POST" })
 
 export const consentAgentConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         code: z.string().regex(/^[A-F0-9]{10}$/),
@@ -1119,7 +1119,7 @@ export const consentAgentConnection = createServerFn({ method: "POST" })
 
 export const connectAgentDirect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         name: z.string().trim().min(1).max(80),
@@ -1211,7 +1211,7 @@ export const listAgentConnections = createServerFn({ method: "POST" })
 
 export const disconnectAgent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const ws = await resolveWorkspace(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -1256,7 +1256,7 @@ export const getBillingState = createServerFn({ method: "POST" })
 
 export const getPaddleCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         plan: z.enum(["solo", "team"]),
