@@ -56,6 +56,7 @@ export type Principal = {
   orgId: string;
   source: "console" | "api" | "mcp";
   label?: string;
+  ownerId?: string;
 };
 
 export type GatewayStore = {
@@ -404,11 +405,11 @@ export async function runGovernedRequest(params: {
     );
   }
 
-  if (finalAction === "REQUIRE_APPROVAL" && principal.kind === "user") {
+  if (finalAction === "REQUIRE_APPROVAL" && (principal.kind === "user" || principal.ownerId)) {
     const approval = await store.insertApproval({
       org_id: principal.orgId,
       request_id: requestRow?.id ?? null,
-      requester_id: principal.id,
+      requester_id: principal.kind === "agent" ? principal.ownerId : principal.id,
       action: "gateway.execute",
       target: modelKey,
       risk: detections.some((d) => d.severity === "critical") ? "critical" : "high",
@@ -423,6 +424,7 @@ export async function runGovernedRequest(params: {
         prompt: redact(prompt, detections),
         modelKey,
         policies,
+        ...(principal.kind === "agent" ? { agentId: principal.id } : {}),
       },
     });
     approvalId = approval?.id ?? null;

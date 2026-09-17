@@ -81,6 +81,69 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       alter_agent: false,
       truncate_requests: false,
     });
+
+    const deviceHash = "a".repeat(64);
+    const tokenHash = "b".repeat(64);
+    const key = "00000000-0000-4000-8000-000000000006";
+    await db.query(
+      "SELECT nexora_start_connection($1,'ABCDEF1234','Test agent',ARRAY['requests:read']::text[])",
+      [deviceHash],
+    );
+    await assert.rejects(
+      db.query(
+        "SELECT nexora_consent_connection('ABCDEF1234',$1,$2,true,ARRAY['requests:read','model:invoke']::text[])",
+        [org, approver],
+      ),
+    );
+    const consent = await db.query(
+      "SELECT nexora_consent_connection('ABCDEF1234',$1,$2,true,ARRAY['requests:read']::text[]) AS id",
+      [org, approver],
+    );
+    const agent = consent.rows[0].id;
+    const exchange = await db.query(
+      "SELECT nexora_exchange_connection($1,$2,'nxr_1234567') AS result",
+      [deviceHash, tokenHash],
+    );
+    assert.equal(exchange.rows[0].result.agent_id, agent);
+    assert.equal(exchange.rows[0].result.scope, "requests:read");
+    assert.equal(
+      (
+        await db.query("SELECT nexora_exchange_connection($1,$2,'nxr_1234567') AS result", [
+          deviceHash,
+          tokenHash,
+        ])
+      ).rows[0].result.error,
+      "invalid_grant",
+    );
+    assert.equal(
+      (
+        await db.query("SELECT nexora_claim_agent($1,$2,$3,NULL) AS result", [
+          agent,
+          key,
+          tokenHash,
+        ])
+      ).rows[0].result.id,
+      agent,
+    );
+    await db.query(
+      "INSERT INTO requests(org_id,agent_id,idempotency_key,decision,status,cost_usd,input_tokens,output_tokens) VALUES($1,$2,'agent-usage','LOG','completed',0.125,10,20)",
+      [org, agent],
+    );
+    const usage = (await db.query("SELECT * FROM nexora_agent_usage($1)", [org])).rows[0];
+    assert.equal(usage.agent_id, agent);
+    assert.equal(Number(usage.request_count), 1);
+    assert.equal(Number(usage.cost_usd), 0.125);
+    await assert.rejects(
+      db.query("SELECT nexora_claim_agent($1,$2,$3,NULL)", [agent, key, tokenHash]),
+    );
+    await db.query("SELECT nexora_revoke_connection($1,$2,$3)", [org, agent, approver]);
+    await assert.rejects(
+      db.query("SELECT nexora_claim_agent($1,$2,$3,NULL)", [
+        agent,
+        "00000000-0000-4000-8000-000000000007",
+        tokenHash,
+      ]),
+    );
   } finally {
     await db.close();
   }

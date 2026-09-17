@@ -31,6 +31,7 @@ export const NAV: NavGroup[] = [
   {
     group: "Agents",
     items: [
+      { label: "Connect an Agent", to: "/connect-agent" },
       { label: "Registry", to: "/module/agent-registry" },
       { label: "Tasks", to: "/module/agent-tasks" },
       { label: "Tools", to: "/module/agent-tools" },
@@ -90,7 +91,7 @@ export function AppShell({
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: "/auth", search: { next: "/overview" }, replace: true });
   }
 
   return (

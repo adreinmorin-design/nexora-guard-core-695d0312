@@ -1,0 +1,194 @@
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { checked, makeStore } from "./gateway.server";
+import { runGovernedRequest } from "./pipeline";
+import { executeProviderRequest } from "../ai-gateway.server";
+import { agentBearer, hashCredential } from "./agent-credentials";
+import type { PolicyRecord } from "./policy-engine";
+
+const db: any = supabaseAdmin;
+
+export async function activeAgent(orgId: string, agentId: string) {
+  const agent = await checked(
+    db
+      .from("agents")
+      .select("id,org_id,owner_id,status,credential_expires_at")
+      .eq("org_id", orgId)
+      .eq("id", agentId)
+      .single(),
+  );
+  if (
+    !agent ||
+    agent.status !== "active" ||
+    !agent.credential_expires_at ||
+    Date.parse(agent.credential_expires_at) <= Date.now()
+  )
+    throw new Error("Agent is inactive or its credential has expired.");
+  const owner = await checked(
+    db.from("org_members").select("id").eq("org_id", orgId).eq("user_id", agent.owner_id).limit(1),
+  );
+  if (!owner.length) throw new Error("Agent owner is no longer a member.");
+  return agent;
+}
+
+export async function requireCapability(orgId: string, agentId: string, capability: string) {
+  const rows = await checked(
+    db
+      .from("agent_capabilities")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("agent_id", agentId)
+      .eq("capability", capability)
+      .limit(1),
+  );
+  if (!rows.length) throw new Error("Agent lacks the required capability.");
+  if (["model:invoke", "findings:resolve"].includes(capability)) {
+    const agent = await activeAgent(orgId, agentId);
+    const roles = await checked(
+      db.from("org_members").select("role").eq("org_id", orgId).eq("user_id", agent.owner_id),
+    );
+    const allowed =
+      capability === "findings:resolve"
+        ? ["platform_admin", "org_admin", "security_admin"]
+        : [
+            "platform_admin",
+            "org_admin",
+            "security_admin",
+            "governance_admin",
+            "agent_admin",
+            "developer",
+          ];
+    if (!roles.some((r: any) => allowed.includes(r.role)))
+      throw new Error("Agent owner no longer has permission for this action.");
+  }
+}
+
+export async function claimAgent(input: {
+  id: string;
+  key: string;
+  actor?: string;
+  hash?: string;
+}) {
+  return checked(
+    db.rpc("nexora_claim_agent", {
+      p_agent: input.id,
+      p_key: input.key,
+      p_actor: input.actor ?? null,
+      p_hash: input.hash ?? null,
+    }),
+  );
+}
+
+export async function authenticateAgent(header: string | null, key: string) {
+  const hash = await hashCredential(agentBearer(header));
+  const agent = await checked(db.from("agents").select("id").eq("token_hash", hash).maybeSingle());
+  if (!agent) throw new Error("Invalid agent credential.");
+  return claimAgent({ id: agent.id, key, hash });
+}
+
+export async function executeAgentModel(
+  orgId: string,
+  agentId: string,
+  input: { prompt: string; modelKey: string; idempotencyKey: string },
+  approvedPolicies?: PolicyRecord[],
+) {
+  const agent = await activeAgent(orgId, agentId);
+  await requireCapability(orgId, agentId, "model:invoke");
+  return runGovernedRequest({
+    store: makeStore({ supabase: db }, orgId),
+    principal: { kind: "agent", id: agentId, orgId, ownerId: agent.owner_id, source: "api" },
+    ...input,
+    ...(approvedPolicies ? { approvedPolicies } : {}),
+    execute: executeProviderRequest,
+  });
+}
+
+export async function runAgentOperation(
+  orgId: string,
+  agentId: string,
+  input: import("./agent-input").AgentTaskInput,
+) {
+  await activeAgent(orgId, agentId);
+  if (input.kind === "model") return executeAgentModel(orgId, agentId, input);
+  if (input.kind === "tool")
+    return (await import("./mcp.server")).executeTool(orgId, agentId, input);
+  if (input.kind === "finding") {
+    await requireCapability(orgId, agentId, "findings:resolve");
+    await checked(
+      db.rpc("nexora_agent_finding", {
+        p_org: orgId,
+        p_agent: agentId,
+        p_finding: input.findingId,
+        p_status: input.status,
+      }),
+    );
+    return {
+      status: "completed",
+      reason: "Finding updated.",
+      output: JSON.stringify({ id: input.findingId, status: input.status }),
+    };
+  }
+  if (input.resource === "status") {
+    const [permissions, models, usageRows] = await Promise.all([
+      checked(
+        db
+          .from("agent_capabilities")
+          .select("capability")
+          .eq("org_id", orgId)
+          .eq("agent_id", agentId),
+      ),
+      checked(
+        db
+          .from("models")
+          .select("model_key,display_name,status")
+          .eq("org_id", orgId)
+          .eq("status", "active"),
+      ),
+      checked(db.rpc("nexora_agent_usage", { p_org: orgId })),
+    ]);
+    const usage = usageRows.find((row: any) => row.agent_id === agentId) ?? {
+      request_count: 0,
+      cost_usd: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+      last_used_at: null,
+    };
+    return {
+      status: "completed",
+      reason: "Connection is active.",
+      output: JSON.stringify({
+        agentId,
+        orgId,
+        permissions: permissions.map((p: any) => p.capability),
+        models,
+        usage,
+      }),
+    };
+  }
+  await requireCapability(orgId, agentId, `${input.resource}:read`);
+  const table = input.resource === "findings" ? "security_findings" : input.resource;
+  const columns =
+    input.resource === "requests"
+      ? "id,model,decision,status,reason,prompt_preview,response_preview,created_at"
+      : input.resource === "findings"
+        ? "id,title,category,severity,status,remediation,created_at"
+        : "id,name,description,action,conditions,version,status,created_at";
+  const rows = await checked(
+    db
+      .from(table)
+      .select(columns)
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false })
+      .limit(input.limit),
+  );
+  await checked(
+    db.from("audit_events").insert({
+      org_id: orgId,
+      actor_type: "agent",
+      action: `agent.read_${input.resource}`,
+      resource: table,
+      result: "success",
+      metadata: { agentId, count: rows.length },
+    }),
+  );
+  return { status: "completed", reason: "Read completed.", output: JSON.stringify(rows) };
+}

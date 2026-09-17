@@ -1,8 +1,15 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    next:
+      typeof search["next"] === "string" &&
+      /^\/connect-agent(?:\?code=[A-Fa-f0-9]{10})?$/.test(search["next"])
+        ? search["next"]
+        : "/overview",
+  }),
   head: () => ({
     meta: [
       { title: "Sign in — NEXORA Control Plane" },
@@ -24,7 +31,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,9 +41,9 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/overview", replace: true });
+      if (data.session) window.location.replace(next);
     });
-  }, [navigate]);
+  }, [next]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,11 +62,11 @@ function AuthPage() {
           setStatus("Check your inbox to confirm this address, then sign in.");
           return;
         }
-        navigate({ to: "/overview", replace: true });
+        window.location.replace(next);
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) throw err;
-        navigate({ to: "/overview", replace: true });
+        window.location.replace(next);
       }
     } catch (err: any) {
       setError(err?.message ?? "Authentication failed.");
@@ -130,9 +137,7 @@ function AuthPage() {
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
             className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground"
           >
-            {mode === "signin"
-              ? "No account yet? Create one"
-              : "Already have an account? Sign in"}
+            {mode === "signin" ? "No account yet? Create one" : "Already have an account? Sign in"}
           </button>
         </div>
       </div>

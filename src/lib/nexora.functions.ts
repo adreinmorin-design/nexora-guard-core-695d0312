@@ -591,14 +591,25 @@ export const listControlPlane = createServerFn({ method: "POST" })
     let query: any;
     switch (data.module) {
       case "agent-registry":
-        query = q("agents", "id,name,slug,description,status,created_at");
+        query = q("agents", "id,name,slug,description,status,credential_expires_at,created_at");
         break;
       case "agent-tools":
         query = q("agent_capabilities", "id,agent_id,capability,created_at,agents(name)");
         break;
-      case "mcp-gateway":
-        query = q("mcp_servers", "id,name,url,transport,status,created_at");
-        break;
+      case "mcp-gateway": {
+        const result = await q("mcp_servers", "id,name,url,transport,auth_mode,status,created_at");
+        if (result.error) throw new Error("MCP servers could not be loaded.");
+        const { mcpReadiness, mcpSecretName } = await import("./nexora/mcp.server");
+        return {
+          workspace: ws,
+          module: data.module,
+          rows: result.data.map((s: any) => ({
+            ...s,
+            readiness: mcpReadiness(s),
+            secret_name: mcpSecretName(s.id),
+          })),
+        };
+      }
       case "threats":
         query = q("security_findings", "id,title,category,severity,status,created_at,request_id");
         break;
@@ -744,6 +755,7 @@ const controlMutation = z.discriminatedUnion("action", [
   z.object({ action: z.literal("revoke-capability"), id: z.string().uuid() }),
   z.object({
     action: z.literal("register-mcp"),
+    authMode: z.enum(["none", "bearer"]).default("bearer"),
     name: z.string().trim().min(2).max(100),
     url: z
       .string()
@@ -796,34 +808,30 @@ export const manageControlPlane = createServerFn({ method: "POST" })
           .eq("id", data.id)
           .single();
         if (agent.error || !agent.data) throw new Error("Agent not found in this organization.");
-        query = db
-          .from("agent_capabilities")
-          .upsert(
-            {
-              org_id: ws.orgId,
-              agent_id: data.id,
-              capability: data.capability,
-              granted_by: context.userId,
-            },
-            { onConflict: "agent_id,capability" },
-          );
+        query = db.from("agent_capabilities").upsert(
+          {
+            org_id: ws.orgId,
+            agent_id: data.id,
+            capability: data.capability,
+            granted_by: context.userId,
+          },
+          { onConflict: "agent_id,capability" },
+        );
         break;
       }
       case "revoke-capability":
         query = db.from("agent_capabilities").delete().eq("org_id", ws.orgId).eq("id", data.id);
         break;
       case "register-mcp":
-        query = db
-          .from("mcp_servers")
-          .insert({
-            org_id: ws.orgId,
-            name: data.name,
-            url: data.url,
-            status: "draft",
-            transport: "http",
-            auth_mode: "bearer",
-            created_by: context.userId,
-          });
+        query = db.from("mcp_servers").insert({
+          org_id: ws.orgId,
+          name: data.name,
+          url: data.url,
+          status: "draft",
+          transport: "http",
+          auth_mode: data.authMode,
+          created_by: context.userId,
+        });
         break;
       case "rename-organization":
         query = db.from("organizations").update({ name: data.name }).eq("id", ws.orgId);
@@ -846,4 +854,361 @@ export const manageControlPlane = createServerFn({ method: "POST" })
       result: "success",
     });
     return { saved: true };
+  });
+
+export const rotateAgentCredential = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { newAgentCredential } = await import("./nexora/agent-credentials");
+    const credential = await newAgentCredential();
+    const { error } = await (supabaseAdmin as any).rpc("nexora_rotate_agent", {
+      p_org: ws.orgId,
+      p_agent: data.id,
+      p_actor: context.userId,
+      p_hash: credential.hash,
+      p_prefix: credential.prefix,
+    });
+    if (error)
+      throw new Error(
+        "Credential rotation requires an available agent and an administration role.",
+      );
+    return { token: credential.token };
+  });
+
+export const getAgentWorkbench = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ws = await resolveWorkspace(context);
+    const db: any = context.supabase;
+    const results = await Promise.all([
+      db.from("agents").select("id,name,status").eq("org_id", ws.orgId).order("name").limit(200),
+      db
+        .from("mcp_tools")
+        .select("id,server_id,remote_name,description,required_capability,status,risk,input_schema")
+        .eq("org_id", ws.orgId)
+        .order("tool_name")
+        .limit(200),
+      db
+        .from("mcp_tool_grants")
+        .select("id,agent_id,tool_id,requires_approval")
+        .eq("org_id", ws.orgId)
+        .limit(200),
+      db
+        .from("tool_invocations")
+        .select("id,agent_id,tool_id,status,decision,reason,created_at")
+        .eq("org_id", ws.orgId)
+        .order("created_at", { ascending: false })
+        .limit(100),
+      db
+        .from("models")
+        .select("model_key,display_name")
+        .eq("org_id", ws.orgId)
+        .eq("status", "active")
+        .order("display_name"),
+    ]);
+    if (results.some((r) => r.error)) throw new Error("Agent workbench could not be loaded.");
+    return {
+      workspace: ws,
+      agents: results[0].data,
+      tools: results[1].data,
+      grants: results[2].data,
+      invocations: results[3].data,
+      models: results[4].data,
+    };
+  });
+
+export const executeAgentTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(async (input: unknown) => {
+    const { agentTaskInput } = await import("./nexora/agent-input");
+    return z.object({ agentId: z.string().uuid(), task: agentTaskInput }).parse(input);
+  })
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    if (
+      !ws.roles.some((r) =>
+        ["platform_admin", "org_admin", "security_admin", "agent_admin"].includes(r),
+      )
+    )
+      throw new Error("Agent administration role required.");
+    const { claimAgent, runAgentOperation } = await import("./nexora/agents.server");
+    const { data: agent, error } = await context.supabase
+      .from("agents")
+      .select("id")
+      .eq("org_id", ws.orgId)
+      .eq("id", data.agentId)
+      .single();
+    if (error || !agent) throw new Error("Agent not found in this organization.");
+    await claimAgent({ id: data.agentId, key: data.task.idempotencyKey, actor: context.userId });
+    return runAgentOperation(ws.orgId, data.agentId, data.task);
+  });
+
+const toolAdminInput = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("discover"), serverId: z.string().uuid() }),
+  z.object({
+    action: z.literal("server-status"),
+    serverId: z.string().uuid(),
+    status: z.enum(["active", "suspended"]),
+  }),
+  z.object({
+    action: z.literal("tool-status"),
+    toolId: z.string().uuid(),
+    status: z.enum(["active", "suspended"]),
+  }),
+  z.object({
+    action: z.literal("grant"),
+    agentId: z.string().uuid(),
+    toolId: z.string().uuid(),
+    requiresApproval: z.boolean(),
+  }),
+  z.object({ action: z.literal("revoke"), grantId: z.string().uuid() }),
+]);
+export type ToolAdminInput = z.infer<typeof toolAdminInput>;
+export const manageAgentTools = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => toolAdminInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    if (
+      !ws.roles.some((r) =>
+        ["platform_admin", "org_admin", "security_admin", "agent_admin"].includes(r),
+      )
+    )
+      throw new Error("Agent administration role required.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { checked } = await import("./nexora/gateway.server");
+    const db: any = supabaseAdmin;
+    if (data.action === "discover")
+      return (await import("./nexora/mcp.server")).discoverMcp(
+        ws.orgId,
+        data.serverId,
+        context.userId,
+      );
+    let query;
+    if (data.action === "server-status")
+      query = db
+        .from("mcp_servers")
+        .update({ status: data.status })
+        .eq("org_id", ws.orgId)
+        .eq("id", data.serverId);
+    if (data.action === "tool-status")
+      query = db
+        .from("mcp_tools")
+        .update({ status: data.status })
+        .eq("org_id", ws.orgId)
+        .eq("id", data.toolId)
+        .not("definition_hash", "is", null);
+    if (data.action === "revoke")
+      query = db.from("mcp_tool_grants").delete().eq("org_id", ws.orgId).eq("id", data.grantId);
+    if (data.action === "grant") {
+      const agent = await checked(
+        db.from("agents").select("id").eq("org_id", ws.orgId).eq("id", data.agentId).single(),
+      );
+      const tool = await checked(
+        db
+          .from("mcp_tools")
+          .select("id,required_capability")
+          .eq("org_id", ws.orgId)
+          .eq("id", data.toolId)
+          .single(),
+      );
+      if (!agent || !tool) throw new Error("Agent and tool must belong to this organization.");
+      await checked(
+        db.from("agent_capabilities").upsert(
+          {
+            org_id: ws.orgId,
+            agent_id: agent.id,
+            capability: tool.required_capability,
+            granted_by: context.userId,
+          },
+          { onConflict: "agent_id,capability" },
+        ),
+      );
+      query = db.from("mcp_tool_grants").upsert(
+        {
+          org_id: ws.orgId,
+          agent_id: agent.id,
+          tool_id: tool.id,
+          requires_approval: data.requiresApproval,
+          granted_by: context.userId,
+        },
+        { onConflict: "agent_id,tool_id" },
+      );
+    }
+    const rows = await checked(query.select("id"));
+    if (!rows.length) throw new Error("Record unavailable.");
+    await writeAudit(context, ws.orgId, {
+      action: `mcp.${data.action}`,
+      resource: "mcp",
+      resource_id: rows[0].id,
+      result: "success",
+    });
+    return { saved: true };
+  });
+
+const connectionScope = z.enum([
+  "requests:read",
+  "findings:read",
+  "policies:read",
+  "model:invoke",
+  "findings:resolve",
+]);
+
+export const inspectAgentConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ code: z.string().regex(/^[A-F0-9]{10}$/) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: connection, error } = await (supabaseAdmin as any)
+      .from("agent_connections")
+      .select("client_name,scopes,status,expires_at")
+      .eq("user_code", data.code)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .single();
+    if (error || !connection)
+      throw new Error("Connection code is invalid, expired, or already used.");
+    return { workspace: ws, connection };
+  });
+
+export const consentAgentConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        code: z.string().regex(/^[A-F0-9]{10}$/),
+        allow: z.boolean(),
+        scopes: z.array(connectionScope).max(5),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any).rpc("nexora_consent_connection", {
+      p_code: data.code,
+      p_org: ws.orgId,
+      p_actor: context.userId,
+      p_allow: data.allow,
+      p_scopes: [...new Set(data.scopes)],
+    });
+    if (error)
+      throw new Error(
+        "Permission could not be granted. Check your role or request a new connection code.",
+      );
+    return { approved: data.allow };
+  });
+
+export const connectAgentDirect = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        name: z.string().trim().min(1).max(80),
+        scopes: z.array(connectionScope).min(1).max(5),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const { startAgentConnection, exchangeAgentConnection } =
+      await import("./nexora/connections.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const scopes = [...new Set(data.scopes)];
+    const connection = await startAgentConnection(data.name, scopes);
+    const { error } = await (supabaseAdmin as any).rpc("nexora_consent_connection", {
+      p_code: connection.user_code,
+      p_org: ws.orgId,
+      p_actor: context.userId,
+      p_allow: true,
+      p_scopes: scopes,
+    });
+    if (error) throw new Error("Your role cannot grant the selected permissions.");
+    const result = await exchangeAgentConnection(connection.device_code);
+    if (result.error) throw new Error("Connection could not be completed.");
+    return result as {
+      access_token: string;
+      agent_id: string;
+      scope: string;
+      expires_in: number;
+    };
+  });
+
+export const listAgentConnections = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ws = await resolveWorkspace(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [agents, usage] = await Promise.all([
+      context.supabase
+        .from("agents")
+        .select("id,name,owner_id,status,credential_expires_at,created_at" as any)
+        .eq("org_id", ws.orgId)
+        .order("created_at", { ascending: false })
+        .limit(200),
+      (supabaseAdmin as any).rpc("nexora_agent_usage", { p_org: ws.orgId }),
+    ]);
+    if (agents.error || usage.error) throw new Error("Connections could not be loaded.");
+    const activity = new Map<
+      string,
+      {
+        requests: number;
+        costUsd: number;
+        inputTokens: number;
+        outputTokens: number;
+        lastUsedAt: string | null;
+      }
+    >();
+    for (const row of (usage.data ?? []) as any[]) {
+      if (!row.agent_id) continue;
+      const entry = activity.get(row.agent_id) ?? {
+        requests: 0,
+        costUsd: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        lastUsedAt: null,
+      };
+      entry.requests = Number(row.request_count ?? 0);
+      entry.costUsd = Number(row.cost_usd ?? 0);
+      entry.inputTokens = Number(row.input_tokens ?? 0);
+      entry.outputTokens = Number(row.output_tokens ?? 0);
+      entry.lastUsedAt = row.last_used_at ?? null;
+      activity.set(row.agent_id, entry);
+    }
+    return {
+      workspace: ws,
+      userId: context.userId,
+      agents: ((agents.data ?? []) as any[]).map((agent) => ({
+        ...agent,
+        usage: activity.get(agent.id) ?? {
+          requests: 0,
+          costUsd: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          lastUsedAt: null,
+        },
+      })),
+    };
+  });
+
+export const disconnectAgent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any).rpc("nexora_revoke_connection", {
+      p_org: ws.orgId,
+      p_agent: data.id,
+      p_actor: context.userId,
+    });
+    if (error)
+      throw new Error("Only the connection owner or an administrator may disconnect this agent.");
+    return { disconnected: true };
   });

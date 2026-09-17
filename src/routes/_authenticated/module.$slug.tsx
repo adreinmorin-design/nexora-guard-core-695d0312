@@ -18,13 +18,13 @@ export const Route = createFileRoute("/_authenticated/module/$slug")({
 
 const NOTES: Record<string, string> = {
   "agent-registry":
-    "Register agent identities and manage their lifecycle. New identities stay in draft until an authenticated agent execution service is connected.",
+    "Register agent identities and manage their lifecycle. Use Connect an Agent to issue consent-scoped credentials and activate an identity.",
   "agent-tasks":
-    "Recent gateway requests attributed to agents. Autonomous task scheduling and tool execution are not connected.",
+    "Recent governed gateway requests attributed to agents, including decisions and execution status.",
   "agent-tools":
-    "Manage capability assignments for registered agents. These assignments do not enable external tool execution.",
+    "Manage capability assignments for registered agents. MCP tools also require an explicit tool grant before execution.",
   "mcp-gateway":
-    "Register HTTPS MCP endpoints in draft. Discovery, credentials and remote tool invocation are not connected.",
+    "Register HTTPS MCP endpoints. Discovery and invocation require an administrator allowlist, server credentials, approved tool definitions, capabilities and per-agent grants.",
   threats: "Tenant-scoped security findings with resolution tracking. Latest 200 records.",
   "security-tests":
     "Run synthetic request and response fixtures against your active policies and content detectors. Tests do not call AI providers or verify model behavior.",
@@ -169,7 +169,12 @@ function ModuleContent({ slug }: { slug: string }) {
         capability: value("capability"),
       });
     if (slug === "mcp-gateway")
-      mutation.mutate({ action: "register-mcp", name: value("name"), url: value("url") });
+      mutation.mutate({
+        action: "register-mcp",
+        name: value("name"),
+        url: value("url"),
+        authMode: "bearer",
+      });
     if (slug === "settings")
       mutation.mutate({ action: "rename-organization", name: value("name") });
   }

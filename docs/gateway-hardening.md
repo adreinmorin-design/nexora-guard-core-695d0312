@@ -16,8 +16,17 @@ The console and approval execution now use the same policy pipeline.
 - Agent metadata, capability grants, draft MCP registration, finding resolution and organization renaming have role-checked server actions. Tenant identifiers are resolved from authenticated memberships; capability parents are checked within that tenant.
 - Threats shows findings; Errors filters execution failures; Latency shows recent requests. These views are limited to the newest 200 records and are not complete historical aggregates.
 - Provider readiness uses server environment availability, not seeded database labels. It does not verify key validity or model entitlement.
-- Agent authentication/execution, autonomous scheduling, MCP discovery/invocation, external SIEM/Slack/Jira delivery, retention scheduling and regional routing remain unimplemented. Registry entries cannot enable those services. Google and Anthropic execution adapters are not implemented.
+- Autonomous scheduling, external SIEM/Slack/Jira delivery, retention scheduling and regional routing remain unimplemented. Google and Anthropic execution adapters are not implemented.
 - Overlapping sensitive spans are merged before redaction. Private-key masking covers the entire key block, including incomplete blocks. The provider timeout covers response body consumption as well as headers.
+
+## Agent connections
+
+- Agents may request a ten-minute connection code or be connected directly by a signed-in user. The consent page displays each requested scope before approval. Sensitive scopes are limited by the consenting user's current roles.
+- Successful consent creates a tenant-bound agent identity and a one-time 256-bit credential. The raw credential is returned once, stored only as a SHA-256 digest, expires after 90 days, and can be revoked immediately by the owner or an administrator.
+- The native `/api/mcp` endpoint exposes only tools covered by the connection's scopes. `/api/agent` accepts bounded JSON tasks. Both derive the organization from the credential and apply replay and rate-limit admission before work starts.
+- Connected-agent usage displays request count, input and output tokens, provider cost, and last use from persisted gateway request records. New agents show zero usage immediately after consent.
+- Model execution still passes through model authorization, content inspection, policies, budget reservation, approvals, response inspection, and audit. Agent owners must remain organization members with a role that can grant sensitive operations.
+- Remote MCP servers require an administrator allowlist in `MCP_ALLOWED_ORIGINS`; bearer secrets use `MCP_TOKEN_<SERVER_UUID>`. Discovery stores a definition hash, leaves tools in draft, and requires explicit tool and agent grants before execution.
 
 ## Behavior
 

@@ -14,7 +14,10 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedApprovalsRouteImport } from './routes/_authenticated/approvals'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
+import { Route as AuthenticatedConnectAgentRouteImport } from './routes/_authenticated/connect-agent'
 import { Route as AuthenticatedOverviewRouteImport } from './routes/_authenticated/overview'
+import { Route as ApiAgentRouteImport } from './routes/api.agent'
+import { Route as ApiMcpRouteImport } from './routes/api.mcp'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedGatewayModelsRouteImport } from './routes/_authenticated/gateway.models'
 import { Route as AuthenticatedGatewayPlaygroundRouteImport } from './routes/_authenticated/gateway.playground'
@@ -26,6 +29,8 @@ import { Route as AuthenticatedGovernancePoliciesRouteImport } from './routes/_a
 import { Route as AuthenticatedModuleSlugRouteImport } from './routes/_authenticated/module.$slug'
 import { Route as AuthenticatedObservabilityUsageRouteImport } from './routes/_authenticated/observability.usage'
 import { Route as AuthenticatedSecurityFindingsRouteImport } from './routes/_authenticated/security.findings'
+import { Route as ApiAgentConnectRouteImport } from './routes/api.agent.connect'
+import { Route as ApiAgentTokenRouteImport } from './routes/api.agent.token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -51,10 +56,26 @@ const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConnectAgentRoute =
+  AuthenticatedConnectAgentRouteImport.update({
+    id: '/connect-agent',
+    path: '/connect-agent',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOverviewRoute = AuthenticatedOverviewRouteImport.update({
   id: '/overview',
   path: '/overview',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiAgentRoute = ApiAgentRouteImport.update({
+  id: '/api/agent',
+  path: '/api/agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   id: '/admin/users',
@@ -120,13 +141,26 @@ const AuthenticatedSecurityFindingsRoute =
     path: '/security/findings',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiAgentConnectRoute = ApiAgentConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
+  getParentRoute: () => ApiAgentRoute,
+} as any)
+const ApiAgentTokenRoute = ApiAgentTokenRouteImport.update({
+  id: '/token',
+  path: '/token',
+  getParentRoute: () => ApiAgentRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/approvals': typeof AuthenticatedApprovalsRoute
   '/audit': typeof AuthenticatedAuditRoute
+  '/connect-agent': typeof AuthenticatedConnectAgentRoute
   '/overview': typeof AuthenticatedOverviewRoute
+  '/api/agent': typeof ApiAgentRouteWithChildren
+  '/api/mcp': typeof ApiMcpRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/gateway/models': typeof AuthenticatedGatewayModelsRoute
   '/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
@@ -138,13 +172,18 @@ export interface FileRoutesByFullPath {
   '/module/$slug': typeof AuthenticatedModuleSlugRoute
   '/observability/usage': typeof AuthenticatedObservabilityUsageRoute
   '/security/findings': typeof AuthenticatedSecurityFindingsRoute
+  '/api/agent/connect': typeof ApiAgentConnectRoute
+  '/api/agent/token': typeof ApiAgentTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/approvals': typeof AuthenticatedApprovalsRoute
   '/audit': typeof AuthenticatedAuditRoute
+  '/connect-agent': typeof AuthenticatedConnectAgentRoute
   '/overview': typeof AuthenticatedOverviewRoute
+  '/api/agent': typeof ApiAgentRouteWithChildren
+  '/api/mcp': typeof ApiMcpRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/gateway/models': typeof AuthenticatedGatewayModelsRoute
   '/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
@@ -156,6 +195,8 @@ export interface FileRoutesByTo {
   '/module/$slug': typeof AuthenticatedModuleSlugRoute
   '/observability/usage': typeof AuthenticatedObservabilityUsageRoute
   '/security/findings': typeof AuthenticatedSecurityFindingsRoute
+  '/api/agent/connect': typeof ApiAgentConnectRoute
+  '/api/agent/token': typeof ApiAgentTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -164,7 +205,10 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/approvals': typeof AuthenticatedApprovalsRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
+  '/_authenticated/connect-agent': typeof AuthenticatedConnectAgentRoute
   '/_authenticated/overview': typeof AuthenticatedOverviewRoute
+  '/api/agent': typeof ApiAgentRouteWithChildren
+  '/api/mcp': typeof ApiMcpRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/gateway/models': typeof AuthenticatedGatewayModelsRoute
   '/_authenticated/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
@@ -176,6 +220,8 @@ export interface FileRoutesById {
   '/_authenticated/module/$slug': typeof AuthenticatedModuleSlugRoute
   '/_authenticated/observability/usage': typeof AuthenticatedObservabilityUsageRoute
   '/_authenticated/security/findings': typeof AuthenticatedSecurityFindingsRoute
+  '/api/agent/connect': typeof ApiAgentConnectRoute
+  '/api/agent/token': typeof ApiAgentTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -184,7 +230,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/approvals'
     | '/audit'
+    | '/connect-agent'
     | '/overview'
+    | '/api/agent'
+    | '/api/mcp'
     | '/admin/users'
     | '/gateway/models'
     | '/gateway/playground'
@@ -196,13 +245,18 @@ export interface FileRouteTypes {
     | '/module/$slug'
     | '/observability/usage'
     | '/security/findings'
+    | '/api/agent/connect'
+    | '/api/agent/token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/approvals'
     | '/audit'
+    | '/connect-agent'
     | '/overview'
+    | '/api/agent'
+    | '/api/mcp'
     | '/admin/users'
     | '/gateway/models'
     | '/gateway/playground'
@@ -214,6 +268,8 @@ export interface FileRouteTypes {
     | '/module/$slug'
     | '/observability/usage'
     | '/security/findings'
+    | '/api/agent/connect'
+    | '/api/agent/token'
   id:
     | '__root__'
     | '/'
@@ -221,7 +277,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/approvals'
     | '/_authenticated/audit'
+    | '/_authenticated/connect-agent'
     | '/_authenticated/overview'
+    | '/api/agent'
+    | '/api/mcp'
     | '/_authenticated/admin/users'
     | '/_authenticated/gateway/models'
     | '/_authenticated/gateway/playground'
@@ -233,12 +292,16 @@ export interface FileRouteTypes {
     | '/_authenticated/module/$slug'
     | '/_authenticated/observability/usage'
     | '/_authenticated/security/findings'
+    | '/api/agent/connect'
+    | '/api/agent/token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiAgentRoute: typeof ApiAgentRouteWithChildren
+  ApiMcpRoute: typeof ApiMcpRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -278,12 +341,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAuditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/connect-agent': {
+      id: '/_authenticated/connect-agent'
+      path: '/connect-agent'
+      fullPath: '/connect-agent'
+      preLoaderRoute: typeof AuthenticatedConnectAgentRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/overview': {
       id: '/_authenticated/overview'
       path: '/overview'
       fullPath: '/overview'
       preLoaderRoute: typeof AuthenticatedOverviewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/agent': {
+      id: '/api/agent'
+      path: '/api/agent'
+      fullPath: '/api/agent'
+      preLoaderRoute: typeof ApiAgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/users': {
       id: '/_authenticated/admin/users'
@@ -362,12 +446,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSecurityFindingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/agent/connect': {
+      id: '/api/agent/connect'
+      path: '/connect'
+      fullPath: '/api/agent/connect'
+      preLoaderRoute: typeof ApiAgentConnectRouteImport
+      parentRoute: typeof ApiAgentRoute
+    }
+    '/api/agent/token': {
+      id: '/api/agent/token'
+      path: '/token'
+      fullPath: '/api/agent/token'
+      preLoaderRoute: typeof ApiAgentTokenRouteImport
+      parentRoute: typeof ApiAgentRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedApprovalsRoute: typeof AuthenticatedApprovalsRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
+  AuthenticatedConnectAgentRoute: typeof AuthenticatedConnectAgentRoute
   AuthenticatedOverviewRoute: typeof AuthenticatedOverviewRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedGatewayModelsRoute: typeof AuthenticatedGatewayModelsRoute
@@ -385,6 +484,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedApprovalsRoute: AuthenticatedApprovalsRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
+  AuthenticatedConnectAgentRoute: AuthenticatedConnectAgentRoute,
   AuthenticatedOverviewRoute: AuthenticatedOverviewRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedGatewayModelsRoute: AuthenticatedGatewayModelsRoute,
@@ -402,10 +502,26 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ApiAgentRouteChildren {
+  ApiAgentConnectRoute: typeof ApiAgentConnectRoute
+  ApiAgentTokenRoute: typeof ApiAgentTokenRoute
+}
+
+const ApiAgentRouteChildren: ApiAgentRouteChildren = {
+  ApiAgentConnectRoute: ApiAgentConnectRoute,
+  ApiAgentTokenRoute: ApiAgentTokenRoute,
+}
+
+const ApiAgentRouteWithChildren = ApiAgentRoute._addFileChildren(
+  ApiAgentRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiAgentRoute: ApiAgentRouteWithChildren,
+  ApiMcpRoute: ApiMcpRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

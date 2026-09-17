@@ -10,7 +10,7 @@ export async function checked(query: PromiseLike<any>): Promise<any> {
   return data;
 }
 
-function makeStore(context: any, orgId: string): GatewayStore {
+export function makeStore(context: any, orgId: string): GatewayStore {
   const db = context.supabase;
   const admin: any = supabaseAdmin;
   const scoped = (id: string) => {
@@ -147,6 +147,29 @@ export async function decideAndExecute(
   );
   if (decision === "rejected") return { ok: true };
   const payload = approval.payload;
+  if (approval.action === "mcp.execute") {
+    const { executeApprovedTool } = await import("./mcp.server");
+    try {
+      const outcome = await executeApprovedTool(orgId, id, payload);
+      await checked(
+        admin
+          .from("approvals")
+          .update({ execution_result: outcome.status })
+          .eq("org_id", orgId)
+          .eq("id", id),
+      );
+      return { ok: true, outcome };
+    } catch {
+      await checked(
+        admin
+          .from("approvals")
+          .update({ execution_result: "failed_no_retry" })
+          .eq("org_id", orgId)
+          .eq("id", id),
+      );
+      throw new Error("Approved tool execution failed; inspect its task record before retrying.");
+    }
+  }
   if (
     typeof payload?.prompt !== "string" ||
     !payload.prompt.length ||
@@ -166,16 +189,21 @@ export async function decideAndExecute(
   try {
     // Policies are reloaded; only unchanged approval policies may be satisfied.
     // Budget admission and response policies are never waived by approval.
-    const outcome = await runConsoleRequest(
-      context,
-      orgId,
-      {
-        prompt: payload.prompt,
-        modelKey: payload.modelKey,
-        idempotencyKey: id,
-      },
-      payload.policies,
-    );
+    const input = {
+      prompt: payload.prompt,
+      modelKey: payload.modelKey,
+      idempotencyKey: id,
+    };
+    const outcome = payload.agentId
+      ? await (
+          await import("./agents.server")
+        ).executeAgentModel(orgId, payload.agentId, input, payload.policies)
+      : await runConsoleRequest(
+          { supabase: admin, userId: approval.requester_id },
+          orgId,
+          input,
+          payload.policies,
+        );
     await checked(
       admin
         .from("approvals")
