@@ -38,6 +38,13 @@ export const SYSTEM_PROMPT =
 
 export const SUPPORTED_VENDORS = ["openai", "anthropic", "google", "openai-compatible"] as const;
 
+function canonicalVendor(vendor: string): string {
+  const normalized = vendor.trim().toLowerCase();
+  if (["gemini", "google-ai", "google_gemini", "google-generative-ai"].includes(normalized))
+    return "google";
+  return normalized;
+}
+
 function nonEmpty(name: string): string | undefined {
   const value = process.env[name];
   return value && value.trim().length > 0 ? value.trim() : undefined;
@@ -48,6 +55,7 @@ function vendorEnvPart(vendor: string): string {
 }
 
 export function providerCredentialVariable(vendor: string): string {
+  vendor = canonicalVendor(vendor);
   if (vendor === "openai") return "OPENAI_API_KEY or OPEN_AI_PLATFORM_API_KEY";
   if (vendor === "anthropic") return "ANTHROPIC_API_KEY";
   if (vendor === "google") return "GOOGLE_AI_API_KEY or GEMINI_API_KEY";
@@ -55,6 +63,7 @@ export function providerCredentialVariable(vendor: string): string {
 }
 
 function providerKey(vendor: string): string | undefined {
+  vendor = canonicalVendor(vendor);
   if (vendor === "openai")
     return nonEmpty("OPENAI_API_KEY") ?? nonEmpty("OPEN_AI_PLATFORM_API_KEY");
   if (vendor === "anthropic") return nonEmpty("ANTHROPIC_API_KEY");
@@ -73,6 +82,7 @@ function compatibleBaseUrl(vendor: string): string | undefined {
 }
 
 function providerBaseUrl(vendor: string): string | undefined {
+  vendor = canonicalVendor(vendor);
   if (vendor === "openai") return nonEmpty("OPENAI_BASE_URL") ?? "https://api.openai.com/v1";
   if (vendor === "anthropic")
     return nonEmpty("ANTHROPIC_BASE_URL") ?? "https://api.anthropic.com/v1";
@@ -80,8 +90,14 @@ function providerBaseUrl(vendor: string): string | undefined {
   return compatibleBaseUrl(vendor);
 }
 
+function endpoint(base: string, path: string): string {
+  const normalized = base.replace(/\/$/, "");
+  return normalized.endsWith(path) ? normalized : `${normalized}${path}`;
+}
+
 /** Readiness never reveals key material or its length. */
 export function providerReadiness(vendor: string): ReadinessState {
+  vendor = canonicalVendor(vendor);
   if (!providerKey(vendor)) return "NOT_CONFIGURED";
   if (!["openai", "anthropic", "google"].includes(vendor) && !providerBaseUrl(vendor)) {
     return "NOT_CONFIGURED";
@@ -198,7 +214,7 @@ async function runOpenAI(model: string, prompt: string): Promise<ProviderResult>
   validatePrompt(prompt);
   const started = Date.now();
   const base = providerBaseUrl("openai")!;
-  const url = base.endsWith("/responses") ? base : `${base.replace(/\/$/, "")}/responses`;
+  const url = endpoint(base, "/responses");
   const { json, latencyMs } = await requestJson(
     url === OPENAI_RESPONSES_URL ? url : url,
     {
@@ -225,7 +241,7 @@ async function runAnthropic(model: string, prompt: string): Promise<ProviderResu
   validatePrompt(prompt);
   const started = Date.now();
   const { json, latencyMs } = await requestJson(
-    `${providerBaseUrl("anthropic")!.replace(/\/$/, "")}/messages`,
+    endpoint(providerBaseUrl("anthropic")!, "/messages"),
     {
       method: "POST",
       headers: {
@@ -280,7 +296,7 @@ async function runOpenAiCompatible(
   if (!key || !base) throw new ProviderError(503, `${vendor} provider is NOT_CONFIGURED.`);
   validatePrompt(prompt);
   const started = Date.now();
-  const url = `${base.replace(/\/$/, "")}/chat/completions`;
+  const url = endpoint(base, "/chat/completions");
   const { json, latencyMs } = await requestJson(
     url,
     {
@@ -307,7 +323,7 @@ export async function executeProviderRequest(
   prompt: string,
 ): Promise<ProviderResult> {
   const slash = modelKey.indexOf("/");
-  const vendor = slash < 0 ? "openai" : modelKey.slice(0, slash).toLowerCase();
+  const vendor = canonicalVendor(slash < 0 ? "openai" : modelKey.slice(0, slash));
   if (vendor === "openai") return runOpenAI(modelKey, prompt);
   if (vendor === "anthropic") return runAnthropic(modelKey, prompt);
   if (vendor === "google" || vendor === "gemini") return runGoogle(modelKey, prompt);
