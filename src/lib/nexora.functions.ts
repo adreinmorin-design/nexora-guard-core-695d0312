@@ -1212,3 +1212,32 @@ export const disconnectAgent = createServerFn({ method: "POST" })
       throw new Error("Only the connection owner or an administrator may disconnect this agent.");
     return { disconnected: true };
   });
+
+export const getBillingState = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ws = await resolveWorkspace(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db: any = supabaseAdmin;
+    const [subscription, usage] = await Promise.all([
+      db
+        .from("billing_subscriptions")
+        .select(
+          "plan_key,status,trial_ends_at,current_period_start,current_period_end,cancel_at_period_end",
+        )
+        .eq("org_id", ws.orgId)
+        .single(),
+      db.rpc("nexora_billing_usage", { p_org: ws.orgId }),
+    ]);
+    if (subscription.error || usage.error) throw new Error("Billing status could not be loaded.");
+    return {
+      workspace: ws,
+      subscription: subscription.data,
+      usage: {
+        seats: Number(usage.data?.seats ?? 0),
+        agents: Number(usage.data?.agents ?? 0),
+        mcpServers: Number(usage.data?.mcp_servers ?? 0),
+        requests: Number(usage.data?.requests ?? 0),
+      },
+    };
+  });
