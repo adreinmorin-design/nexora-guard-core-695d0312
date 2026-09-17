@@ -21,7 +21,7 @@ function fixture(overrides = {}) {
       output_cost_per_1k: 0.02,
     }),
     monthlySpend: async () => 0,
-    listPolicies: async () => [],
+    listPolicies: async () => [policy("LOG")],
     listBudgets: async () => [],
     findRequestByIdempotencyKey: async () => null,
     insertRequest: async (row) => {
@@ -180,4 +180,11 @@ test("unknown runtime action cannot dispatch", async () => {
   });
   assert.equal(called, false);
   assert.equal(r.executed, false);
+});
+
+test("missing policy coverage fails closed", async () => {
+  const f = fixture({ listPolicies: async () => [] });
+  const result = await f.run();
+  assert.equal(result.decision, "BLOCK");
+  assert.equal(f.calls.length, 0);
 });

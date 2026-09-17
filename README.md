@@ -146,3 +146,14 @@ boundaries and [`docs/billing.md`](docs/billing.md) for subscription controls.
 
 Private and proprietary. No license is granted for copying, redistribution or
 production use outside the owner's organization.
+
+## Security-sensitive deployment configuration
+
+- Keep `SUPABASE_SERVICE_ROLE_KEY`, provider API keys, MCP bearer tokens,
+  `PADDLE_WEBHOOK_SECRET`, and `PADDLE_CHECKOUT_SIGNING_SECRET` server-only.
+- Configure `PROVIDER_ALLOWED_ORIGINS` for every non-default or OpenAI-compatible
+  provider endpoint. Endpoints that are not HTTPS or not explicitly allowlisted
+  fail closed.
+- Configure `MCP_ALLOWED_ORIGINS` with exact trusted HTTPS origins. Redirects,
+  IP literals, local hostnames, credentials in URLs, and unapproved origins are rejected.
+- Copy `.env.example` into the deployment secret manager; never commit `.env`.

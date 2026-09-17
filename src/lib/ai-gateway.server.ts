@@ -81,13 +81,64 @@ function compatibleBaseUrl(vendor: string): string | undefined {
   );
 }
 
+const DEFAULT_PROVIDER_BASES: Record<string, string> = {
+  openai: "https://api.openai.com/v1",
+  anthropic: "https://api.anthropic.com/v1",
+  google: GOOGLE_GENERATIVE_URL,
+};
+
+function configuredProviderBase(vendor: string): string | undefined {
+  if (vendor === "openai") return nonEmpty("OPENAI_BASE_URL");
+  if (vendor === "anthropic") return nonEmpty("ANTHROPIC_BASE_URL");
+  if (vendor === "google") return nonEmpty("GOOGLE_AI_BASE_URL");
+  return compatibleBaseUrl(vendor);
+}
+
+function providerOriginAllowlist(): Set<string> {
+  return new Set(
+    (nonEmpty("PROVIDER_ALLOWED_ORIGINS") ?? "")
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean),
+  );
+}
+
+export function validateProviderBaseUrl(raw: string, vendor: string): string {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new ProviderError(503, `${vendor} provider endpoint is invalid.`);
+  }
+  const hostname = url.hostname.toLowerCase();
+  const defaultOrigin = DEFAULT_PROVIDER_BASES[vendor]
+    ? new URL(DEFAULT_PROVIDER_BASES[vendor]).origin
+    : null;
+  const allowed = providerOriginAllowlist();
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.hash ||
+    url.search ||
+    !hostname.includes(".") ||
+    /^[0-9.]+$/.test(hostname) ||
+    /(?:^|\.)(?:localhost|local|internal|test|invalid)$/.test(hostname) ||
+    (url.origin !== defaultOrigin && !allowed.has(url.origin))
+  ) {
+    throw new ProviderError(
+      503,
+      `${vendor} provider endpoint is not in PROVIDER_ALLOWED_ORIGINS.`,
+    );
+  }
+  return url.toString().replace(/\/$/, "");
+}
+
 function providerBaseUrl(vendor: string): string | undefined {
   vendor = canonicalVendor(vendor);
-  if (vendor === "openai") return nonEmpty("OPENAI_BASE_URL") ?? "https://api.openai.com/v1";
-  if (vendor === "anthropic")
-    return nonEmpty("ANTHROPIC_BASE_URL") ?? "https://api.anthropic.com/v1";
-  if (vendor === "google") return nonEmpty("GOOGLE_AI_BASE_URL") ?? GOOGLE_GENERATIVE_URL;
-  return compatibleBaseUrl(vendor);
+  const configured = configuredProviderBase(vendor);
+  const raw = configured ?? DEFAULT_PROVIDER_BASES[vendor];
+  return raw ? validateProviderBaseUrl(raw, vendor) : undefined;
 }
 
 function endpoint(base: string, path: string): string {
@@ -99,7 +150,9 @@ function endpoint(base: string, path: string): string {
 export function providerReadiness(vendor: string): ReadinessState {
   vendor = canonicalVendor(vendor);
   if (!providerKey(vendor)) return "NOT_CONFIGURED";
-  if (!["openai", "anthropic", "google"].includes(vendor) && !providerBaseUrl(vendor)) {
+  try {
+    if (!providerBaseUrl(vendor)) return "NOT_CONFIGURED";
+  } catch {
     return "NOT_CONFIGURED";
   }
   return "CONFIGURED";

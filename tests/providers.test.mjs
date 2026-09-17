@@ -77,6 +77,7 @@ test("native adapters dispatch the governed prompt and normalize usage", async (
 test("unknown vendors use the bounded OpenAI-compatible adapter", async () => {
   process.env.NEXORA_MISTRAL_API_KEY = "mistral-secret";
   process.env.NEXORA_MISTRAL_BASE_URL = "https://mistral.example/v1";
+  process.env.PROVIDER_ALLOWED_ORIGINS = "https://mistral.example";
   globalThis.fetch = async (url) => {
     assert.equal(String(url), "https://mistral.example/v1/chat/completions");
     return response({
@@ -88,4 +89,15 @@ test("unknown vendors use the bounded OpenAI-compatible adapter", async () => {
   assert.equal(result.text, "compatible answer");
   assert.equal(result.inputTokens, 1);
   assert.equal(result.outputTokens, 2);
+});
+
+test("custom provider endpoints fail closed unless explicitly allowlisted", () => {
+  process.env.NEXORA_MISTRAL_API_KEY = "mistral-secret";
+  process.env.NEXORA_MISTRAL_BASE_URL = "http://127.0.0.1:8080/v1";
+  delete process.env.PROVIDER_ALLOWED_ORIGINS;
+  assert.equal(providerReadiness("mistral"), "NOT_CONFIGURED");
+  process.env.NEXORA_MISTRAL_BASE_URL = "https://mistral.example/v1";
+  assert.equal(providerReadiness("mistral"), "NOT_CONFIGURED");
+  process.env.PROVIDER_ALLOWED_ORIGINS = "https://mistral.example";
+  assert.equal(providerReadiness("mistral"), "CONFIGURED");
 });

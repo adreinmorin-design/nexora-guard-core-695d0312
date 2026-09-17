@@ -149,3 +149,29 @@ export function planFromPriceId(priceId: unknown): CheckoutPlan | undefined {
   }
   return undefined;
 }
+
+export function resolvePaddleWebhookIdentity(
+  priceId: unknown,
+  custom: Partial<PaddleCheckoutData> | null | undefined,
+  secret = value("PADDLE_CHECKOUT_SIGNING_SECRET"),
+): { orgId: string | null; planKey: CheckoutPlan | undefined; signedIdentity: boolean } | null {
+  const pricePlan = planFromPriceId(priceId);
+  const hasAnyIdentity = Boolean(
+    custom &&
+      (custom.org_id ||
+        custom.plan_key ||
+        custom.interval ||
+        custom.user_id ||
+        custom.signature),
+  );
+  if (!hasAnyIdentity) return { orgId: null, planKey: pricePlan, signedIdentity: false };
+  const complete =
+    typeof custom?.org_id === "string" &&
+    (custom?.plan_key === "solo" || custom?.plan_key === "team") &&
+    (custom?.interval === "monthly" || custom?.interval === "annual") &&
+    typeof custom?.user_id === "string" &&
+    typeof custom?.signature === "string";
+  if (!complete || !verifyCheckoutData(custom as PaddleCheckoutData, secret)) return null;
+  if (pricePlan && pricePlan !== custom.plan_key) return null;
+  return { orgId: custom.org_id, planKey: pricePlan ?? custom.plan_key, signedIdentity: true };
+}

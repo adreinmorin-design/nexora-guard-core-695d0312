@@ -5,6 +5,7 @@ import {
   createCheckoutConfig,
   planFromPriceId,
   signCheckoutData,
+  resolvePaddleWebhookIdentity,
   verifyCheckoutData,
   verifyPaddleWebhook,
 } from "../src/lib/paddle.server.ts";
@@ -47,3 +48,33 @@ test("webhook signatures require a fresh timestamp and exact body", () => {
   assert.equal(verifyPaddleWebhook(body, header, "webhook-secret", Date.now() - 6 * 60 * 1000), false);
 });
 
+
+test("webhook identity rejects unsigned or price-mismatched tenant metadata", () => {
+  process.env.PADDLE_CHECKOUT_SIGNING_SECRET = "checkout-secret";
+  process.env.PADDLE_PRICE_TEAM_MONTHLY = "pri_team_monthly";
+  const unsigned = {
+    org_id: "org-1",
+    plan_key: "team",
+    interval: "monthly",
+    user_id: "user-1",
+  };
+  const signature = signCheckoutData(unsigned);
+  assert.ok(signature);
+  assert.deepEqual(
+    resolvePaddleWebhookIdentity("pri_team_monthly", { ...unsigned, signature }),
+    { orgId: "org-1", planKey: "team", signedIdentity: true },
+  );
+  assert.equal(
+    resolvePaddleWebhookIdentity("pri_team_monthly", {
+      ...unsigned,
+      org_id: "attacker-org",
+      signature,
+    }),
+    null,
+  );
+  process.env.PADDLE_PRICE_SOLO_MONTHLY = "pri_solo_monthly";
+  assert.equal(
+    resolvePaddleWebhookIdentity("pri_solo_monthly", { ...unsigned, signature }),
+    null,
+  );
+});
