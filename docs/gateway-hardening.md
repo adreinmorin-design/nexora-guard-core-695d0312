@@ -16,7 +16,7 @@ The console and approval execution now use the same policy pipeline.
 - Agent metadata, capability grants, draft MCP registration, finding resolution and organization renaming have role-checked server actions. Tenant identifiers are resolved from authenticated memberships; capability parents are checked within that tenant.
 - Threats shows findings; Errors filters execution failures; Latency shows recent requests. These views are limited to the newest 200 records and are not complete historical aggregates.
 - Provider readiness uses server environment availability, not seeded database labels. It does not verify key validity or model entitlement.
-- Autonomous scheduling, external SIEM/Slack/Jira delivery, retention scheduling and regional routing remain unimplemented. Google and Anthropic execution adapters are not implemented.
+- Autonomous scheduling, external SIEM/Slack/Jira delivery, retention scheduling and regional routing remain unimplemented. Native OpenAI, Anthropic and Google adapters plus a bounded OpenAI-compatible adapter are implemented; each still requires its own server credential and live entitlement check.
 - Overlapping sensitive spans are merged before redaction. Private-key masking covers the entire key block, including incomplete blocks. The provider timeout covers response body consumption as well as headers.
 
 ## Agent connections
