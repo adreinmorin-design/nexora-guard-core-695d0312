@@ -308,17 +308,29 @@ export const listCatalog = createServerFn({ method: "POST" })
     const ws = await resolveWorkspace(context);
     const [providers, models] = await Promise.all([
       context.supabase.from("providers").select("*").eq("org_id", ws.orgId).order("name"),
-      context.supabase.from("models").select("*").eq("org_id", ws.orgId).order("display_name"),
+      context.supabase
+        .from("models")
+        .select("*, providers(vendor)")
+        .eq("org_id", ws.orgId)
+        .order("display_name"),
     ]);
     if (providers.error || models.error) throw new Error("Catalog could not be loaded.");
-    const { providerReadiness } = await import("./ai-gateway.server");
+    const { providerCredentialVariable, providerReadiness } = await import("./ai-gateway.server");
     return {
       workspace: ws,
       providers: (providers.data ?? []).map((p: any) => ({
         ...p,
         credential_state: providerReadiness(p.vendor),
+        credential_variable: providerCredentialVariable(p.vendor),
+        adapter: ["openai", "anthropic", "google"].includes(p.vendor)
+          ? p.vendor
+          : "openai-compatible",
       })),
-      models: models.data ?? [],
+      models: (models.data ?? []).map((model: any) => ({
+        ...model,
+        provider_vendor: model.providers?.vendor ?? "unknown",
+        execution_state: providerReadiness(model.providers?.vendor ?? "unknown"),
+      })),
     };
   });
 
