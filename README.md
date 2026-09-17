@@ -15,7 +15,9 @@ sent to a model provider or remote tool.
 ## What works
 
 - Tenant-scoped Supabase authentication and row-level security.
-- OpenAI Responses API routing from server-only credentials.
+- Native OpenAI Responses, Anthropic Messages and Google Gemini adapters, plus
+  a bounded OpenAI-compatible adapter for additional vendors and private
+  gateways.
 - Request and response DLP, secret detection and prompt-injection checks.
 - Versioned deterministic policies with block, redact, log and approval actions.
 - Atomic budget and subscription-quota admission.
@@ -56,18 +58,27 @@ policies that govern them.
 
 - Node.js 24+
 - A Supabase project
-- An OpenAI Platform API key for live model execution
-- Paddle account and approved domain for paid checkout
+- At least one supported model-provider credential for live model execution
+- Paddle account and approved domain for paid checkout (optional until billing is enabled)
 
 ## Server configuration
 
-Required:
+Required for the control plane:
 
 ```text
 SUPABASE_URL
 SUPABASE_PUBLISHABLE_KEY
 SUPABASE_SERVICE_ROLE_KEY
-OPENAI_API_KEY
+```
+
+Configure one or more model providers for live execution:
+
+```text
+OPENAI_API_KEY                  # OpenAI Responses API
+ANTHROPIC_API_KEY               # Anthropic Messages API
+GOOGLE_AI_API_KEY               # Google Gemini
+NEXORA_<VENDOR>_API_KEY         # OpenAI-compatible vendor
+NEXORA_<VENDOR>_BASE_URL        # required for compatible vendors
 ```
 
 Optional remote MCP configuration:
@@ -77,9 +88,9 @@ MCP_ALLOWED_ORIGINS=https://trusted-mcp.example
 MCP_TOKEN_<SERVER_UUID>=server-bearer-secret
 ```
 
-Paddle activation requires an API key, client-side token, webhook secret and
-price IDs. See [`docs/billing.md`](docs/billing.md). Never put server secrets in
-`VITE_` variables.
+Paddle activation requires a client token, signed checkout secret, webhook
+secret and four recurring price IDs. See [`docs/billing.md`](docs/billing.md).
+Never put server secrets in `VITE_` variables.
 
 ## Local development
 
@@ -95,6 +106,7 @@ npm run test:gateway
 npm run test:security
 npm run test:agents
 npm run test:providers
+npm run test:paddle
 npm run test:billing
 npm run test:database
 npm run lint
