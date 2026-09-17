@@ -12,12 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as AuthenticatedApprovalsRouteImport } from './routes/_authenticated/approvals'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedConnectAgentRouteImport } from './routes/_authenticated/connect-agent'
 import { Route as AuthenticatedOverviewRouteImport } from './routes/_authenticated/overview'
 import { Route as ApiAgentRouteImport } from './routes/api.agent'
 import { Route as ApiMcpRouteImport } from './routes/api.mcp'
+import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin.billing'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedGatewayModelsRouteImport } from './routes/_authenticated/gateway.models'
 import { Route as AuthenticatedGatewayPlaygroundRouteImport } from './routes/_authenticated/gateway.playground'
@@ -44,6 +46,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedApprovalsRoute = AuthenticatedApprovalsRouteImport.update({
@@ -77,6 +84,12 @@ const ApiMcpRoute = ApiMcpRouteImport.update({
   path: '/api/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminBillingRoute =
+  AuthenticatedAdminBillingRouteImport.update({
+    id: '/admin/billing',
+    path: '/admin/billing',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
@@ -155,12 +168,14 @@ const ApiAgentTokenRoute = ApiAgentTokenRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/pricing': typeof PricingRoute
   '/approvals': typeof AuthenticatedApprovalsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/connect-agent': typeof AuthenticatedConnectAgentRoute
   '/overview': typeof AuthenticatedOverviewRoute
   '/api/agent': typeof ApiAgentRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
+  '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/gateway/models': typeof AuthenticatedGatewayModelsRoute
   '/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
@@ -178,12 +193,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/pricing': typeof PricingRoute
   '/approvals': typeof AuthenticatedApprovalsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/connect-agent': typeof AuthenticatedConnectAgentRoute
   '/overview': typeof AuthenticatedOverviewRoute
   '/api/agent': typeof ApiAgentRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
+  '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/gateway/models': typeof AuthenticatedGatewayModelsRoute
   '/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
@@ -203,12 +220,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/pricing': typeof PricingRoute
   '/_authenticated/approvals': typeof AuthenticatedApprovalsRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/connect-agent': typeof AuthenticatedConnectAgentRoute
   '/_authenticated/overview': typeof AuthenticatedOverviewRoute
   '/api/agent': typeof ApiAgentRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
+  '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/gateway/models': typeof AuthenticatedGatewayModelsRoute
   '/_authenticated/gateway/playground': typeof AuthenticatedGatewayPlaygroundRoute
@@ -228,12 +247,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/pricing'
     | '/approvals'
     | '/audit'
     | '/connect-agent'
     | '/overview'
     | '/api/agent'
     | '/api/mcp'
+    | '/admin/billing'
     | '/admin/users'
     | '/gateway/models'
     | '/gateway/playground'
@@ -251,12 +272,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/pricing'
     | '/approvals'
     | '/audit'
     | '/connect-agent'
     | '/overview'
     | '/api/agent'
     | '/api/mcp'
+    | '/admin/billing'
     | '/admin/users'
     | '/gateway/models'
     | '/gateway/playground'
@@ -275,12 +298,14 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/pricing'
     | '/_authenticated/approvals'
     | '/_authenticated/audit'
     | '/_authenticated/connect-agent'
     | '/_authenticated/overview'
     | '/api/agent'
     | '/api/mcp'
+    | '/_authenticated/admin/billing'
     | '/_authenticated/admin/users'
     | '/_authenticated/gateway/models'
     | '/_authenticated/gateway/playground'
@@ -300,6 +325,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  PricingRoute: typeof PricingRoute
   ApiAgentRoute: typeof ApiAgentRouteWithChildren
   ApiMcpRoute: typeof ApiMcpRoute
 }
@@ -325,6 +351,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/approvals': {
@@ -368,6 +401,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/mcp'
       preLoaderRoute: typeof ApiMcpRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin/billing': {
+      id: '/_authenticated/admin/billing'
+      path: '/admin/billing'
+      fullPath: '/admin/billing'
+      preLoaderRoute: typeof AuthenticatedAdminBillingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/users': {
       id: '/_authenticated/admin/users'
@@ -468,6 +508,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedConnectAgentRoute: typeof AuthenticatedConnectAgentRoute
   AuthenticatedOverviewRoute: typeof AuthenticatedOverviewRoute
+  AuthenticatedAdminBillingRoute: typeof AuthenticatedAdminBillingRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedGatewayModelsRoute: typeof AuthenticatedGatewayModelsRoute
   AuthenticatedGatewayPlaygroundRoute: typeof AuthenticatedGatewayPlaygroundRoute
@@ -486,6 +527,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedConnectAgentRoute: AuthenticatedConnectAgentRoute,
   AuthenticatedOverviewRoute: AuthenticatedOverviewRoute,
+  AuthenticatedAdminBillingRoute: AuthenticatedAdminBillingRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedGatewayModelsRoute: AuthenticatedGatewayModelsRoute,
   AuthenticatedGatewayPlaygroundRoute: AuthenticatedGatewayPlaygroundRoute,
@@ -520,6 +562,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  PricingRoute: PricingRoute,
   ApiAgentRoute: ApiAgentRouteWithChildren,
   ApiMcpRoute: ApiMcpRoute,
 }
