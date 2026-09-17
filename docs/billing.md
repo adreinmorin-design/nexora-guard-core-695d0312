@@ -18,10 +18,25 @@ contract.
 
 ## Paddle activation
 
-Create products and recurring prices in Paddle, then configure server secrets
-for the Paddle API key and webhook secret plus public client-side token and
-price IDs. Use Paddle sandbox until checkout, renewal, failed-payment,
-cancellation and webhook replay scenarios pass.
+Create products and recurring prices in Paddle, then configure these server
+secrets (use sandbox values first):
+
+```text
+PADDLE_ENVIRONMENT=sandbox
+PADDLE_CLIENT_TOKEN=...
+PADDLE_CHECKOUT_SIGNING_SECRET=...
+PADDLE_WEBHOOK_SECRET=...
+PADDLE_PRICE_SOLO_MONTHLY=pri_...
+PADDLE_PRICE_SOLO_ANNUAL=pri_...
+PADDLE_PRICE_TEAM_MONTHLY=pri_...
+PADDLE_PRICE_TEAM_ANNUAL=pri_...
+```
+
+Point Paddle's notification destination at `/api/paddle/webhook`. NEXORA
+verifies the `Paddle-Signature` header, rejects stale/replayed payloads, checks
+the signed organization metadata and only then updates entitlements. Use the
+Paddle sandbox until checkout, renewal, failed-payment, cancellation and
+webhook replay scenarios pass.
 
 Subscription changes must be applied from verified Paddle webhooks using the
 organization ID carried in checkout custom data. Never activate a subscription
@@ -29,7 +44,6 @@ from a browser redirect alone. Store Paddle customer and subscription IDs in
 `billing_subscriptions.provider_customer_id` and
 `billing_subscriptions.provider_subscription_id`.
 
-Checkout is intentionally unavailable until a Paddle account, approved domain,
-products, prices and webhook destination exist. The pricing and entitlement
-layer can deploy independently without pretending that payment collection is
-active.
+If any Paddle value is absent, checkout remains disabled and the billing page
+explains that state. The pricing and entitlement layer can deploy independently
+without pretending that payment collection is active.
