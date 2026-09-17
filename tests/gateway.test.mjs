@@ -120,10 +120,9 @@ test("blocked previews are sanitized", async () => {
   assert.ok(!JSON.stringify(f.rows).includes("alice@example.com"));
 });
 test("response approval withholds output", async () => {
-  // Category-independent policy change in injected executor models response-only
-  // spend threshold: request estimate < 100, actual spend > 100.
   const g = fixture({
     listPolicies: async () => [
+      { ...policy("LOG"), id: "baseline", name: "baseline", priority: 100 },
       {
         ...policy("REQUIRE_APPROVAL"),
         conditions: [{ field: "estimated_cost_usd", op: "gt", value: 100 }],
