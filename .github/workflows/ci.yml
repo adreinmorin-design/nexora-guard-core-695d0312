@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # The Lovable checkout currently does not include a package-lock.json.
+      # Use npm install until the lockfile is committed so CI remains runnable.
+      - run: npm install --ignore-scripts
+      - run: npm run lint
+      - run: npm run test:gateway
+      - run: npm run test:security
+      - run: npm run test:agents
+      - run: npm run test:providers
+      - run: npm run test:billing
+      - run: npm run test:database
+      - run: npx tsc --noEmit
+      - run: npm run build
