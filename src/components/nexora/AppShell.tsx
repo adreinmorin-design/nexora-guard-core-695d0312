@@ -61,6 +61,7 @@ export const NAV: NavGroup[] = [
     group: "Administration",
     items: [
       { label: "Users & Roles", to: "/admin/users" },
+      { label: "Plans & Billing", to: "/admin/billing" },
       { label: "Integrations", to: "/module/integrations" },
       { label: "Settings", to: "/module/settings" },
     ],
