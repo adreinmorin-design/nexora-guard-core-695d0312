@@ -2,8 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-import { inspect, redact, maskPreview, type Detection } from "./nexora/dlp";
-import { evaluate, type GovAction, type PolicyRecord } from "./nexora/policy-engine";
+import type { GovAction } from "./nexora/policy-engine";
 import { SEED_MODELS, SEED_POLICIES, SEED_PROVIDERS } from "./nexora/catalog";
 
 const GOV_ROLES = ["platform_admin", "org_admin", "governance_admin", "security_admin"];
@@ -52,13 +51,15 @@ async function writeAudit(
     metadata?: Record<string, unknown>;
   },
 ) {
-  await context.supabase.from("audit_events").insert({
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await (supabaseAdmin as any).from("audit_events").insert({
     org_id: orgId,
     actor_id: context.userId,
     actor_type: "user",
     source: "console",
     ...event,
   });
+  if (error) throw new Error("Audit persistence unavailable.");
 }
 
 /* ------------------------------------------------------------------ */
@@ -206,10 +207,7 @@ export const getOverview = createServerFn({ method: "POST" })
         .select("decision, cost_usd, latency_ms, model, created_at, redacted")
         .eq("org_id", ws.orgId)
         .gte("created_at", since),
-      context.supabase
-        .from("security_findings")
-        .select("severity, status")
-        .eq("org_id", ws.orgId),
+      context.supabase.from("security_findings").select("severity, status").eq("org_id", ws.orgId),
       context.supabase
         .from("approvals")
         .select("id, status")
@@ -261,7 +259,8 @@ export const getOverview = createServerFn({ method: "POST" })
         pendingApprovals: (approvals.data ?? []).length,
         openFindings: openFindings.length,
         criticalFindings: critical,
-        activePolicies: ((policies.data ?? []) as any[]).filter((p) => p.status === "active").length,
+        activePolicies: ((policies.data ?? []) as any[]).filter((p) => p.status === "active")
+          .length,
         members: (members.data ?? []).length,
         budget: Number(((budgets.data ?? [])[0] as any)?.limit_usd ?? 0),
         avgLatency: latencies.length
@@ -535,42 +534,8 @@ export const decideApproval = createServerFn({ method: "POST" })
       throw new Error("Forbidden: you are not an approver in this organization.");
     }
 
-    const existing = await context.supabase
-      .from("approvals")
-      .select("id, status, requester_id, expires_at")
-      .eq("id", data.id)
-      .eq("org_id", ws.orgId)
-      .single();
-    if (existing.error) throw new Error("Approval request not found.");
-    if (existing.data.status !== "pending") throw new Error("This request is already decided.");
-    if (existing.data.requester_id === context.userId) {
-      throw new Error("Self-approval is not permitted.");
-    }
-    if (new Date(existing.data.expires_at).getTime() < Date.now()) {
-      throw new Error("This approval request has expired.");
-    }
-
-    const { error } = await context.supabase
-      .from("approvals")
-      .update({
-        status: data.decision,
-        approver_id: context.userId,
-        decided_at: new Date().toISOString(),
-        execution_result: data.decision === "approved" ? "authorized" : "not_executed",
-      })
-      .eq("id", data.id)
-      .eq("org_id", ws.orgId);
-    if (error) throw new Error(error.message);
-
-    await writeAudit(context, ws.orgId, {
-      action: `approval.${data.decision}`,
-      resource: "approval",
-      resource_id: data.id,
-      risk: data.decision === "approved" ? "high" : "low",
-      result: data.decision,
-    });
-
-    return { ok: true };
+    const { decideAndExecute } = await import("./nexora/gateway.server");
+    return decideAndExecute(context, ws.orgId, data.id, data.decision);
   });
 
 /* ------------------------------------------------------------------ */
@@ -580,347 +545,16 @@ export const decideApproval = createServerFn({ method: "POST" })
 export const submitGatewayRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ prompt: z.string().min(1).max(20000), modelKey: z.string().min(1) }).parse(input),
+    z
+      .object({
+        prompt: z.string().min(1).max(20000),
+        modelKey: z.string().min(1),
+        idempotencyKey: z.string().uuid().optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }: { data: any; context: any }) => {
     const ws = await resolveWorkspace(context);
-    const startedAt = Date.now();
-
-    // 1. Model must be registered and approved inside this tenant.
-    const model = await context.supabase
-      .from("models")
-      .select("model_key, display_name, classification, status, input_cost_per_1k, output_cost_per_1k, providers(vendor, status, credential_state)")
-      .eq("org_id", ws.orgId)
-      .eq("model_key", data.modelKey)
-      .maybeSingle();
-
-    if (!model.data) {
-      const req = await recordRequest(context, ws.orgId, {
-        model: data.modelKey,
-        provider: null,
-        decision: "BLOCK",
-        reason: "Model is not registered in this organization's model registry.",
-        prompt_preview: data.prompt.slice(0, 200),
-        latency_ms: Date.now() - startedAt,
-        status: "blocked",
-      });
-      await writeAudit(context, ws.orgId, {
-        action: "gateway.request",
-        resource: "model",
-        resource_id: data.modelKey,
-        decision: "BLOCK",
-        request_id: req?.id ?? null,
-        risk: "high",
-        result: "blocked",
-      });
-      return {
-        decision: "BLOCK" as GovAction,
-        reason: "Model is not registered in this organization's model registry.",
-        policy: null,
-        matchedRules: [],
-        findings: [],
-        output: null,
-        requestId: req?.id ?? null,
-      };
-    }
-
-    const provider = (model.data as any).providers;
-    const modelClassification = (model.data as any).classification as string;
-    const vendor = provider?.vendor as string;
-
-    if ((model.data as any).status !== "active" || provider?.status !== "active") {
-      return await blockedResponse(
-        context,
-        ws.orgId,
-        data,
-        vendor,
-        "Model or provider is not in an active state.",
-        startedAt,
-      );
-    }
-
-    if (provider?.credential_state === "NOT_CONFIGURED") {
-      return await blockedResponse(
-        context,
-        ws.orgId,
-        data,
-        vendor,
-        `Provider execution for ${vendor} is NOT_CONFIGURED.`,
-        startedAt,
-      );
-    }
-
-    // 2. Deterministic inspection of the prompt.
-    const detections = inspect(data.prompt);
-
-    // 3. Cost context (server-side only, never trusted from the browser).
-    const monthStart = new Date();
-    monthStart.setUTCDate(1);
-    monthStart.setUTCHours(0, 0, 0, 0);
-    const spendRows = await context.supabase
-      .from("requests")
-      .select("cost_usd")
-      .eq("org_id", ws.orgId)
-      .gte("created_at", monthStart.toISOString());
-    const monthlySpend = ((spendRows.data ?? []) as any[]).reduce(
-      (sum, r) => sum + Number(r.cost_usd ?? 0),
-      0,
-    );
-    const estTokens = Math.ceil(data.prompt.length / 4);
-    const estimatedCost =
-      (estTokens / 1000) * Number((model.data as any).input_cost_per_1k ?? 0);
-
-    // 4. Load tenant policies and evaluate deterministically.
-    const policyRows = await context.supabase
-      .from("policies")
-      .select("id, name, description, priority, action, version, status, scope, conditions")
-      .eq("org_id", ws.orgId);
-
-    const policies = (policyRows.data ?? []) as PolicyRecord[];
-    const decision = evaluate(policies, {
-      detections,
-      modelKey: data.modelKey,
-      modelClassification,
-      provider: vendor,
-      estimatedCostUsd: estimatedCost,
-      monthlySpendUsd: monthlySpend,
-      actorType: "user",
-      stage: "request",
-    });
-
-    // 5. Budget enforcement, server-side.
-    const budgetRows = await context.supabase
-      .from("budgets")
-      .select("name, limit_usd, action_on_exceed, status, period")
-      .eq("org_id", ws.orgId)
-      .eq("status", "active");
-    let budgetAction: GovAction | null = null;
-    let budgetReason = "";
-    for (const b of (budgetRows.data ?? []) as any[]) {
-      if (monthlySpend + estimatedCost > Number(b.limit_usd)) {
-        budgetAction = b.action_on_exceed as GovAction;
-        budgetReason = `Budget "${b.name}" exceeded ($${monthlySpend.toFixed(4)} of $${Number(b.limit_usd).toFixed(2)}).`;
-      }
-    }
-
-    const order: GovAction[] = ["ALLOW", "LOG", "REDACT", "REQUIRE_APPROVAL", "BLOCK"];
-    let finalAction = decision.action;
-    let finalReason = decision.reason;
-    if (budgetAction && order.indexOf(budgetAction) > order.indexOf(finalAction)) {
-      finalAction = budgetAction;
-      finalReason = budgetReason;
-    }
-
-    const findingsToWrite = detections.map((d) => ({
-      severity: d.severity,
-      category: d.category,
-      title: `${d.label} detected in prompt`,
-      detection_source: d.source,
-      confidence: d.confidence,
-      evidence: { sample: `${d.match.slice(0, 4)}…`, offset: d.start, stage: "request" },
-      affected_resource: data.modelKey,
-      remediation: "Remove or tokenize the sensitive value before sending it to a model.",
-    }));
-
-    let output: string | null = null;
-    let inputTokens = 0;
-    let outputTokens = 0;
-    let costUsd = 0;
-    let latency = 0;
-    let redactedFlag = false;
-    let status = "completed";
-    let approvalId: string | null = null;
-    let responseDetections: Detection[] = [];
-
-    if (finalAction === "BLOCK") {
-      status = "blocked";
-    } else if (finalAction === "REQUIRE_APPROVAL") {
-      status = "pending_approval";
-    } else {
-      const outbound =
-        finalAction === "REDACT" ? redact(data.prompt, detections) : data.prompt;
-      redactedFlag = finalAction === "REDACT";
-      try {
-        const { executeProviderRequest } = await import("./ai-gateway.server");
-        const result = await executeProviderRequest(data.modelKey, outbound);
-        inputTokens = result.inputTokens || estTokens;
-        outputTokens = result.outputTokens || Math.ceil(result.text.length / 4);
-        latency = result.latencyMs;
-        costUsd =
-          (inputTokens / 1000) * Number((model.data as any).input_cost_per_1k ?? 0) +
-          (outputTokens / 1000) * Number((model.data as any).output_cost_per_1k ?? 0);
-
-        // 6. Response inspection — responses are governed too.
-        responseDetections = inspect(result.text);
-        const responseDecision = evaluate(policies, {
-          detections: responseDetections,
-          modelKey: data.modelKey,
-          modelClassification,
-          provider: vendor,
-          estimatedCostUsd: costUsd,
-          monthlySpendUsd: monthlySpend + costUsd,
-          actorType: "user",
-          stage: "response",
-        });
-
-        if (responseDecision.action === "BLOCK") {
-          output = null;
-          status = "response_blocked";
-          finalAction = "BLOCK";
-          finalReason = `Response withheld — ${responseDecision.reason}`;
-        } else if (responseDetections.length > 0) {
-          output = redact(result.text, responseDetections);
-          redactedFlag = true;
-          if (finalAction === "ALLOW" || finalAction === "LOG") finalAction = "REDACT";
-          finalReason = `${finalReason} · response redacted (${responseDetections.length} finding(s))`;
-        } else {
-          output = result.text;
-        }
-
-        for (const d of responseDetections) {
-          findingsToWrite.push({
-            severity: d.severity,
-            category: d.category,
-            title: `${d.label} detected in model response`,
-            detection_source: d.source,
-            confidence: d.confidence,
-            evidence: { sample: `${d.match.slice(0, 4)}…`, offset: d.start, stage: "response" },
-            affected_resource: data.modelKey,
-            remediation: "Investigate the source of the leaked value and tighten data access.",
-          });
-        }
-      } catch (error: any) {
-        status = "provider_error";
-        finalReason = `${finalReason} · provider error: ${error?.message ?? "unknown"}`;
-      }
-    }
-
-    const requestRow = await recordRequest(context, ws.orgId, {
-      model: data.modelKey,
-      provider: vendor,
-      decision: finalAction,
-      reason: finalReason,
-      policy_id: decision.policyId,
-      policy_version: decision.policyVersion,
-      matched_rules: decision.matchedRules,
-      redacted: redactedFlag,
-      prompt_preview: maskPreview(data.prompt, detections, 300),
-      response_preview: output ? output.slice(0, 300) : null,
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      cost_usd: Number(costUsd.toFixed(6)),
-      latency_ms: latency || Date.now() - startedAt,
-      status,
-    });
-
-    if (findingsToWrite.length > 0) {
-      await context.supabase.from("security_findings").insert(
-        findingsToWrite.map((f) => ({ ...f, org_id: ws.orgId, request_id: requestRow?.id ?? null })),
-      );
-    }
-
-    if (finalAction === "REQUIRE_APPROVAL") {
-      const approval = await context.supabase
-        .from("approvals")
-        .insert({
-          org_id: ws.orgId,
-          request_id: requestRow?.id ?? null,
-          requester_id: context.userId,
-          action: "gateway.execute",
-          target: data.modelKey,
-          risk: detections.some((d) => d.severity === "critical") ? "critical" : "high",
-          reason: finalReason,
-          policy_id: decision.policyId,
-          policy_version: decision.policyVersion,
-          payload: { promptPreview: maskPreview(data.prompt, detections, 200) },
-        })
-        .select("id")
-        .single();
-      approvalId = (approval.data as any)?.id ?? null;
-    }
-
-    await writeAudit(context, ws.orgId, {
-      action: "gateway.request",
-      resource: "model",
-      resource_id: data.modelKey,
-      decision: finalAction,
-      policy_id: decision.policyId,
-      policy_version: decision.policyVersion,
-      request_id: requestRow?.id ?? null,
-      risk:
-        finalAction === "BLOCK"
-          ? "high"
-          : finalAction === "REQUIRE_APPROVAL"
-            ? "medium"
-            : "info",
-      result: status,
-      metadata: { detections: detections.length, cost: costUsd },
-    });
-
-    return {
-      decision: finalAction,
-      reason: finalReason,
-      policy: decision.policyName
-        ? { name: decision.policyName, version: decision.policyVersion }
-        : null,
-      matchedRules: decision.matchedRules,
-      findings: [...detections, ...responseDetections].map((d) => ({
-        category: d.category,
-        label: d.label,
-        severity: d.severity,
-        confidence: d.confidence,
-        source: d.source,
-      })),
-      output,
-      status,
-      approvalId,
-      requestId: requestRow?.id ?? null,
-      usage: { inputTokens, outputTokens, costUsd, latency },
-    };
+    const { runConsoleRequest } = await import("./nexora/gateway.server");
+    return runConsoleRequest(context, ws.orgId, data);
   });
-
-async function recordRequest(context: any, orgId: string, values: Record<string, unknown>) {
-  const { data } = await context.supabase
-    .from("requests")
-    .insert({ org_id: orgId, user_id: context.userId, ...values })
-    .select("id")
-    .single();
-  return data as { id: string } | null;
-}
-
-async function blockedResponse(
-  context: any,
-  orgId: string,
-  data: any,
-  vendor: string | null,
-  reason: string,
-  startedAt: number,
-) {
-  const req = await recordRequest(context, orgId, {
-    model: data.modelKey,
-    provider: vendor,
-    decision: "BLOCK",
-    reason,
-    prompt_preview: data.prompt.slice(0, 200),
-    latency_ms: Date.now() - startedAt,
-    status: "blocked",
-  });
-  await writeAudit(context, orgId, {
-    action: "gateway.request",
-    resource: "model",
-    resource_id: data.modelKey,
-    decision: "BLOCK",
-    request_id: req?.id ?? null,
-    risk: "medium",
-    result: "blocked",
-  });
-  return {
-    decision: "BLOCK" as GovAction,
-    reason,
-    policy: null,
-    matchedRules: [],
-    findings: [],
-    output: null,
-    requestId: req?.id ?? null,
-  };
-}

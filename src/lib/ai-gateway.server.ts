@@ -7,6 +7,8 @@
  * Other vendors are explicitly NOT_CONFIGURED — nothing is simulated.
  */
 
+import { MAX_OUTPUT_TOKENS } from "./nexora/limits";
+
 export type ProviderResult = {
   text: string;
   inputTokens: number;
@@ -130,6 +132,8 @@ async function runOpenAI(modelKey: string, prompt: string): Promise<ProviderResu
         instructions: SYSTEM_PROMPT,
         input: prompt,
         stream: false,
+        max_output_tokens: MAX_OUTPUT_TOKENS,
+        store: false,
       }),
       signal: controller.signal,
     });

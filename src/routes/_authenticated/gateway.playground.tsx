@@ -38,7 +38,8 @@ function Playground() {
   const selected = modelKey || models[0]?.model_key || "";
 
   const run = useMutation({
-    mutationFn: () => submitFn({ data: { prompt, modelKey: selected } }),
+    mutationFn: () =>
+      submitFn({ data: { prompt, modelKey: selected, idempotencyKey: crypto.randomUUID() } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["overview"] });
       queryClient.invalidateQueries({ queryKey: ["requests"] });

@@ -138,6 +138,28 @@ function evaluateCondition(
 
 export function evaluate(policies: PolicyRecord[], ctx: EvaluationContext): Decision {
   const matchedRules: MatchedRule[] = [];
+  const fields = [
+    "detection_category",
+    "detection_severity",
+    "model_key",
+    "model_classification",
+    "provider",
+    "estimated_cost_usd",
+    "monthly_spend_usd",
+    "actor_type",
+  ];
+  for (const p of policies.filter((p) => p.status === "active")) {
+    if (
+      !(p.action in PRECEDENCE) ||
+      !Array.isArray(p.conditions) ||
+      p.conditions.some(
+        (c) =>
+          !fields.includes(c.field) || !["in", "equals", "not_equals", "gt", "lt"].includes(c.op),
+      )
+    ) {
+      throw new Error("Invalid active policy; refusing execution.");
+    }
+  }
 
   const ordered = [...policies]
     .filter((p) => p.status === "active")
@@ -187,4 +209,10 @@ export function evaluate(policies: PolicyRecord[], ctx: EvaluationContext): Deci
   };
 }
 
-export const PRECEDENCE_ORDER: GovAction[] = ["BLOCK", "REQUIRE_APPROVAL", "REDACT", "LOG", "ALLOW"];
+export const PRECEDENCE_ORDER: GovAction[] = [
+  "BLOCK",
+  "REQUIRE_APPROVAL",
+  "REDACT",
+  "LOG",
+  "ALLOW",
+];
