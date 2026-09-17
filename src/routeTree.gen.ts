@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as AuthenticatedAiEfficiencyRouteImport } from './routes/_authenticated/ai-efficiency'
 import { Route as AuthenticatedApprovalsRouteImport } from './routes/_authenticated/approvals'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedConnectAgentRouteImport } from './routes/_authenticated/connect-agent'
@@ -53,6 +54,12 @@ const PricingRoute = PricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAiEfficiencyRoute =
+  AuthenticatedAiEfficiencyRouteImport.update({
+    id: '/ai-efficiency',
+    path: '/ai-efficiency',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedApprovalsRoute = AuthenticatedApprovalsRouteImport.update({
   id: '/approvals',
   path: '/approvals',
@@ -169,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/pricing': typeof PricingRoute
+  '/ai-efficiency': typeof AuthenticatedAiEfficiencyRoute
   '/approvals': typeof AuthenticatedApprovalsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/connect-agent': typeof AuthenticatedConnectAgentRoute
@@ -194,6 +202,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/pricing': typeof PricingRoute
+  '/ai-efficiency': typeof AuthenticatedAiEfficiencyRoute
   '/approvals': typeof AuthenticatedApprovalsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/connect-agent': typeof AuthenticatedConnectAgentRoute
@@ -221,6 +230,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/pricing': typeof PricingRoute
+  '/_authenticated/ai-efficiency': typeof AuthenticatedAiEfficiencyRoute
   '/_authenticated/approvals': typeof AuthenticatedApprovalsRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/connect-agent': typeof AuthenticatedConnectAgentRoute
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/pricing'
+    | '/ai-efficiency'
     | '/approvals'
     | '/audit'
     | '/connect-agent'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/pricing'
+    | '/ai-efficiency'
     | '/approvals'
     | '/audit'
     | '/connect-agent'
@@ -299,6 +311,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/pricing'
+    | '/_authenticated/ai-efficiency'
     | '/_authenticated/approvals'
     | '/_authenticated/audit'
     | '/_authenticated/connect-agent'
@@ -359,6 +372,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/ai-efficiency': {
+      id: '/_authenticated/ai-efficiency'
+      path: '/ai-efficiency'
+      fullPath: '/ai-efficiency'
+      preLoaderRoute: typeof AuthenticatedAiEfficiencyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/approvals': {
       id: '/_authenticated/approvals'
@@ -504,6 +524,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAiEfficiencyRoute: typeof AuthenticatedAiEfficiencyRoute
   AuthenticatedApprovalsRoute: typeof AuthenticatedApprovalsRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedConnectAgentRoute: typeof AuthenticatedConnectAgentRoute
@@ -523,6 +544,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAiEfficiencyRoute: AuthenticatedAiEfficiencyRoute,
   AuthenticatedApprovalsRoute: AuthenticatedApprovalsRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedConnectAgentRoute: AuthenticatedConnectAgentRoute,
