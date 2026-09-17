@@ -1253,3 +1253,22 @@ export const getBillingState = createServerFn({ method: "POST" })
       },
     };
   });
+
+export const getPaddleCheckout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        plan: z.enum(["solo", "team"]),
+        interval: z.enum(["monthly", "annual"]),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    if (!ws.roles.some((role) => ["platform_admin", "org_admin"].includes(role)))
+      throw new Error("Organization administrator role required for billing changes.");
+    const { createCheckoutConfig } = await import("./paddle.server");
+    const config = createCheckoutConfig(ws.orgId, context.userId, data.plan, data.interval);
+    return config ?? { enabled: false as const, reason: "PADDLE_NOT_CONFIGURED" as const };
+  });
