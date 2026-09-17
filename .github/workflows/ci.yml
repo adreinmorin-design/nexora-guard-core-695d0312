@@ -27,6 +27,7 @@ jobs:
       - run: npm run test:security
       - run: npm run test:agents
       - run: npm run test:providers
+      - run: npm run test:paddle
       - run: npm run test:billing
       - run: npm run test:database
       - run: npx tsc --noEmit
