@@ -57,6 +57,7 @@ export const NAV: NavGroup[] = [
     ],
   },
   { group: "Audit", items: [{ label: "Audit Log", to: "/audit" }] },
+  { group: "Enablement", items: [{ label: "AI Efficiency Playbook", to: "/ai-efficiency" }] },
   {
     group: "Administration",
     items: [
