@@ -1,9 +1,24 @@
 /** Seed catalog for a newly provisioned NEXORA organization. */
 
 export const SEED_PROVIDERS = [
-  { name: "OpenAI", vendor: "openai", credential_state: "MANAGED", region: "global" },
-  { name: "Google", vendor: "google", credential_state: "NOT_CONFIGURED", region: "global" },
-  { name: "Anthropic", vendor: "anthropic", credential_state: "NOT_CONFIGURED", region: "global" },
+  {
+    name: "OpenAI",
+    vendor: "openai",
+    credential_state: "MANAGED",
+    region: "global",
+  },
+  {
+    name: "Google",
+    vendor: "google",
+    credential_state: "NOT_CONFIGURED",
+    region: "global",
+  },
+  {
+    name: "Anthropic",
+    vendor: "anthropic",
+    credential_state: "NOT_CONFIGURED",
+    region: "global",
+  },
 ] as const;
 
 /** Default model for new traffic: the lowest-cost supported OpenAI model. */
@@ -64,17 +79,23 @@ export const SEED_MODELS: Array<{
 export const SEED_POLICIES = [
   {
     name: "Restricted Data Protection",
-    description: "Blocks government and payment identifiers from leaving the tenant boundary.",
+    description:
+      "Blocks government and payment identifiers from leaving the tenant boundary.",
     priority: 10,
     action: "BLOCK" as const,
     scope: "organization",
     conditions: [
-      { field: "detection_category", op: "in", value: ["ssn", "credit_card", "iban"] },
+      {
+        field: "detection_category",
+        op: "in",
+        value: ["ssn", "credit_card", "iban"],
+      },
     ],
   },
   {
     name: "Secret Egress Prevention",
-    description: "Blocks credentials, keys and connection strings in prompts and responses.",
+    description:
+      "Blocks credentials, keys and connection strings in prompts and responses.",
     priority: 20,
     action: "BLOCK" as const,
     scope: "organization",
@@ -82,13 +103,20 @@ export const SEED_POLICIES = [
       {
         field: "detection_category",
         op: "in",
-        value: ["api_key", "private_key", "connection_string", "jwt", "password"],
+        value: [
+          "api_key",
+          "private_key",
+          "connection_string",
+          "jwt",
+          "password",
+        ],
       },
     ],
   },
   {
     name: "Prompt Injection Containment",
-    description: "Routes suspected injection and extraction attempts to human approval.",
+    description:
+      "Routes suspected injection and extraction attempts to human approval.",
     priority: 30,
     action: "REQUIRE_APPROVAL" as const,
     scope: "organization",
@@ -96,23 +124,33 @@ export const SEED_POLICIES = [
       {
         field: "detection_category",
         op: "in",
-        value: ["prompt_injection", "system_prompt_extraction", "data_exfiltration"],
+        value: [
+          "prompt_injection",
+          "system_prompt_extraction",
+          "data_exfiltration",
+        ],
       },
     ],
   },
   {
     name: "PII Redaction",
-    description: "Redacts contact-level personal data before provider execution.",
+    description:
+      "Redacts contact-level personal data before provider execution.",
     priority: 50,
     action: "REDACT" as const,
     scope: "organization",
     conditions: [
-      { field: "detection_category", op: "in", value: ["email", "phone", "ip_address"] },
+      {
+        field: "detection_category",
+        op: "in",
+        value: ["email", "phone", "ip_address"],
+      },
     ],
   },
   {
     name: "Frontier Model Spend Control",
-    description: "Requires approval for frontier models once monthly spend passes the threshold.",
+    description:
+      "Requires approval for frontier models once monthly spend passes the threshold.",
     priority: 60,
     action: "REQUIRE_APPROVAL" as const,
     scope: "organization",

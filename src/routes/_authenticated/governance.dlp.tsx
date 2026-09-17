@@ -2,7 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listFindings } from "@/lib/nexora.functions";
-import { DataTable, PageHeader, Panel, Tag } from "@/components/nexora/primitives";
+import {
+  DataTable,
+  PageHeader,
+  Panel,
+  Tag,
+} from "@/components/nexora/primitives";
 
 export const Route = createFileRoute("/_authenticated/governance/dlp")({
   head: () => ({
@@ -14,7 +19,10 @@ export const Route = createFileRoute("/_authenticated/governance/dlp")({
           "Detection coverage for personal data, secrets and prompt injection, with the action each category triggers.",
       },
       { property: "og:title", content: "DLP & Data Protection — NEXORA" },
-      { property: "og:description", content: "Data protection coverage and detections." },
+      {
+        property: "og:description",
+        content: "Data protection coverage and detections.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -23,11 +31,19 @@ export const Route = createFileRoute("/_authenticated/governance/dlp")({
 });
 
 const COVERAGE = [
-  { group: "Personal data", items: "Email, phone, SSN, payment card, IBAN, IP address" },
-  { group: "Secrets", items: "Provider API keys, private keys, JWTs, connection strings, credential assignments" },
+  {
+    group: "Personal data",
+    items: "Email, phone, SSN, payment card, IBAN, IP address",
+  },
+  {
+    group: "Secrets",
+    items:
+      "Provider API keys, private keys, JWTs, connection strings, credential assignments",
+  },
   {
     group: "Adversarial input",
-    items: "Instruction override, guardrail bypass, system-prompt extraction, exfiltration attempts, role reassignment",
+    items:
+      "Instruction override, guardrail bypass, system-prompt extraction, exfiltration attempts, role reassignment",
   },
 ];
 
@@ -52,15 +68,29 @@ function Dlp() {
         ))}
       </div>
 
-      <h2 className="mt-8 mb-3 font-display text-lg font-semibold">Recent detections</h2>
+      <h2 className="mt-8 mb-3 font-display text-lg font-semibold">
+        Recent detections
+      </h2>
       <DataTable
-        columns={["Time", "Severity", "Category", "Detection", "Confidence", "Source", "Stage"]}
+        columns={[
+          "Time",
+          "Severity",
+          "Category",
+          "Detection",
+          "Confidence",
+          "Source",
+          "Stage",
+        ]}
         rows={rows.map((f) => [
-          <span className="font-mono text-xs">{new Date(f.created_at).toLocaleString()}</span>,
+          <span className="font-mono text-xs">
+            {new Date(f.created_at).toLocaleString()}
+          </span>,
           <Tag value={f.severity} kind="severity" />,
           <span className="font-mono text-xs">{f.category}</span>,
           f.title,
-          <span className="tabular-nums">{Math.round(Number(f.confidence ?? 0) * 100)}%</span>,
+          <span className="tabular-nums">
+            {Math.round(Number(f.confidence ?? 0) * 100)}%
+          </span>,
           f.detection_source,
           (f.evidence as any)?.stage ?? "—",
         ])}

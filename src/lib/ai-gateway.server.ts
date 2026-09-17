@@ -31,16 +31,26 @@ const REQUEST_TIMEOUT_MS = 30_000;
 const MAX_INPUT_CHARS = 20_000;
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
-const GOOGLE_GENERATIVE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const GOOGLE_GENERATIVE_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models";
 
 export const SYSTEM_PROMPT =
   "You are NEXORA's governed assistant. The request you receive has already passed a deterministic policy engine and may contain redaction tokens such as [REDACTED:EMAIL]. Never attempt to reconstruct redacted values. Answer concisely and professionally.";
 
-export const SUPPORTED_VENDORS = ["openai", "anthropic", "google", "openai-compatible"] as const;
+export const SUPPORTED_VENDORS = [
+  "openai",
+  "anthropic",
+  "google",
+  "openai-compatible",
+] as const;
 
 function canonicalVendor(vendor: string): string {
   const normalized = vendor.trim().toLowerCase();
-  if (["gemini", "google-ai", "google_gemini", "google-generative-ai"].includes(normalized))
+  if (
+    ["gemini", "google-ai", "google_gemini", "google-generative-ai"].includes(
+      normalized,
+    )
+  )
     return "google";
   return normalized;
 }
@@ -67,7 +77,8 @@ function providerKey(vendor: string): string | undefined {
   if (vendor === "openai")
     return nonEmpty("OPENAI_API_KEY") ?? nonEmpty("OPEN_AI_PLATFORM_API_KEY");
   if (vendor === "anthropic") return nonEmpty("ANTHROPIC_API_KEY");
-  if (vendor === "google") return nonEmpty("GOOGLE_AI_API_KEY") ?? nonEmpty("GEMINI_API_KEY");
+  if (vendor === "google")
+    return nonEmpty("GOOGLE_AI_API_KEY") ?? nonEmpty("GEMINI_API_KEY");
   return (
     nonEmpty(`NEXORA_${vendorEnvPart(vendor)}_API_KEY`) ??
     nonEmpty(`NEXORA_PROVIDER_${vendorEnvPart(vendor)}_API_KEY`)
@@ -161,7 +172,9 @@ export function providerReadiness(vendor: string): ReadinessState {
 export function readinessSnapshot(
   vendors: string[] = ["openai", "anthropic", "google"],
 ): Record<string, ReadinessState> {
-  return Object.fromEntries(vendors.map((vendor) => [vendor, providerReadiness(vendor)]));
+  return Object.fromEntries(
+    vendors.map((vendor) => [vendor, providerReadiness(vendor)]),
+  );
 }
 
 /** "openai/gpt-4.1-mini" -> "gpt-4.1-mini" */
@@ -183,9 +196,13 @@ function numberOrZero(value: unknown): number {
 export function parseUsage(json: any): Usage {
   const usage = json?.usage ?? json?.usageMetadata ?? {};
   return {
-    inputTokens: numberOrZero(usage.input_tokens ?? usage.prompt_tokens ?? usage.promptTokenCount),
+    inputTokens: numberOrZero(
+      usage.input_tokens ?? usage.prompt_tokens ?? usage.promptTokenCount,
+    ),
     outputTokens: numberOrZero(
-      usage.output_tokens ?? usage.completion_tokens ?? usage.candidatesTokenCount,
+      usage.output_tokens ??
+        usage.completion_tokens ??
+        usage.candidatesTokenCount,
     ),
   };
 }
@@ -226,9 +243,15 @@ export function parseResponseText(json: any): string {
 function mapUpstreamStatus(status: number): ProviderError {
   if (status === 401 || status === 403)
     return new ProviderError(502, "Provider rejected the server credential.");
-  if (status === 404) return new ProviderError(400, "Requested model is unavailable upstream.");
-  if (status === 429) return new ProviderError(429, "Provider rate limit reached. Retry shortly.");
-  if (status >= 500) return new ProviderError(502, "Provider is temporarily unavailable.");
+  if (status === 404)
+    return new ProviderError(400, "Requested model is unavailable upstream.");
+  if (status === 429)
+    return new ProviderError(
+      429,
+      "Provider rate limit reached. Retry shortly.",
+    );
+  if (status >= 500)
+    return new ProviderError(502, "Provider is temporarily unavailable.");
   return new ProviderError(502, "Provider rejected the request.");
 }
 
@@ -261,7 +284,10 @@ function validatePrompt(prompt: string) {
     throw new ProviderError(413, "Prompt exceeds the gateway input limit.");
 }
 
-async function runOpenAI(model: string, prompt: string): Promise<ProviderResult> {
+async function runOpenAI(
+  model: string,
+  prompt: string,
+): Promise<ProviderResult> {
   const key = providerKey("openai");
   if (!key) throw new ProviderError(503, "OpenAI provider is NOT_CONFIGURED.");
   validatePrompt(prompt);
@@ -272,7 +298,10 @@ async function runOpenAI(model: string, prompt: string): Promise<ProviderResult>
     url === OPENAI_RESPONSES_URL ? url : url,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+      },
       body: JSON.stringify({
         model: toUpstreamModel(model),
         instructions: SYSTEM_PROMPT,
@@ -288,9 +317,13 @@ async function runOpenAI(model: string, prompt: string): Promise<ProviderResult>
   return { text: parseResponseText(json), ...usage, latencyMs };
 }
 
-async function runAnthropic(model: string, prompt: string): Promise<ProviderResult> {
+async function runAnthropic(
+  model: string,
+  prompt: string,
+): Promise<ProviderResult> {
   const key = providerKey("anthropic");
-  if (!key) throw new ProviderError(503, "Anthropic provider is NOT_CONFIGURED.");
+  if (!key)
+    throw new ProviderError(503, "Anthropic provider is NOT_CONFIGURED.");
   validatePrompt(prompt);
   const started = Date.now();
   const { json, latencyMs } = await requestJson(
@@ -315,7 +348,10 @@ async function runAnthropic(model: string, prompt: string): Promise<ProviderResu
   return { text: parseResponseText(json), ...usage, latencyMs };
 }
 
-async function runGoogle(model: string, prompt: string): Promise<ProviderResult> {
+async function runGoogle(
+  model: string,
+  prompt: string,
+): Promise<ProviderResult> {
   const key = providerKey("google");
   if (!key) throw new ProviderError(503, "Google provider is NOT_CONFIGURED.");
   validatePrompt(prompt);
@@ -329,7 +365,9 @@ async function runGoogle(model: string, prompt: string): Promise<ProviderResult>
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }] }],
+        contents: [
+          { role: "user", parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }] },
+        ],
         generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS },
       }),
     },
@@ -346,7 +384,8 @@ async function runOpenAiCompatible(
 ): Promise<ProviderResult> {
   const key = providerKey(vendor);
   const base = providerBaseUrl(vendor);
-  if (!key || !base) throw new ProviderError(503, `${vendor} provider is NOT_CONFIGURED.`);
+  if (!key || !base)
+    throw new ProviderError(503, `${vendor} provider is NOT_CONFIGURED.`);
   validatePrompt(prompt);
   const started = Date.now();
   const url = endpoint(base, "/chat/completions");
@@ -354,7 +393,10 @@ async function runOpenAiCompatible(
     url,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+      },
       body: JSON.stringify({
         model: toUpstreamModel(model),
         messages: [
@@ -376,9 +418,12 @@ export async function executeProviderRequest(
   prompt: string,
 ): Promise<ProviderResult> {
   const slash = modelKey.indexOf("/");
-  const vendor = canonicalVendor(slash < 0 ? "openai" : modelKey.slice(0, slash));
+  const vendor = canonicalVendor(
+    slash < 0 ? "openai" : modelKey.slice(0, slash),
+  );
   if (vendor === "openai") return runOpenAI(modelKey, prompt);
   if (vendor === "anthropic") return runAnthropic(modelKey, prompt);
-  if (vendor === "google" || vendor === "gemini") return runGoogle(modelKey, prompt);
+  if (vendor === "google" || vendor === "gemini")
+    return runGoogle(modelKey, prompt);
   return runOpenAiCompatible(vendor, modelKey, prompt);
 }

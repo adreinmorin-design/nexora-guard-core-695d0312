@@ -15,7 +15,10 @@ export const Route = createFileRoute("/_authenticated/security/findings")({
           "Security findings with severity, affected resource, evidence, detection source and remediation guidance.",
       },
       { property: "og:title", content: "Security Findings — NEXORA" },
-      { property: "og:description", content: "AI security findings and remediation." },
+      {
+        property: "og:description",
+        content: "AI security findings and remediation.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -49,14 +52,25 @@ function Findings() {
         }
       />
       <DataTable
-        columns={["Time", "Severity", "Finding", "Resource", "Status", "Remediation"]}
+        columns={[
+          "Time",
+          "Severity",
+          "Finding",
+          "Resource",
+          "Status",
+          "Remediation",
+        ]}
         rows={rows.map((f) => [
-          <span className="font-mono text-xs">{new Date(f.created_at).toLocaleString()}</span>,
+          <span className="font-mono text-xs">
+            {new Date(f.created_at).toLocaleString()}
+          </span>,
           <Tag value={f.severity} kind="severity" />,
           f.title,
           <span className="font-mono text-xs">{f.affected_resource}</span>,
           <Tag value={f.status} />,
-          <span className="text-xs text-muted-foreground">{f.remediation}</span>,
+          <span className="text-xs text-muted-foreground">
+            {f.remediation}
+          </span>,
         ])}
       />
     </div>

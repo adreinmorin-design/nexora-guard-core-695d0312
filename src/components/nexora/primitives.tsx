@@ -1,7 +1,13 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-export function Panel({ className, children }: { className?: string; children: ReactNode }) {
+export function Panel({
+  className,
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
   return <div className={cn("panel p-5", className)}>{children}</div>;
 }
 
@@ -18,7 +24,11 @@ export function PageHeader({
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1 className="text-2xl font-semibold">{title}</h1>
-        {subtitle ? <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{subtitle}</p> : null}
+        {subtitle ? (
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            {subtitle}
+          </p>
+        ) : null}
       </div>
       {actions}
     </div>
@@ -93,10 +103,17 @@ export function Metric({
   return (
     <div className="panel p-4">
       <div className="label-caps">{label}</div>
-      <div className={cn("mt-2 font-display text-2xl font-semibold tabular-nums", toneClass)}>
+      <div
+        className={cn(
+          "mt-2 font-display text-2xl font-semibold tabular-nums",
+          toneClass,
+        )}
+      >
         {value}
       </div>
-      {hint ? <div className="mt-1 text-xs text-muted-foreground">{hint}</div> : null}
+      {hint ? (
+        <div className="mt-1 text-xs text-muted-foreground">{hint}</div>
+      ) : null}
     </div>
   );
 }
@@ -110,7 +127,13 @@ export function EmptyState({ title, body }: { title: string; body: string }) {
   );
 }
 
-export function NotConfigured({ module, note }: { module: string; note?: string }) {
+export function NotConfigured({
+  module,
+  note,
+}: {
+  module: string;
+  note?: string;
+}) {
   return (
     <div className="panel p-8">
       <span className="inline-flex items-center rounded-sm border border-medium/30 bg-medium/10 px-2 py-0.5 font-mono text-[11px] tracking-wide text-medium uppercase">
@@ -138,7 +161,10 @@ export function DataTable({
         <thead>
           <tr className="border-b border-border">
             {columns.map((c) => (
-              <th key={c} className="label-caps px-4 py-3 text-left font-normal">
+              <th
+                key={c}
+                className="label-caps px-4 py-3 text-left font-normal"
+              >
                 {c}
               </th>
             ))}
@@ -146,7 +172,10 @@ export function DataTable({
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} className="border-b border-border/60 last:border-0 hover:bg-accent/40">
+            <tr
+              key={i}
+              className="border-b border-border/60 last:border-0 hover:bg-accent/40"
+            >
               {row.map((cell, j) => (
                 <td key={j} className="px-4 py-3 align-top">
                   {cell}
@@ -157,7 +186,9 @@ export function DataTable({
         </tbody>
       </table>
       {rows.length === 0 ? (
-        <div className="px-4 py-10 text-center text-sm text-muted-foreground">No records yet.</div>
+        <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+          No records yet.
+        </div>
       ) : null}
     </div>
   );

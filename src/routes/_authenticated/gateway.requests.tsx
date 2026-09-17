@@ -43,24 +43,39 @@ function Requests() {
             onChange={(e) => setFilter(e.target.value)}
             className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
           >
-            {["ALL", "ALLOW", "LOG", "REDACT", "REQUIRE_APPROVAL", "BLOCK"].map((d) => (
-              <option key={d}>{d}</option>
-            ))}
+            {["ALL", "ALLOW", "LOG", "REDACT", "REQUIRE_APPROVAL", "BLOCK"].map(
+              (d) => (
+                <option key={d}>{d}</option>
+              ),
+            )}
           </select>
         }
       />
 
       <DataTable
-        columns={["Time", "Decision", "Model", "Provider", "Tokens", "Cost", "Latency", "Reason"]}
+        columns={[
+          "Time",
+          "Decision",
+          "Model",
+          "Provider",
+          "Tokens",
+          "Cost",
+          "Latency",
+          "Reason",
+        ]}
         rows={rows.map((r) => [
-          <span className="font-mono text-xs">{new Date(r.created_at).toLocaleString()}</span>,
+          <span className="font-mono text-xs">
+            {new Date(r.created_at).toLocaleString()}
+          </span>,
           <Tag value={r.decision} kind="decision" />,
           <span className="font-mono text-xs">{r.model}</span>,
           r.provider ?? "—",
           <span className="tabular-nums">
             {r.input_tokens}/{r.output_tokens}
           </span>,
-          <span className="tabular-nums">${Number(r.cost_usd).toFixed(6)}</span>,
+          <span className="tabular-nums">
+            ${Number(r.cost_usd).toFixed(6)}
+          </span>,
           <span className="tabular-nums">{r.latency_ms} ms</span>,
           <span className="text-xs text-muted-foreground">{r.reason}</span>,
         ])}
