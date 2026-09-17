@@ -34,6 +34,7 @@ import { Route as AuthenticatedObservabilityUsageRouteImport } from './routes/_a
 import { Route as AuthenticatedSecurityFindingsRouteImport } from './routes/_authenticated/security.findings'
 import { Route as ApiAgentConnectRouteImport } from './routes/api.agent.connect'
 import { Route as ApiAgentTokenRouteImport } from './routes/api.agent.token'
+import { Route as ApiPaddleWebhookRouteImport } from './routes/api.paddle.webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -171,6 +172,11 @@ const ApiAgentTokenRoute = ApiAgentTokenRouteImport.update({
   path: '/token',
   getParentRoute: () => ApiAgentRoute,
 } as any)
+const ApiPaddleWebhookRoute = ApiPaddleWebhookRouteImport.update({
+  id: '/api/paddle/webhook',
+  path: '/api/paddle/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -197,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/security/findings': typeof AuthenticatedSecurityFindingsRoute
   '/api/agent/connect': typeof ApiAgentConnectRoute
   '/api/agent/token': typeof ApiAgentTokenRoute
+  '/api/paddle/webhook': typeof ApiPaddleWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/security/findings': typeof AuthenticatedSecurityFindingsRoute
   '/api/agent/connect': typeof ApiAgentConnectRoute
   '/api/agent/token': typeof ApiAgentTokenRoute
+  '/api/paddle/webhook': typeof ApiPaddleWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/_authenticated/security/findings': typeof AuthenticatedSecurityFindingsRoute
   '/api/agent/connect': typeof ApiAgentConnectRoute
   '/api/agent/token': typeof ApiAgentTokenRoute
+  '/api/paddle/webhook': typeof ApiPaddleWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -279,6 +288,7 @@ export interface FileRouteTypes {
     | '/security/findings'
     | '/api/agent/connect'
     | '/api/agent/token'
+    | '/api/paddle/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -305,6 +315,7 @@ export interface FileRouteTypes {
     | '/security/findings'
     | '/api/agent/connect'
     | '/api/agent/token'
+    | '/api/paddle/webhook'
   id:
     | '__root__'
     | '/'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/_authenticated/security/findings'
     | '/api/agent/connect'
     | '/api/agent/token'
+    | '/api/paddle/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -341,6 +353,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ApiAgentRoute: typeof ApiAgentRouteWithChildren
   ApiMcpRoute: typeof ApiMcpRoute
+  ApiPaddleWebhookRoute: typeof ApiPaddleWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -520,6 +533,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAgentTokenRouteImport
       parentRoute: typeof ApiAgentRoute
     }
+    '/api/paddle/webhook': {
+      id: '/api/paddle/webhook'
+      path: '/api/paddle/webhook'
+      fullPath: '/api/paddle/webhook'
+      preLoaderRoute: typeof ApiPaddleWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -587,6 +607,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ApiAgentRoute: ApiAgentRouteWithChildren,
   ApiMcpRoute: ApiMcpRoute,
+  ApiPaddleWebhookRoute: ApiPaddleWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
