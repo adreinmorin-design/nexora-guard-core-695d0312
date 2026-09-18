@@ -9,20 +9,15 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // Lovable Cloud exposes the database configuration to the server runtime. Mirror
 // only the public URL + publishable key into the browser bundle at build time.
 // Never expose SUPABASE_SERVICE_ROLE_KEY here.
-const publicSupabaseUrl =
-  process.env["VITE_SUPABASE_URL"] ?? process.env["SUPABASE_URL"] ?? "";
+const publicSupabaseUrl = process.env["VITE_SUPABASE_URL"] ?? process.env["SUPABASE_URL"] ?? "";
 const publicSupabasePublishableKey =
-  process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ??
-  process.env["SUPABASE_PUBLISHABLE_KEY"] ??
-  "";
+  process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ?? process.env["SUPABASE_PUBLISHABLE_KEY"] ?? "";
 
 export default defineConfig({
   vite: {
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(publicSupabaseUrl),
-      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
-        publicSupabasePublishableKey,
-      ),
+      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(publicSupabasePublishableKey),
     },
   },
   tanstackStart: {
