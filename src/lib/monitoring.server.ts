@@ -145,7 +145,9 @@ export function buildSlackAlertPayload(alert: SlackAlert) {
 
 export async function notifySlackAlert(alert: SlackAlert): Promise<SlackAlertResult> {
   const configured = configuredSlackWebhook();
-  if (!configured.url) return { sent: false, reason: configured.reason };
+  if (!configured.url) {
+    return { sent: false, reason: configured.reason ?? "not_configured" };
+  }
   if (isDuplicate(alert)) return { sent: false, reason: "duplicate" };
 
   const controller = new AbortController();
