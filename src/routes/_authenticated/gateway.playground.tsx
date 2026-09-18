@@ -34,14 +34,11 @@ function Playground() {
   const [modelKey, setModelKey] = useState("");
 
   const catalog = useQuery({ queryKey: ["catalog"], queryFn: () => catalogFn({}) });
-  const models = ((catalog.data?.models ?? []) as any[]).filter(
-    (model) => model.status === "active" && model.execution_state === "CONFIGURED",
-  );
+  const models = (catalog.data?.models ?? []) as any[];
   const selected = modelKey || models[0]?.model_key || "";
 
   const run = useMutation({
-    mutationFn: () =>
-      submitFn({ data: { prompt, modelKey: selected, idempotencyKey: crypto.randomUUID() } }),
+    mutationFn: () => submitFn({ data: { prompt, modelKey: selected } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["overview"] });
       queryClient.invalidateQueries({ queryKey: ["requests"] });
@@ -94,12 +91,6 @@ function Playground() {
           >
             {run.isPending ? "Evaluating…" : "Submit through gateway"}
           </button>
-          {!models.length ? (
-            <p className="mt-3 text-sm text-warning">
-              No executable provider is configured. Add a server-side provider credential before
-              submitting live traffic.
-            </p>
-          ) : null}
           {run.error ? (
             <p className="mt-3 text-sm text-critical">{String((run.error as any).message)}</p>
           ) : null}

@@ -54,11 +54,7 @@ function Overview() {
           tone={t.criticalFindings > 0 ? "critical" : "high"}
           hint={`${t.criticalFindings} critical`}
         />
-        <Metric
-          label="Active Agents"
-          value={data.totals.activeAgents}
-          hint="Registered active identities"
-        />
+        <Metric label="Active Agents" value={0} hint="registry NOT_CONFIGURED" />
         <Metric label="Spend" value={`$${t.spend.toFixed(4)}`} hint={`budget $${t.budget}`} />
         <Metric label="Policy Violations" value={t.violations} tone="high" />
         <Metric label="Pending Approvals" value={t.pendingApprovals} tone="high" />

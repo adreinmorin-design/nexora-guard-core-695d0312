@@ -49,18 +49,12 @@ function Landing() {
           <div className="h-6 w-6 rounded-sm border border-primary/50 bg-primary/15" />
           <span className="font-display text-sm font-semibold tracking-[0.22em]">NEXORA</span>
         </div>
-        <div className="flex items-center gap-3">
-          <Link to="/pricing" className="text-sm text-muted-foreground hover:text-foreground">
-            Pricing
-          </Link>
-          <Link
-            to="/auth"
-            search={{ next: "/overview" }}
-            className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            Sign in
-          </Link>
-        </div>
+        <Link
+          to="/auth"
+          className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          Sign in
+        </Link>
       </header>
 
       <section className="grid-lines border-y border-border px-6 py-20 lg:px-12">
@@ -76,16 +70,9 @@ function Landing() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             to="/auth"
-            search={{ next: "/overview" }}
             className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
             Open the control plane
-          </Link>
-          <Link
-            to="/pricing"
-            className="rounded-md border border-border px-5 py-2.5 text-sm font-medium hover:bg-accent"
-          >
-            View pricing
           </Link>
         </div>
       </section>

@@ -1,4 +1,5 @@
 import js from "@eslint/js";
+import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
 import globals from "globals";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
@@ -31,24 +32,9 @@ export default tseslint.config(
           ],
         },
       ],
-      "react-refresh/only-export-components": [
-        "error",
-        {
-          allowConstantExport: true,
-          allowExportNames: [
-            "NAV",
-            "badgeVariants",
-            "buttonVariants",
-            "useFormField",
-            "navigationMenuTriggerStyle",
-            "useSidebar",
-            "toggleVariants",
-          ],
-        },
-      ],
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-explicit-any": "off",
-      "prefer-const": "off",
     },
   },
+  eslintPluginPrettier,
 );

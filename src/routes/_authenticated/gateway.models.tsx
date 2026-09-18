@@ -34,23 +34,15 @@ function Models() {
         subtitle="A model that is not registered and active in this organization is blocked at the gateway before any provider call."
       />
       <DataTable
-        columns={[
-          "Model",
-          "Provider",
-          "Key",
-          "Classification",
-          "Input /1k",
-          "Output /1k",
-          "Execution",
-        ]}
+        columns={["Model", "Key", "Classification", "Context", "Input /1k", "Output /1k", "Status"]}
         rows={models.map((m) => [
           m.display_name,
-          m.provider_vendor,
           <span className="font-mono text-xs">{m.model_key}</span>,
           <Tag value={m.classification} />,
+          <span className="tabular-nums">{(m.context_window ?? 0).toLocaleString()}</span>,
           <span className="tabular-nums">${Number(m.input_cost_per_1k).toFixed(5)}</span>,
           <span className="tabular-nums">${Number(m.output_cost_per_1k).toFixed(5)}</span>,
-          <Tag value={m.execution_state === "CONFIGURED" ? m.status : "NOT_CONFIGURED"} />,
+          <Tag value={m.status} />,
         ])}
       />
     </div>

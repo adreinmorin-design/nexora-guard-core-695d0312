@@ -15,10 +15,7 @@ export const Route = createFileRoute("/_authenticated/security/findings")({
           "Security findings with severity, affected resource, evidence, detection source and remediation guidance.",
       },
       { property: "og:title", content: "Security Findings — NEXORA" },
-      {
-        property: "og:description",
-        content: "AI security findings and remediation.",
-      },
+      { property: "og:description", content: "AI security findings and remediation." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -30,7 +27,9 @@ function Findings() {
   const fn = useServerFn(listFindings);
   const [severity, setSeverity] = useState("ALL");
   const { data } = useQuery({ queryKey: ["findings"], queryFn: () => fn({}) });
-  const rows = ((data ?? []) as any[]).filter((f) => severity === "ALL" || f.severity === severity);
+  const rows = ((data ?? []) as any[]).filter(
+    (f) => severity === "ALL" || f.severity === severity,
+  );
 
   return (
     <div>

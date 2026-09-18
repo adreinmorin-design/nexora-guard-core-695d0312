@@ -14,10 +14,7 @@ export const Route = createFileRoute("/_authenticated/observability/usage")({
           "Token usage, spend and latency per model, computed server-side from provider-reported usage.",
       },
       { property: "og:title", content: "Usage & Cost — NEXORA" },
-      {
-        property: "og:description",
-        content: "AI usage, cost and latency analytics.",
-      },
+      { property: "og:description", content: "AI usage, cost and latency analytics." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -28,37 +25,18 @@ export const Route = createFileRoute("/_authenticated/observability/usage")({
 function Usage() {
   const overviewFn = useServerFn(getOverview);
   const requestsFn = useServerFn(listRequests);
-  const overview = useQuery({
-    queryKey: ["overview"],
-    queryFn: () => overviewFn({}),
-  });
-  const requests = useQuery({
-    queryKey: ["requests"],
-    queryFn: () => requestsFn({}),
-  });
+  const overview = useQuery({ queryKey: ["overview"], queryFn: () => overviewFn({}) });
+  const requests = useQuery({ queryKey: ["requests"], queryFn: () => requestsFn({}) });
 
   const rows = (requests.data ?? []) as any[];
   const byModel = new Map<
     string,
-    {
-      model: string;
-      calls: number;
-      input: number;
-      output: number;
-      cost: number;
-      latency: number;
-    }
+    { model: string; calls: number; input: number; output: number; cost: number; latency: number }
   >();
   for (const r of rows) {
     const key = r.model ?? "unknown";
-    const e = byModel.get(key) ?? {
-      model: key,
-      calls: 0,
-      input: 0,
-      output: 0,
-      cost: 0,
-      latency: 0,
-    };
+    const e =
+      byModel.get(key) ?? { model: key, calls: 0, input: 0, output: 0, cost: 0, latency: 0 };
     e.calls += 1;
     e.input += r.input_tokens;
     e.output += r.output_tokens;

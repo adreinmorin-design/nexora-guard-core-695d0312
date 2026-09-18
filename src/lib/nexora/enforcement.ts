@@ -30,7 +30,7 @@ export async function executeUnderDecision<T>(params: {
 }): Promise<GateOutcome<T>> {
   const { action, originalPrompt, redactedPrompt, execute } = params;
 
-  if (NO_PROVIDER_ACTIONS.includes(action) || !["ALLOW", "LOG", "REDACT"].includes(action)) {
+  if (NO_PROVIDER_ACTIONS.includes(action)) {
     return { executed: false, forwardedPrompt: null, redacted: false, result: null };
   }
 

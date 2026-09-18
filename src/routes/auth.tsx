@@ -1,17 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    next:
-      typeof search["next"] === "string" &&
-      /^(?:\/connect-agent(?:\?code=[A-Fa-f0-9]{10})?|\/admin\/billing(?:\?plan=(?:solo|team|enterprise))?)$/.test(
-        search["next"],
-      )
-        ? search["next"]
-        : "/overview",
-  }),
   head: () => ({
     meta: [
       { title: "Sign in — NEXORA Control Plane" },
@@ -32,32 +23,8 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-function authErrorMessage(err: unknown): string {
-  const message = err instanceof Error ? err.message : "Authentication failed.";
-  if (message.includes("Missing Supabase environment variable")) {
-    return "Authentication is temporarily unavailable because this deployment is missing its Supabase public configuration.";
-  }
-  return message;
-}
-
-async function requireVerifiedSession(): Promise<void> {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) throw sessionError;
-  if (!sessionData.session?.access_token) {
-    throw new Error("Authentication completed without a usable session. Please try again.");
-  }
-
-  const { data: userData, error: userError } = await supabase.auth.getUser(
-    sessionData.session.access_token,
-  );
-  if (userError) throw userError;
-  if (!userData.user) {
-    throw new Error("Authentication completed but the session could not be verified.");
-  }
-}
-
 function AuthPage() {
-  const { next } = Route.useSearch();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -66,59 +33,36 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    let active = true;
-
-    void (async () => {
-      try {
-        const { data, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        if (active && data.session) {
-          await requireVerifiedSession();
-          if (active) window.location.replace(next);
-        }
-      } catch (err) {
-        if (active) setError(authErrorMessage(err));
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [next]);
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate({ to: "/overview", replace: true });
+    });
+  }, [navigate]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     setStatus(null);
-
     try {
       if (mode === "signup") {
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        const { data, error: err } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: window.location.origin },
         });
-        if (signUpError) throw signUpError;
+        if (err) throw err;
         if (!data.session) {
           setStatus("Check your inbox to confirm this address, then sign in.");
           return;
         }
+        navigate({ to: "/overview", replace: true });
       } else {
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (signInError) throw signInError;
-        if (!data.session) {
-          throw new Error("Sign-in succeeded without creating a session. Please try again.");
-        }
+        const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+        if (err) throw err;
+        navigate({ to: "/overview", replace: true });
       }
-
-      await requireVerifiedSession();
-      window.location.replace(next);
-    } catch (err) {
-      setError(authErrorMessage(err));
+    } catch (err: any) {
+      setError(err?.message ?? "Authentication failed.");
     } finally {
       setBusy(false);
     }
@@ -150,7 +94,6 @@ function AuthPage() {
                 id="email"
                 type="email"
                 required
-                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
@@ -165,23 +108,14 @@ function AuthPage() {
                 type="password"
                 required
                 minLength={8}
-                autoComplete={mode === "signin" ? "current-password" : "new-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
               />
             </div>
 
-            {error ? (
-              <p role="alert" className="text-sm text-critical">
-                {error}
-              </p>
-            ) : null}
-            {status ? (
-              <p role="status" className="text-sm text-primary">
-                {status}
-              </p>
-            ) : null}
+            {error ? <p className="text-sm text-critical">{error}</p> : null}
+            {status ? <p className="text-sm text-primary">{status}</p> : null}
 
             <button
               type="submit"
@@ -193,11 +127,12 @@ function AuthPage() {
           </form>
 
           <button
-            type="button"
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
             className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground"
           >
-            {mode === "signin" ? "No account yet? Create one" : "Already have an account? Sign in"}
+            {mode === "signin"
+              ? "No account yet? Create one"
+              : "Already have an account? Sign in"}
           </button>
         </div>
       </div>

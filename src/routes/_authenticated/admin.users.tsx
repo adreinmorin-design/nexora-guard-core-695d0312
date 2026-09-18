@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/admin/users")({
 function Users() {
   const fn = useServerFn(listMembers);
   const { data } = useQuery({ queryKey: ["members"], queryFn: () => fn({}) });
-  const members = (data?.members ?? []) as any[];
+  const members = (data ?? []) as any[];
 
   return (
     <div>

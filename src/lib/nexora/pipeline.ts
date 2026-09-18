@@ -18,7 +18,6 @@
 import { inspect, redact, maskPreview, type Detection } from "./dlp";
 import { evaluate, type Decision, type GovAction, type PolicyRecord } from "./policy-engine";
 import { executeUnderDecision } from "./enforcement";
-import { MAX_OUTPUT_TOKENS, INPUT_OVERHEAD_TOKENS } from "./limits";
 
 export type ProviderResult = {
   text: string;
@@ -56,7 +55,6 @@ export type Principal = {
   orgId: string;
   source: "console" | "api" | "mcp";
   label?: string;
-  ownerId?: string;
 };
 
 export type GatewayStore = {
@@ -69,8 +67,6 @@ export type GatewayStore = {
   insertFindings(rows: Array<Record<string, unknown>>): Promise<void>;
   insertApproval(row: Record<string, unknown>): Promise<{ id: string } | null>;
   insertAudit(row: Record<string, unknown>): Promise<void>;
-  reserve(orgId: string, key: string, cost: number): Promise<{ admitted: boolean; reason: string }>;
-  settle(orgId: string, key: string): Promise<void>;
 };
 
 export type GatewayOutcome = {
@@ -95,21 +91,6 @@ export type GatewayOutcome = {
 
 const ORDER: GovAction[] = ["ALLOW", "LOG", "REDACT", "REQUIRE_APPROVAL", "BLOCK"];
 
-// jsonb reorders object keys; compare canonical snapshots, not serialization order.
-function canonical(value: unknown): string {
-  if (Array.isArray(value)) return "[" + value.map(canonical).join(",") + "]";
-  if (value && typeof value === "object")
-    return (
-      "{" +
-      Object.entries(value)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([k, v]) => JSON.stringify(k) + ":" + canonical(v))
-        .join(",") +
-      "}"
-    );
-  return JSON.stringify(value) ?? "null";
-}
-
 function emptyUsage() {
   return { inputTokens: 0, outputTokens: 0, costUsd: 0, latency: 0 };
 }
@@ -121,10 +102,9 @@ export async function runGovernedRequest(params: {
   modelKey: string;
   execute: ProviderExecutor;
   idempotencyKey?: string | null;
-  approvedPolicies?: PolicyRecord[];
 }): Promise<GatewayOutcome> {
   const { store, principal, prompt, modelKey, execute } = params;
-  const idempotencyKey = params.idempotencyKey ?? crypto.randomUUID();
+  const idempotencyKey = params.idempotencyKey ?? null;
   const startedAt = Date.now();
   const actorColumns =
     principal.kind === "agent"
@@ -211,7 +191,7 @@ export async function runGovernedRequest(params: {
   if (model.status !== "active" || model.provider_status !== "active") {
     return failClosed("Model or provider is not in an active state.");
   }
-  if (model.provider_credential_state !== "CONFIGURED") {
+  if (model.provider_credential_state === "NOT_CONFIGURED") {
     return failClosed(`Provider execution for ${model.provider_vendor} is NOT_CONFIGURED.`);
   }
 
@@ -220,28 +200,12 @@ export async function runGovernedRequest(params: {
 
   // 3. Server-side cost context.
   const monthlySpend = await store.monthlySpend(principal.orgId);
-  // UTF-8 bytes conservatively bound token count; include instructions/framing.
-  const estTokens = new TextEncoder().encode(prompt).length + INPUT_OVERHEAD_TOKENS;
-  const prices: [number, number] = [
-    Number(model.input_cost_per_1k),
-    Number(model.output_cost_per_1k),
-  ];
-  if (prices.some((p) => !Number.isFinite(p) || p <= 0)) {
-    return failClosed("Model pricing is missing or invalid.");
-  }
-  const estimatedCost = (estTokens * prices[0] + MAX_OUTPUT_TOKENS * prices[1]) / 1000;
+  const estTokens = Math.ceil(prompt.length / 4);
+  const estimatedCost = (estTokens / 1000) * Number(model.input_cost_per_1k ?? 0);
 
   // 4. Versioned, tenant-scoped policy evaluation.
   const policies = await store.listPolicies(principal.orgId);
-  const requestPolicies = policies.map((p) =>
-    p.action === "REQUIRE_APPROVAL" &&
-    params.approvedPolicies?.some(
-      (a) => a.id === p.id && a.version === p.version && canonical(a) === canonical(p),
-    )
-      ? { ...p, action: "LOG" as GovAction }
-      : p,
-  );
-  const decision = evaluate(requestPolicies, {
+  const decision = evaluate(policies, {
     detections,
     modelKey,
     modelClassification: model.classification,
@@ -256,8 +220,6 @@ export async function runGovernedRequest(params: {
   let finalAction = decision.action;
   let finalReason = decision.reason;
   for (const b of await store.listBudgets(principal.orgId)) {
-    // Authoritative, period-aware admission happens atomically in reserve().
-    if (b.period !== "monthly") continue;
     if (monthlySpend + estimatedCost > Number(b.limit_usd)) {
       const action = b.action_on_exceed;
       if (ORDER.indexOf(action) > ORDER.indexOf(finalAction)) {
@@ -273,7 +235,7 @@ export async function runGovernedRequest(params: {
     title: `${d.label} detected in prompt`,
     detection_source: d.source,
     confidence: d.confidence,
-    evidence: { offset: d.start, stage: "request" },
+    evidence: { sample: `${d.match.slice(0, 4)}…`, offset: d.start, stage: "request" },
     affected_resource: modelKey,
     remediation: "Remove or tokenize the sensitive value before sending it to a model.",
   }));
@@ -287,21 +249,6 @@ export async function runGovernedRequest(params: {
   let status = "completed";
   let approvalId: string | null = null;
   let responseDetections: Detection[] = [];
-  let reserved = false;
-  if (["ALLOW", "LOG", "REDACT"].includes(finalAction)) {
-    const admission = await store.reserve(principal.orgId, idempotencyKey, estimatedCost);
-    if (!admission.admitted) return failClosed(admission.reason);
-    reserved = true;
-    // An audit outage must prevent dispatch, not just hide it after the fact.
-    await audit({
-      action: "gateway.dispatch",
-      resource: "model",
-      resource_id: modelKey,
-      decision: finalAction,
-      result: "reserved",
-      metadata: { idempotencyKey },
-    });
-  }
 
   if (finalAction === "BLOCK") status = "blocked";
   else if (finalAction === "REQUIRE_APPROVAL") status = "pending_approval";
@@ -339,16 +286,11 @@ export async function runGovernedRequest(params: {
         stage: "response",
       });
 
-      if (responseDecision.action === "BLOCK" || responseDecision.action === "REQUIRE_APPROVAL") {
+      if (responseDecision.action === "BLOCK") {
         output = null;
         status = "response_blocked";
         finalAction = "BLOCK";
         finalReason = `Response withheld — ${responseDecision.reason}`;
-      } else if (responseDecision.action === "REDACT" && responseDetections.length === 0) {
-        output = null;
-        status = "response_blocked";
-        finalAction = "BLOCK";
-        finalReason = "Response redaction could not be performed; output withheld.";
       } else if (responseDetections.length > 0) {
         output = redact(result.text, responseDetections);
         redactedFlag = true;
@@ -365,7 +307,7 @@ export async function runGovernedRequest(params: {
           title: `${d.label} detected in model response`,
           detection_source: d.source,
           confidence: d.confidence,
-          evidence: { offset: d.start, stage: "response" },
+          evidence: { sample: `${d.match.slice(0, 4)}…`, offset: d.start, stage: "response" },
           affected_resource: modelKey,
           remediation: "Investigate the source of the leaked value and tighten data access.",
         });
@@ -373,7 +315,7 @@ export async function runGovernedRequest(params: {
     }
   } catch (error) {
     status = "provider_error";
-    finalReason = `${finalReason} · provider request failed; details withheld`;
+    finalReason = `${finalReason} · provider error: ${(error as Error)?.message ?? "unknown"}`;
   }
 
   // 8. Persist request, findings, approval and the append-only audit event.
@@ -405,11 +347,11 @@ export async function runGovernedRequest(params: {
     );
   }
 
-  if (finalAction === "REQUIRE_APPROVAL" && (principal.kind === "user" || principal.ownerId)) {
+  if (finalAction === "REQUIRE_APPROVAL" && principal.kind === "user") {
     const approval = await store.insertApproval({
       org_id: principal.orgId,
       request_id: requestRow?.id ?? null,
-      requester_id: principal.kind === "agent" ? principal.ownerId : principal.id,
+      requester_id: principal.id,
       action: "gateway.execute",
       target: modelKey,
       risk: detections.some((d) => d.severity === "critical") ? "critical" : "high",
@@ -419,13 +361,7 @@ export async function runGovernedRequest(params: {
       policy_revalidated_at: new Date().toISOString(),
       idempotency_key: idempotencyKey,
       // Sanitized payload only — never the raw prompt.
-      payload: {
-        promptPreview: maskPreview(prompt, detections, 200),
-        prompt: redact(prompt, detections),
-        modelKey,
-        policies,
-        ...(principal.kind === "agent" ? { agentId: principal.id } : {}),
-      },
+      payload: { promptPreview: maskPreview(prompt, detections, 200), modelKey },
     });
     approvalId = approval?.id ?? null;
   }
@@ -442,10 +378,6 @@ export async function runGovernedRequest(params: {
     result: status,
     metadata: { detections: detections.length, cost: costUsd, principal: principal.kind },
   });
-
-  // Unknown provider failures retain the reservation: the upstream may have
-  // billed the call. Never automatically release ambiguous spend.
-  if (reserved && status !== "provider_error") await store.settle(principal.orgId, idempotencyKey);
 
   return {
     decision: finalAction,

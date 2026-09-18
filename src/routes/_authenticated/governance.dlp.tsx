@@ -14,10 +14,7 @@ export const Route = createFileRoute("/_authenticated/governance/dlp")({
           "Detection coverage for personal data, secrets and prompt injection, with the action each category triggers.",
       },
       { property: "og:title", content: "DLP & Data Protection — NEXORA" },
-      {
-        property: "og:description",
-        content: "Data protection coverage and detections.",
-      },
+      { property: "og:description", content: "Data protection coverage and detections." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -26,18 +23,11 @@ export const Route = createFileRoute("/_authenticated/governance/dlp")({
 });
 
 const COVERAGE = [
-  {
-    group: "Personal data",
-    items: "Email, phone, SSN, payment card, IBAN, IP address",
-  },
-  {
-    group: "Secrets",
-    items: "Provider API keys, private keys, JWTs, connection strings, credential assignments",
-  },
+  { group: "Personal data", items: "Email, phone, SSN, payment card, IBAN, IP address" },
+  { group: "Secrets", items: "Provider API keys, private keys, JWTs, connection strings, credential assignments" },
   {
     group: "Adversarial input",
-    items:
-      "Instruction override, guardrail bypass, system-prompt extraction, exfiltration attempts, role reassignment",
+    items: "Instruction override, guardrail bypass, system-prompt extraction, exfiltration attempts, role reassignment",
   },
 ];
 
