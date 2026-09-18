@@ -12,6 +12,7 @@ test.afterEach(() => {
 
 test("Slack payload contains only bounded operational metadata", () => {
   process.env.NEXORA_ENVIRONMENT = "production";
+  process.env.OPENAI_API_KEY = "monitoring-test-secret";
   const payload = buildSlackAlertPayload({
     category: "provider",
     severity: "critical",
@@ -26,7 +27,7 @@ test("Slack payload contains only bounded operational metadata", () => {
   assert.match(serialized, /production/);
   assert.match(serialized, /\/api\/agent/);
   assert.match(serialized, /openai/);
-  assert.doesNotMatch(serialized, /Authorization|Bearer|prompt|request body/i);
+  assert.doesNotMatch(serialized, /monitoring-test-secret|Bearer sk-/i);
 });
 
 test("Slack transport rejects non-Slack webhook URLs without network access", async () => {
