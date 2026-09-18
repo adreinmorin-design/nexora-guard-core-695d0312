@@ -31,6 +31,7 @@ export const NAV: NavGroup[] = [
   {
     group: "Agents",
     items: [
+      { label: "Connect an Agent", to: "/connect-agent" },
       { label: "Registry", to: "/module/agent-registry" },
       { label: "Tasks", to: "/module/agent-tasks" },
       { label: "Tools", to: "/module/agent-tools" },
@@ -56,10 +57,12 @@ export const NAV: NavGroup[] = [
     ],
   },
   { group: "Audit", items: [{ label: "Audit Log", to: "/audit" }] },
+  { group: "Enablement", items: [{ label: "AI Efficiency Playbook", to: "/ai-efficiency" }] },
   {
     group: "Administration",
     items: [
       { label: "Users & Roles", to: "/admin/users" },
+      { label: "Plans & Billing", to: "/admin/billing" },
       { label: "Integrations", to: "/module/integrations" },
       { label: "Settings", to: "/module/settings" },
     ],
@@ -90,7 +93,7 @@ export function AppShell({
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: "/auth", search: { next: "/overview" }, replace: true });
   }
 
   return (

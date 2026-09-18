@@ -2,8 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-import { inspect, redact, maskPreview, type Detection } from "./nexora/dlp";
-import { evaluate, type GovAction, type PolicyRecord } from "./nexora/policy-engine";
+import type { GovAction } from "./nexora/policy-engine";
 import { SEED_MODELS, SEED_POLICIES, SEED_PROVIDERS } from "./nexora/catalog";
 
 const GOV_ROLES = ["platform_admin", "org_admin", "governance_admin", "security_admin"];
@@ -52,13 +51,15 @@ async function writeAudit(
     metadata?: Record<string, unknown>;
   },
 ) {
-  await context.supabase.from("audit_events").insert({
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await (supabaseAdmin as any).from("audit_events").insert({
     org_id: orgId,
     actor_id: context.userId,
     actor_type: "user",
     source: "console",
     ...event,
   });
+  if (error) throw new Error("Audit persistence unavailable.");
 }
 
 /* ------------------------------------------------------------------ */
@@ -200,16 +201,13 @@ export const getOverview = createServerFn({ method: "POST" })
     const ws = await resolveWorkspace(context);
     const since = new Date(Date.now() - 30 * 864e5).toISOString();
 
-    const [requests, findings, approvals, policies, budgets, members] = await Promise.all([
+    const [requests, findings, approvals, policies, budgets, members, agents] = await Promise.all([
       context.supabase
         .from("requests")
         .select("decision, cost_usd, latency_ms, model, created_at, redacted")
         .eq("org_id", ws.orgId)
         .gte("created_at", since),
-      context.supabase
-        .from("security_findings")
-        .select("severity, status")
-        .eq("org_id", ws.orgId),
+      context.supabase.from("security_findings").select("severity, status").eq("org_id", ws.orgId),
       context.supabase
         .from("approvals")
         .select("id, status")
@@ -218,7 +216,14 @@ export const getOverview = createServerFn({ method: "POST" })
       context.supabase.from("policies").select("id, status").eq("org_id", ws.orgId),
       context.supabase.from("budgets").select("limit_usd, period").eq("org_id", ws.orgId),
       context.supabase.from("org_members").select("user_id").eq("org_id", ws.orgId),
+      context.supabase
+        .from("agents")
+        .select("id", { count: "exact", head: true })
+        .eq("org_id", ws.orgId)
+        .eq("status", "active"),
     ]);
+    if ([requests, findings, approvals, policies, budgets, members, agents].some((r) => r.error))
+      throw new Error("Overview could not be loaded.");
 
     const rows = (requests.data ?? []) as any[];
     const spend = rows.reduce((sum, r) => sum + Number(r.cost_usd ?? 0), 0);
@@ -254,6 +259,7 @@ export const getOverview = createServerFn({ method: "POST" })
       workspace: ws,
       totals: {
         requests: rows.length,
+        activeAgents: agents.count ?? 0,
         blocked,
         redacted,
         violations,
@@ -261,7 +267,8 @@ export const getOverview = createServerFn({ method: "POST" })
         pendingApprovals: (approvals.data ?? []).length,
         openFindings: openFindings.length,
         criticalFindings: critical,
-        activePolicies: ((policies.data ?? []) as any[]).filter((p) => p.status === "active").length,
+        activePolicies: ((policies.data ?? []) as any[]).filter((p) => p.status === "active")
+          .length,
         members: (members.data ?? []).length,
         budget: Number(((budgets.data ?? [])[0] as any)?.limit_usd ?? 0),
         avgLatency: latencies.length
@@ -301,12 +308,29 @@ export const listCatalog = createServerFn({ method: "POST" })
     const ws = await resolveWorkspace(context);
     const [providers, models] = await Promise.all([
       context.supabase.from("providers").select("*").eq("org_id", ws.orgId).order("name"),
-      context.supabase.from("models").select("*").eq("org_id", ws.orgId).order("display_name"),
+      context.supabase
+        .from("models")
+        .select("*, providers(vendor)")
+        .eq("org_id", ws.orgId)
+        .order("display_name"),
     ]);
+    if (providers.error || models.error) throw new Error("Catalog could not be loaded.");
+    const { providerCredentialVariable, providerReadiness } = await import("./ai-gateway.server");
     return {
       workspace: ws,
-      providers: providers.data ?? [],
-      models: models.data ?? [],
+      providers: (providers.data ?? []).map((p: any) => ({
+        ...p,
+        credential_state: providerReadiness(p.vendor),
+        credential_variable: providerCredentialVariable(p.vendor),
+        adapter: ["openai", "anthropic", "google"].includes(p.vendor)
+          ? p.vendor
+          : "openai-compatible",
+      })),
+      models: (models.data ?? []).map((model: any) => ({
+        ...model,
+        provider_vendor: model.providers?.vendor ?? "unknown",
+        execution_state: providerReadiness(model.providers?.vendor ?? "unknown"),
+      })),
     };
   });
 
@@ -441,7 +465,7 @@ const policyInput = z.object({
 
 export const savePolicy = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => policyInput.parse(input))
+  .validator((input: unknown) => policyInput.parse(input))
   .handler(async ({ data, context }: { data: any; context: any }) => {
     const ws = await resolveWorkspace(context);
     if (!ws.roles.some((r) => GOV_ROLES.includes(r))) {
@@ -526,7 +550,7 @@ export const savePolicy = createServerFn({ method: "POST" })
 
 export const decideApproval = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ id: z.string().uuid(), decision: z.enum(["approved", "rejected"]) }).parse(input),
   )
   .handler(async ({ data, context }: { data: any; context: any }) => {
@@ -535,42 +559,8 @@ export const decideApproval = createServerFn({ method: "POST" })
       throw new Error("Forbidden: you are not an approver in this organization.");
     }
 
-    const existing = await context.supabase
-      .from("approvals")
-      .select("id, status, requester_id, expires_at")
-      .eq("id", data.id)
-      .eq("org_id", ws.orgId)
-      .single();
-    if (existing.error) throw new Error("Approval request not found.");
-    if (existing.data.status !== "pending") throw new Error("This request is already decided.");
-    if (existing.data.requester_id === context.userId) {
-      throw new Error("Self-approval is not permitted.");
-    }
-    if (new Date(existing.data.expires_at).getTime() < Date.now()) {
-      throw new Error("This approval request has expired.");
-    }
-
-    const { error } = await context.supabase
-      .from("approvals")
-      .update({
-        status: data.decision,
-        approver_id: context.userId,
-        decided_at: new Date().toISOString(),
-        execution_result: data.decision === "approved" ? "authorized" : "not_executed",
-      })
-      .eq("id", data.id)
-      .eq("org_id", ws.orgId);
-    if (error) throw new Error(error.message);
-
-    await writeAudit(context, ws.orgId, {
-      action: `approval.${data.decision}`,
-      resource: "approval",
-      resource_id: data.id,
-      risk: data.decision === "approved" ? "high" : "low",
-      result: data.decision,
-    });
-
-    return { ok: true };
+    const { decideAndExecute } = await import("./nexora/gateway.server");
+    return decideAndExecute(context, ws.orgId, data.id, data.decision);
   });
 
 /* ------------------------------------------------------------------ */
@@ -579,348 +569,706 @@ export const decideApproval = createServerFn({ method: "POST" })
 
 export const submitGatewayRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
-    z.object({ prompt: z.string().min(1).max(20000), modelKey: z.string().min(1) }).parse(input),
+  .validator((input: unknown) =>
+    z
+      .object({
+        prompt: z.string().min(1).max(20000),
+        modelKey: z.string().min(1),
+        idempotencyKey: z.string().uuid().optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }: { data: any; context: any }) => {
     const ws = await resolveWorkspace(context);
-    const startedAt = Date.now();
+    const { runConsoleRequest } = await import("./nexora/gateway.server");
+    return runConsoleRequest(context, ws.orgId, data);
+  });
 
-    // 1. Model must be registered and approved inside this tenant.
-    const model = await context.supabase
-      .from("models")
-      .select("model_key, display_name, classification, status, input_cost_per_1k, output_cost_per_1k, providers(vendor, status, credential_state)")
-      .eq("org_id", ws.orgId)
-      .eq("model_key", data.modelKey)
-      .maybeSingle();
+/* ------------------------------------------------------------------ */
+/* Control-plane registries                                            */
+/* ------------------------------------------------------------------ */
 
-    if (!model.data) {
-      const req = await recordRequest(context, ws.orgId, {
-        model: data.modelKey,
-        provider: null,
-        decision: "BLOCK",
-        reason: "Model is not registered in this organization's model registry.",
-        prompt_preview: data.prompt.slice(0, 200),
-        latency_ms: Date.now() - startedAt,
-        status: "blocked",
-      });
-      await writeAudit(context, ws.orgId, {
-        action: "gateway.request",
-        resource: "model",
-        resource_id: data.modelKey,
-        decision: "BLOCK",
-        request_id: req?.id ?? null,
-        risk: "high",
-        result: "blocked",
-      });
-      return {
-        decision: "BLOCK" as GovAction,
-        reason: "Model is not registered in this organization's model registry.",
-        policy: null,
-        matchedRules: [],
-        findings: [],
-        output: null,
-        requestId: req?.id ?? null,
-      };
+export const listControlPlane = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => z.object({ module: z.string().min(1) }).parse(input))
+  .handler(async ({ data, context }: { data: { module: string }; context: any }) => {
+    const ws = await resolveWorkspace(context);
+    const q = (table: string, columns: string) =>
+      context.supabase
+        .from(table)
+        .select(columns)
+        .eq("org_id", ws.orgId)
+        .order("created_at", { ascending: false })
+        .limit(200);
+    let query: any;
+    switch (data.module) {
+      case "agent-registry":
+        query = q("agents", "id,name,slug,description,status,credential_expires_at,created_at");
+        break;
+      case "agent-tools":
+        query = q("agent_capabilities", "id,agent_id,capability,created_at,agents(name)");
+        break;
+      case "mcp-gateway": {
+        const result = await q("mcp_servers", "id,name,url,transport,auth_mode,status,created_at");
+        if (result.error) throw new Error("MCP servers could not be loaded.");
+        const { mcpReadiness, mcpSecretName } = await import("./nexora/mcp.server");
+        return {
+          workspace: ws,
+          module: data.module,
+          rows: result.data.map((s: any) => ({
+            ...s,
+            readiness: mcpReadiness(s),
+            secret_name: mcpSecretName(s.id),
+          })),
+        };
+      }
+      case "threats":
+        query = q("security_findings", "id,title,category,severity,status,created_at,request_id");
+        break;
+      case "security-tests":
+      case "attack-simulation":
+        query = q("audit_events", "id,action,result,metadata,created_at").eq(
+          "action",
+          data.module === "security-tests" ? "security.suite" : "security.simulation",
+        );
+        break;
+      case "latency":
+        query = q("requests", "id,model,decision,status,latency_ms,created_at");
+        break;
+      case "errors":
+        query = q("requests", "id,model,decision,status,latency_ms,created_at").in("status", [
+          "provider_error",
+          "error",
+          "failed",
+        ]);
+        break;
+      case "agent-tasks":
+        query = q("requests", "id,agent_id,model,decision,status,created_at").eq(
+          "actor_type",
+          "agent",
+        );
+        break;
+      case "integrations": {
+        const { providerReadiness } = await import("./ai-gateway.server");
+        const result = await q("providers", "id,name,vendor,status");
+        if (result.error) throw new Error("Integrations could not be loaded.");
+        return {
+          workspace: ws,
+          module: data.module,
+          rows: result.data.map((p: any) => ({ ...p, readiness: providerReadiness(p.vendor) })),
+        };
+      }
+      case "settings":
+        return { workspace: ws, module: data.module, rows: [] };
+      default:
+        throw new Error("Unknown module.");
     }
+    const { data: rows, error } = await query;
+    if (error) throw new Error("Module data could not be loaded. Please retry.");
+    return { workspace: ws, module: data.module, rows: rows ?? [] };
+  });
 
-    const provider = (model.data as any).providers;
-    const modelClassification = (model.data as any).classification as string;
-    const vendor = provider?.vendor as string;
-
-    if ((model.data as any).status !== "active" || provider?.status !== "active") {
-      return await blockedResponse(
-        context,
-        ws.orgId,
-        data,
-        vendor,
-        "Model or provider is not in an active state.",
-        startedAt,
-      );
+export const createAgent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    z
+      .object({
+        name: z.string().min(2).max(100),
+        slug: z
+          .string()
+          .regex(/^[a-z0-9-]+$/)
+          .max(80),
+        description: z.string().max(500).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }: { data: any; context: any }) => {
+    const ws = await resolveWorkspace(context);
+    if (
+      !ws.roles.some((r) =>
+        ["platform_admin", "org_admin", "agent_admin", "security_admin"].includes(r),
+      )
+    ) {
+      throw new Error("Forbidden: agent administration role required.");
     }
-
-    if (provider?.credential_state === "NOT_CONFIGURED") {
-      return await blockedResponse(
-        context,
-        ws.orgId,
-        data,
-        vendor,
-        `Provider execution for ${vendor} is NOT_CONFIGURED.`,
-        startedAt,
-      );
-    }
-
-    // 2. Deterministic inspection of the prompt.
-    const detections = inspect(data.prompt);
-
-    // 3. Cost context (server-side only, never trusted from the browser).
-    const monthStart = new Date();
-    monthStart.setUTCDate(1);
-    monthStart.setUTCHours(0, 0, 0, 0);
-    const spendRows = await context.supabase
-      .from("requests")
-      .select("cost_usd")
-      .eq("org_id", ws.orgId)
-      .gte("created_at", monthStart.toISOString());
-    const monthlySpend = ((spendRows.data ?? []) as any[]).reduce(
-      (sum, r) => sum + Number(r.cost_usd ?? 0),
-      0,
-    );
-    const estTokens = Math.ceil(data.prompt.length / 4);
-    const estimatedCost =
-      (estTokens / 1000) * Number((model.data as any).input_cost_per_1k ?? 0);
-
-    // 4. Load tenant policies and evaluate deterministically.
-    const policyRows = await context.supabase
-      .from("policies")
-      .select("id, name, description, priority, action, version, status, scope, conditions")
-      .eq("org_id", ws.orgId);
-
-    const policies = (policyRows.data ?? []) as PolicyRecord[];
-    const decision = evaluate(policies, {
-      detections,
-      modelKey: data.modelKey,
-      modelClassification,
-      provider: vendor,
-      estimatedCostUsd: estimatedCost,
-      monthlySpendUsd: monthlySpend,
-      actorType: "user",
-      stage: "request",
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: agent, error } = await (supabaseAdmin as any)
+      .from("agents")
+      .insert({
+        org_id: ws.orgId,
+        name: data.name,
+        slug: data.slug,
+        description: data.description ?? null,
+        owner_id: context.userId,
+        status: "draft",
+      })
+      .select("id, name, slug, status, created_at")
+      .single();
+    if (error) throw new Error("Agent could not be created.");
+    await writeAudit(context, ws.orgId, {
+      action: "agent.created",
+      resource: "agent",
+      resource_id: agent.id,
+      risk: "medium",
+      metadata: { slug: agent.slug },
     });
+    return agent;
+  });
 
-    // 5. Budget enforcement, server-side.
-    const budgetRows = await context.supabase
-      .from("budgets")
-      .select("name, limit_usd, action_on_exceed, status, period")
+export const runSecurityTests = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => z.object({ adversarial: z.boolean() }).parse(input))
+  .handler(async ({ data, context }: { data: { adversarial: boolean }; context: any }) => {
+    const ws = await resolveWorkspace(context);
+    if (!ws.roles.some((r) => GOV_ROLES.includes(r)))
+      throw new Error("Security administration role required.");
+    const { data: policies, error } = await context.supabase
+      .from("policies")
+      .select("*")
       .eq("org_id", ws.orgId)
       .eq("status", "active");
-    let budgetAction: GovAction | null = null;
-    let budgetReason = "";
-    for (const b of (budgetRows.data ?? []) as any[]) {
-      if (monthlySpend + estimatedCost > Number(b.limit_usd)) {
-        budgetAction = b.action_on_exceed as GovAction;
-        budgetReason = `Budget "${b.name}" exceeded ($${monthlySpend.toFixed(4)} of $${Number(b.limit_usd).toFixed(2)}).`;
-      }
-    }
-
-    const order: GovAction[] = ["ALLOW", "LOG", "REDACT", "REQUIRE_APPROVAL", "BLOCK"];
-    let finalAction = decision.action;
-    let finalReason = decision.reason;
-    if (budgetAction && order.indexOf(budgetAction) > order.indexOf(finalAction)) {
-      finalAction = budgetAction;
-      finalReason = budgetReason;
-    }
-
-    const findingsToWrite = detections.map((d) => ({
-      severity: d.severity,
-      category: d.category,
-      title: `${d.label} detected in prompt`,
-      detection_source: d.source,
-      confidence: d.confidence,
-      evidence: { sample: `${d.match.slice(0, 4)}…`, offset: d.start, stage: "request" },
-      affected_resource: data.modelKey,
-      remediation: "Remove or tokenize the sensitive value before sending it to a model.",
-    }));
-
-    let output: string | null = null;
-    let inputTokens = 0;
-    let outputTokens = 0;
-    let costUsd = 0;
-    let latency = 0;
-    let redactedFlag = false;
-    let status = "completed";
-    let approvalId: string | null = null;
-    let responseDetections: Detection[] = [];
-
-    if (finalAction === "BLOCK") {
-      status = "blocked";
-    } else if (finalAction === "REQUIRE_APPROVAL") {
-      status = "pending_approval";
-    } else {
-      const outbound =
-        finalAction === "REDACT" ? redact(data.prompt, detections) : data.prompt;
-      redactedFlag = finalAction === "REDACT";
-      try {
-        const { executeProviderRequest } = await import("./ai-gateway.server");
-        const result = await executeProviderRequest(data.modelKey, outbound);
-        inputTokens = result.inputTokens || estTokens;
-        outputTokens = result.outputTokens || Math.ceil(result.text.length / 4);
-        latency = result.latencyMs;
-        costUsd =
-          (inputTokens / 1000) * Number((model.data as any).input_cost_per_1k ?? 0) +
-          (outputTokens / 1000) * Number((model.data as any).output_cost_per_1k ?? 0);
-
-        // 6. Response inspection — responses are governed too.
-        responseDetections = inspect(result.text);
-        const responseDecision = evaluate(policies, {
-          detections: responseDetections,
-          modelKey: data.modelKey,
-          modelClassification,
-          provider: vendor,
-          estimatedCostUsd: costUsd,
-          monthlySpendUsd: monthlySpend + costUsd,
-          actorType: "user",
-          stage: "response",
-        });
-
-        if (responseDecision.action === "BLOCK") {
-          output = null;
-          status = "response_blocked";
-          finalAction = "BLOCK";
-          finalReason = `Response withheld — ${responseDecision.reason}`;
-        } else if (responseDetections.length > 0) {
-          output = redact(result.text, responseDetections);
-          redactedFlag = true;
-          if (finalAction === "ALLOW" || finalAction === "LOG") finalAction = "REDACT";
-          finalReason = `${finalReason} · response redacted (${responseDetections.length} finding(s))`;
-        } else {
-          output = result.text;
-        }
-
-        for (const d of responseDetections) {
-          findingsToWrite.push({
-            severity: d.severity,
-            category: d.category,
-            title: `${d.label} detected in model response`,
-            detection_source: d.source,
-            confidence: d.confidence,
-            evidence: { sample: `${d.match.slice(0, 4)}…`, offset: d.start, stage: "response" },
-            affected_resource: data.modelKey,
-            remediation: "Investigate the source of the leaked value and tighten data access.",
-          });
-        }
-      } catch (error: any) {
-        status = "provider_error";
-        finalReason = `${finalReason} · provider error: ${error?.message ?? "unknown"}`;
-      }
-    }
-
-    const requestRow = await recordRequest(context, ws.orgId, {
-      model: data.modelKey,
-      provider: vendor,
-      decision: finalAction,
-      reason: finalReason,
-      policy_id: decision.policyId,
-      policy_version: decision.policyVersion,
-      matched_rules: decision.matchedRules,
-      redacted: redactedFlag,
-      prompt_preview: maskPreview(data.prompt, detections, 300),
-      response_preview: output ? output.slice(0, 300) : null,
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      cost_usd: Number(costUsd.toFixed(6)),
-      latency_ms: latency || Date.now() - startedAt,
-      status,
-    });
-
-    if (findingsToWrite.length > 0) {
-      await context.supabase.from("security_findings").insert(
-        findingsToWrite.map((f) => ({ ...f, org_id: ws.orgId, request_id: requestRow?.id ?? null })),
-      );
-    }
-
-    if (finalAction === "REQUIRE_APPROVAL") {
-      const approval = await context.supabase
-        .from("approvals")
-        .insert({
-          org_id: ws.orgId,
-          request_id: requestRow?.id ?? null,
-          requester_id: context.userId,
-          action: "gateway.execute",
-          target: data.modelKey,
-          risk: detections.some((d) => d.severity === "critical") ? "critical" : "high",
-          reason: finalReason,
-          policy_id: decision.policyId,
-          policy_version: decision.policyVersion,
-          payload: { promptPreview: maskPreview(data.prompt, detections, 200) },
-        })
-        .select("id")
-        .single();
-      approvalId = (approval.data as any)?.id ?? null;
-    }
-
+    if (error) throw new Error("Policies could not be loaded.");
+    const { runSecuritySuite } = await import("./nexora/security-suite");
+    const cases = runSecuritySuite(policies ?? [], data.adversarial);
+    const passed = cases.filter((c) => c.passed).length;
     await writeAudit(context, ws.orgId, {
-      action: "gateway.request",
-      resource: "model",
-      resource_id: data.modelKey,
-      decision: finalAction,
-      policy_id: decision.policyId,
-      policy_version: decision.policyVersion,
-      request_id: requestRow?.id ?? null,
-      risk:
-        finalAction === "BLOCK"
-          ? "high"
-          : finalAction === "REQUIRE_APPROVAL"
-            ? "medium"
-            : "info",
-      result: status,
-      metadata: { detections: detections.length, cost: costUsd },
+      action: data.adversarial ? "security.simulation" : "security.suite",
+      resource: "policy_suite",
+      result: passed === cases.length ? "passed" : "failed",
+      risk: passed === cases.length ? "info" : "high",
+      metadata: {
+        suiteVersion: 1,
+        scope: "deterministic_policy_only",
+        passed,
+        total: cases.length,
+        cases,
+        policies: (policies ?? []).map((p: any) => ({ id: p.id, version: p.version })),
+      },
     });
+    return { cases, passed, total: cases.length };
+  });
 
+const controlMutation = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("agent-status"),
+    id: z.string().uuid(),
+    status: z.enum(["draft", "suspended", "archived"]),
+  }),
+  z.object({
+    action: z.literal("grant-capability"),
+    id: z.string().uuid(),
+    capability: z
+      .string()
+      .trim()
+      .min(2)
+      .max(100)
+      .regex(/^[a-z0-9:._-]+$/),
+  }),
+  z.object({ action: z.literal("revoke-capability"), id: z.string().uuid() }),
+  z.object({
+    action: z.literal("register-mcp"),
+    authMode: z.enum(["none", "bearer"]).default("bearer"),
+    name: z.string().trim().min(2).max(100),
+    url: z
+      .string()
+      .url()
+      .max(2048)
+      .refine((s) => {
+        const u = new URL(s);
+        return u.protocol === "https:" && !u.username && !u.password && !u.search && !u.hash;
+      }, "Use an HTTPS URL without credentials or query parameters."),
+  }),
+  z.object({ action: z.literal("rename-organization"), name: z.string().trim().min(2).max(100) }),
+  z.object({
+    action: z.literal("finding-status"),
+    id: z.string().uuid(),
+    status: z.enum(["open", "resolved"]),
+  }),
+]);
+
+export type ControlMutation = z.infer<typeof controlMutation>;
+
+export const manageControlPlane = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => controlMutation.parse(input))
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const allowed =
+      data.action === "rename-organization"
+        ? ["platform_admin", "org_admin"]
+        : data.action === "finding-status"
+          ? ["platform_admin", "org_admin", "security_admin"]
+          : ["platform_admin", "org_admin", "security_admin", "agent_admin"];
+    if (!ws.roles.some((r) => allowed.includes(r)))
+      throw new Error("Administration role required.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as any;
+    let query: any;
+    switch (data.action) {
+      case "agent-status":
+        query = db
+          .from("agents")
+          .update({ status: data.status })
+          .eq("org_id", ws.orgId)
+          .eq("id", data.id);
+        break;
+      case "grant-capability": {
+        const agent = await db
+          .from("agents")
+          .select("id")
+          .eq("org_id", ws.orgId)
+          .eq("id", data.id)
+          .single();
+        if (agent.error || !agent.data) throw new Error("Agent not found in this organization.");
+        query = db.from("agent_capabilities").upsert(
+          {
+            org_id: ws.orgId,
+            agent_id: data.id,
+            capability: data.capability,
+            granted_by: context.userId,
+          },
+          { onConflict: "agent_id,capability" },
+        );
+        break;
+      }
+      case "revoke-capability":
+        query = db.from("agent_capabilities").delete().eq("org_id", ws.orgId).eq("id", data.id);
+        break;
+      case "register-mcp":
+        query = db.from("mcp_servers").insert({
+          org_id: ws.orgId,
+          name: data.name,
+          url: data.url,
+          status: "draft",
+          transport: "http",
+          auth_mode: data.authMode,
+          created_by: context.userId,
+        });
+        break;
+      case "rename-organization":
+        query = db.from("organizations").update({ name: data.name }).eq("id", ws.orgId);
+        break;
+      case "finding-status":
+        query = db
+          .from("security_findings")
+          .update({ status: data.status })
+          .eq("org_id", ws.orgId)
+          .eq("id", data.id);
+        break;
+    }
+    const result = await query.select("id");
+    if (result.error || !result.data?.length)
+      throw new Error("Change could not be saved. The record may no longer exist.");
+    await writeAudit(context, ws.orgId, {
+      action: `control.${data.action}`,
+      resource: data.action,
+      resource_id: result.data[0].id,
+      result: "success",
+    });
+    return { saved: true };
+  });
+
+export const rotateAgentCredential = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { newAgentCredential } = await import("./nexora/agent-credentials");
+    const credential = await newAgentCredential();
+    const { error } = await (supabaseAdmin as any).rpc("nexora_rotate_agent", {
+      p_org: ws.orgId,
+      p_agent: data.id,
+      p_actor: context.userId,
+      p_hash: credential.hash,
+      p_prefix: credential.prefix,
+    });
+    if (error)
+      throw new Error(
+        "Credential rotation requires an available agent and an administration role.",
+      );
+    return { token: credential.token };
+  });
+
+export const getAgentWorkbench = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ws = await resolveWorkspace(context);
+    const db: any = context.supabase;
+    const results = await Promise.all([
+      db.from("agents").select("id,name,status").eq("org_id", ws.orgId).order("name").limit(200),
+      db
+        .from("mcp_tools")
+        .select("id,server_id,remote_name,description,required_capability,status,risk,input_schema")
+        .eq("org_id", ws.orgId)
+        .order("tool_name")
+        .limit(200),
+      db
+        .from("mcp_tool_grants")
+        .select("id,agent_id,tool_id,requires_approval")
+        .eq("org_id", ws.orgId)
+        .limit(200),
+      db
+        .from("tool_invocations")
+        .select("id,agent_id,tool_id,status,decision,reason,created_at")
+        .eq("org_id", ws.orgId)
+        .order("created_at", { ascending: false })
+        .limit(100),
+      db
+        .from("models")
+        .select("model_key,display_name")
+        .eq("org_id", ws.orgId)
+        .eq("status", "active")
+        .order("display_name"),
+    ]);
+    if (results.some((r) => r.error)) throw new Error("Agent workbench could not be loaded.");
     return {
-      decision: finalAction,
-      reason: finalReason,
-      policy: decision.policyName
-        ? { name: decision.policyName, version: decision.policyVersion }
-        : null,
-      matchedRules: decision.matchedRules,
-      findings: [...detections, ...responseDetections].map((d) => ({
-        category: d.category,
-        label: d.label,
-        severity: d.severity,
-        confidence: d.confidence,
-        source: d.source,
-      })),
-      output,
-      status,
-      approvalId,
-      requestId: requestRow?.id ?? null,
-      usage: { inputTokens, outputTokens, costUsd, latency },
+      workspace: ws,
+      agents: results[0].data,
+      tools: results[1].data,
+      grants: results[2].data,
+      invocations: results[3].data,
+      models: results[4].data,
     };
   });
 
-async function recordRequest(context: any, orgId: string, values: Record<string, unknown>) {
-  const { data } = await context.supabase
-    .from("requests")
-    .insert({ org_id: orgId, user_id: context.userId, ...values })
-    .select("id")
-    .single();
-  return data as { id: string } | null;
-}
+export const executeAgentTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(async (input: unknown) => {
+    const { agentTaskInput } = await import("./nexora/agent-input");
+    return z.object({ agentId: z.string().uuid(), task: agentTaskInput }).parse(input);
+  })
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    if (
+      !ws.roles.some((r) =>
+        ["platform_admin", "org_admin", "security_admin", "agent_admin"].includes(r),
+      )
+    )
+      throw new Error("Agent administration role required.");
+    const { claimAgent, runAgentOperation } = await import("./nexora/agents.server");
+    const { data: agent, error } = await context.supabase
+      .from("agents")
+      .select("id")
+      .eq("org_id", ws.orgId)
+      .eq("id", data.agentId)
+      .single();
+    if (error || !agent) throw new Error("Agent not found in this organization.");
+    await claimAgent({ id: data.agentId, key: data.task.idempotencyKey, actor: context.userId });
+    return runAgentOperation(ws.orgId, data.agentId, data.task);
+  });
 
-async function blockedResponse(
-  context: any,
-  orgId: string,
-  data: any,
-  vendor: string | null,
-  reason: string,
-  startedAt: number,
-) {
-  const req = await recordRequest(context, orgId, {
-    model: data.modelKey,
-    provider: vendor,
-    decision: "BLOCK",
-    reason,
-    prompt_preview: data.prompt.slice(0, 200),
-    latency_ms: Date.now() - startedAt,
-    status: "blocked",
+const toolAdminInput = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("discover"), serverId: z.string().uuid() }),
+  z.object({
+    action: z.literal("server-status"),
+    serverId: z.string().uuid(),
+    status: z.enum(["active", "suspended"]),
+  }),
+  z.object({
+    action: z.literal("tool-status"),
+    toolId: z.string().uuid(),
+    status: z.enum(["active", "suspended"]),
+  }),
+  z.object({
+    action: z.literal("grant"),
+    agentId: z.string().uuid(),
+    toolId: z.string().uuid(),
+    requiresApproval: z.boolean(),
+  }),
+  z.object({ action: z.literal("revoke"), grantId: z.string().uuid() }),
+]);
+export type ToolAdminInput = z.infer<typeof toolAdminInput>;
+export const manageAgentTools = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => toolAdminInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    if (
+      !ws.roles.some((r) =>
+        ["platform_admin", "org_admin", "security_admin", "agent_admin"].includes(r),
+      )
+    )
+      throw new Error("Agent administration role required.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { checked } = await import("./nexora/gateway.server");
+    const db: any = supabaseAdmin;
+    if (data.action === "discover")
+      return (await import("./nexora/mcp.server")).discoverMcp(
+        ws.orgId,
+        data.serverId,
+        context.userId,
+      );
+    let query;
+    if (data.action === "server-status")
+      query = db
+        .from("mcp_servers")
+        .update({ status: data.status })
+        .eq("org_id", ws.orgId)
+        .eq("id", data.serverId);
+    if (data.action === "tool-status")
+      query = db
+        .from("mcp_tools")
+        .update({ status: data.status })
+        .eq("org_id", ws.orgId)
+        .eq("id", data.toolId)
+        .not("definition_hash", "is", null);
+    if (data.action === "revoke")
+      query = db.from("mcp_tool_grants").delete().eq("org_id", ws.orgId).eq("id", data.grantId);
+    if (data.action === "grant") {
+      const agent = await checked(
+        db.from("agents").select("id").eq("org_id", ws.orgId).eq("id", data.agentId).single(),
+      );
+      const tool = await checked(
+        db
+          .from("mcp_tools")
+          .select("id,required_capability")
+          .eq("org_id", ws.orgId)
+          .eq("id", data.toolId)
+          .single(),
+      );
+      if (!agent || !tool) throw new Error("Agent and tool must belong to this organization.");
+      await checked(
+        db.from("agent_capabilities").upsert(
+          {
+            org_id: ws.orgId,
+            agent_id: agent.id,
+            capability: tool.required_capability,
+            granted_by: context.userId,
+          },
+          { onConflict: "agent_id,capability" },
+        ),
+      );
+      query = db.from("mcp_tool_grants").upsert(
+        {
+          org_id: ws.orgId,
+          agent_id: agent.id,
+          tool_id: tool.id,
+          requires_approval: data.requiresApproval,
+          granted_by: context.userId,
+        },
+        { onConflict: "agent_id,tool_id" },
+      );
+    }
+    const rows = await checked(query.select("id"));
+    if (!rows.length) throw new Error("Record unavailable.");
+    await writeAudit(context, ws.orgId, {
+      action: `mcp.${data.action}`,
+      resource: "mcp",
+      resource_id: rows[0].id,
+      result: "success",
+    });
+    return { saved: true };
   });
-  await writeAudit(context, orgId, {
-    action: "gateway.request",
-    resource: "model",
-    resource_id: data.modelKey,
-    decision: "BLOCK",
-    request_id: req?.id ?? null,
-    risk: "medium",
-    result: "blocked",
+
+const connectionScope = z.enum([
+  "requests:read",
+  "findings:read",
+  "policies:read",
+  "model:invoke",
+  "findings:resolve",
+]);
+
+export const inspectAgentConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    z.object({ code: z.string().regex(/^[A-F0-9]{10}$/) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: connection, error } = await (supabaseAdmin as any)
+      .from("agent_connections")
+      .select("client_name,scopes,status,expires_at")
+      .eq("user_code", data.code)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .single();
+    if (error || !connection)
+      throw new Error("Connection code is invalid, expired, or already used.");
+    return { workspace: ws, connection };
   });
-  return {
-    decision: "BLOCK" as GovAction,
-    reason,
-    policy: null,
-    matchedRules: [],
-    findings: [],
-    output: null,
-    requestId: req?.id ?? null,
-  };
-}
+
+export const consentAgentConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    z
+      .object({
+        code: z.string().regex(/^[A-F0-9]{10}$/),
+        allow: z.boolean(),
+        scopes: z.array(connectionScope).max(5),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any).rpc("nexora_consent_connection", {
+      p_code: data.code,
+      p_org: ws.orgId,
+      p_actor: context.userId,
+      p_allow: data.allow,
+      p_scopes: [...new Set(data.scopes)],
+    });
+    if (error)
+      throw new Error(
+        "Permission could not be granted. Check your role or request a new connection code.",
+      );
+    return { approved: data.allow };
+  });
+
+export const connectAgentDirect = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    z
+      .object({
+        name: z.string().trim().min(1).max(80),
+        scopes: z.array(connectionScope).min(1).max(5),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const { startAgentConnection, exchangeAgentConnection } =
+      await import("./nexora/connections.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const scopes = [...new Set(data.scopes)];
+    const connection = await startAgentConnection(data.name, scopes);
+    const { error } = await (supabaseAdmin as any).rpc("nexora_consent_connection", {
+      p_code: connection.user_code,
+      p_org: ws.orgId,
+      p_actor: context.userId,
+      p_allow: true,
+      p_scopes: scopes,
+    });
+    if (error) throw new Error("Your role cannot grant the selected permissions.");
+    const result = await exchangeAgentConnection(connection.device_code);
+    if (result.error) throw new Error("Connection could not be completed.");
+    return result as {
+      access_token: string;
+      agent_id: string;
+      scope: string;
+      expires_in: number;
+    };
+  });
+
+export const listAgentConnections = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ws = await resolveWorkspace(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [agents, usage] = await Promise.all([
+      context.supabase
+        .from("agents")
+        .select("id,name,owner_id,status,credential_expires_at,created_at" as any)
+        .eq("org_id", ws.orgId)
+        .order("created_at", { ascending: false })
+        .limit(200),
+      (supabaseAdmin as any).rpc("nexora_agent_usage", { p_org: ws.orgId }),
+    ]);
+    if (agents.error || usage.error) throw new Error("Connections could not be loaded.");
+    const activity = new Map<
+      string,
+      {
+        requests: number;
+        costUsd: number;
+        inputTokens: number;
+        outputTokens: number;
+        lastUsedAt: string | null;
+      }
+    >();
+    for (const row of (usage.data ?? []) as any[]) {
+      if (!row.agent_id) continue;
+      const entry = activity.get(row.agent_id) ?? {
+        requests: 0,
+        costUsd: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        lastUsedAt: null,
+      };
+      entry.requests = Number(row.request_count ?? 0);
+      entry.costUsd = Number(row.cost_usd ?? 0);
+      entry.inputTokens = Number(row.input_tokens ?? 0);
+      entry.outputTokens = Number(row.output_tokens ?? 0);
+      entry.lastUsedAt = row.last_used_at ?? null;
+      activity.set(row.agent_id, entry);
+    }
+    return {
+      workspace: ws,
+      userId: context.userId,
+      agents: ((agents.data ?? []) as any[]).map((agent) => ({
+        ...agent,
+        usage: activity.get(agent.id) ?? {
+          requests: 0,
+          costUsd: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          lastUsedAt: null,
+        },
+      })),
+    };
+  });
+
+export const disconnectAgent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any).rpc("nexora_revoke_connection", {
+      p_org: ws.orgId,
+      p_agent: data.id,
+      p_actor: context.userId,
+    });
+    if (error)
+      throw new Error("Only the connection owner or an administrator may disconnect this agent.");
+    return { disconnected: true };
+  });
+
+export const getBillingState = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ws = await resolveWorkspace(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db: any = supabaseAdmin;
+    const [subscription, usage] = await Promise.all([
+      db
+        .from("billing_subscriptions")
+        .select(
+          "plan_key,status,trial_ends_at,current_period_start,current_period_end,cancel_at_period_end",
+        )
+        .eq("org_id", ws.orgId)
+        .single(),
+      db.rpc("nexora_billing_usage", { p_org: ws.orgId }),
+    ]);
+    if (subscription.error || usage.error) throw new Error("Billing status could not be loaded.");
+    return {
+      workspace: ws,
+      subscription: subscription.data,
+      usage: {
+        seats: Number(usage.data?.seats ?? 0),
+        agents: Number(usage.data?.agents ?? 0),
+        mcpServers: Number(usage.data?.mcp_servers ?? 0),
+        requests: Number(usage.data?.requests ?? 0),
+      },
+    };
+  });
+
+export const getPaddleCheckout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    z
+      .object({
+        plan: z.enum(["solo", "team"]),
+        interval: z.enum(["monthly", "annual"]),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    if (!ws.roles.some((role) => ["platform_admin", "org_admin"].includes(role)))
+      throw new Error("Organization administrator role required for billing changes.");
+    const { createCheckoutConfig } = await import("./paddle.server");
+    const config = createCheckoutConfig(ws.orgId, context.userId, data.plan, data.interval);
+    return config ?? { enabled: false as const, reason: "PADDLE_NOT_CONFIGURED" as const };
+  });

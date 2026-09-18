@@ -28,9 +28,7 @@ function Requests() {
   const [filter, setFilter] = useState("ALL");
   const { data } = useQuery({ queryKey: ["requests"], queryFn: () => fn({}) });
 
-  const rows = ((data ?? []) as any[]).filter(
-    (r) => filter === "ALL" || r.decision === filter,
-  );
+  const rows = ((data ?? []) as any[]).filter((r) => filter === "ALL" || r.decision === filter);
 
   return (
     <div>

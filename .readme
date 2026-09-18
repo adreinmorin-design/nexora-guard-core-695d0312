@@ -1,0 +1,56 @@
+# NEXORA release handoff
+
+NEXORA is a server-enforced AI security and governance control plane for model
+traffic, agents and MCP tools.
+
+Live release: https://nexora-guard-core.lovable.app
+Repository: https://github.com/adreinmorin-design/nexora-guard-core-695d0312
+
+## Start here
+
+1. Open the live URL and create an operator account.
+2. Configure at least one provider secret in the deployment environment.
+3. Open **AI Gateway → Providers** and confirm `CONFIGURED`.
+4. Run a non-sensitive request in **Gateway → Playground**.
+5. Review **Plans & Billing**, **Agents**, **Security** and **AI Efficiency**.
+
+## Provider setup
+
+Native adapters support OpenAI, Anthropic and Google Gemini. Any vendor or
+private gateway using the OpenAI Chat Completions shape can be added with
+`NEXORA_<VENDOR>_API_KEY` and `NEXORA_<VENDOR>_BASE_URL`. Provider keys never
+reach browser code.
+
+## Paddle setup
+
+Paddle checkout is implemented but stays disabled until the Paddle client token,
+checkout-signing secret, webhook secret, and Solo/Team price IDs are supplied.
+Register `/api/paddle/webhook` as the notification destination. Entitlements
+change only after a verified webhook.
+
+## Efficiency playbook
+
+Use **AI Efficiency Playbook** to inventory calls, route simple work to cheaper
+models, reuse structured prompts, retrieve only needed evidence, scope agents
+as identities, and measure cost per business outcome. Start with a 30-day
+baseline before expanding automation.
+
+## Verification
+
+```bash
+npm install
+npm run lint
+npm run test:gateway
+npm run test:security
+npm run test:agents
+npm run test:providers
+npm run test:paddle
+npm run test:billing
+npm run test:database
+npx tsc --noEmit
+npm run build
+```
+
+GitHub Actions uses `npm install --ignore-scripts` because this Lovable checkout
+does not yet contain a lockfile. Add and commit a lockfile before making CI
+reproducibility a release gate.

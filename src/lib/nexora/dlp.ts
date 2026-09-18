@@ -117,7 +117,8 @@ const SECRET_RULES: Rule[] = [
   {
     category: "private_key",
     label: "Private key material",
-    pattern: /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/g,
+    pattern:
+      /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]*?(?:-----END (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----|$)/g,
     confidence: 0.99,
     severity: "critical",
     source: "regex",
@@ -125,7 +126,8 @@ const SECRET_RULES: Rule[] = [
   {
     category: "api_key",
     label: "Provider API key",
-    pattern: /\b(?:sk-[A-Za-z0-9-_]{16,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{12,}|xox[baprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z\-_]{20,})\b/g,
+    pattern:
+      /\b(?:sk-[A-Za-z0-9-_]{16,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{12,}|xox[baprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z\-_]{20,})\b/g,
     confidence: 0.96,
     severity: "critical",
     source: "regex",
@@ -149,7 +151,8 @@ const SECRET_RULES: Rule[] = [
   {
     category: "password",
     label: "Credential assignment",
-    pattern: /\b(?:password|passwd|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*["']?[^\s"',;]{6,}/gi,
+    pattern:
+      /\b(?:password|passwd|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*["']?[^\s"',;]{6,}/gi,
     confidence: 0.75,
     severity: "high",
     source: "regex",
@@ -160,7 +163,8 @@ const INJECTION_RULES: Rule[] = [
   {
     category: "prompt_injection",
     label: "Instruction override attempt",
-    pattern: /\b(?:ignore|disregard|forget)\s+(?:all\s+|any\s+|your\s+)?(?:previous|prior|above|earlier)\s+(?:instructions|rules|prompts|directions)\b/gi,
+    pattern:
+      /\b(?:ignore|disregard|forget)\s+(?:all\s+|any\s+|your\s+)?(?:previous|prior|above|earlier)\s+(?:instructions|rules|prompts|directions)\b/gi,
     confidence: 0.9,
     severity: "high",
     source: "heuristic",
@@ -168,7 +172,8 @@ const INJECTION_RULES: Rule[] = [
   {
     category: "prompt_injection",
     label: "Guardrail bypass attempt",
-    pattern: /\b(?:developer mode|jailbreak|DAN mode|no restrictions|without any (?:filters|guardrails|restrictions)|bypass (?:the )?(?:policy|policies|security|filter))\b/gi,
+    pattern:
+      /\b(?:developer mode|jailbreak|DAN mode|no restrictions|without any (?:filters|guardrails|restrictions)|bypass (?:the )?(?:policy|policies|security|filter))\b/gi,
     confidence: 0.85,
     severity: "high",
     source: "heuristic",
@@ -176,7 +181,8 @@ const INJECTION_RULES: Rule[] = [
   {
     category: "system_prompt_extraction",
     label: "System prompt extraction attempt",
-    pattern: /\b(?:reveal|show|print|repeat|output|expose)\s+(?:me\s+)?(?:your|the)\s+(?:system\s+prompt|initial\s+instructions|hidden\s+instructions|rules|configuration)\b/gi,
+    pattern:
+      /\b(?:reveal|show|print|repeat|output|expose)\s+(?:me\s+)?(?:your|the)\s+(?:system\s+prompt|initial\s+instructions|hidden\s+instructions|rules|configuration)\b/gi,
     confidence: 0.9,
     severity: "high",
     source: "heuristic",
@@ -184,7 +190,8 @@ const INJECTION_RULES: Rule[] = [
   {
     category: "data_exfiltration",
     label: "Data exfiltration attempt",
-    pattern: /\b(?:send|post|upload|exfiltrate|forward)\b[^.\n]{0,60}\b(?:https?:\/\/|webhook|external server|attacker)\b/gi,
+    pattern:
+      /\b(?:send|post|upload|exfiltrate|forward)\b[^.\n]{0,60}\b(?:https?:\/\/|webhook|external server|attacker)\b/gi,
     confidence: 0.8,
     severity: "critical",
     source: "heuristic",
@@ -244,7 +251,8 @@ export function inspect(text: string): Detection[] {
   const kept: Detection[] = [];
   for (const detection of found) {
     const overlaps = kept.some(
-      (k) => detection.start < k.end && k.start < detection.end && k.category === detection.category,
+      (k) =>
+        detection.start < k.end && k.start < detection.end && k.category === detection.category,
     );
     if (!overlaps) kept.push(detection);
   }
@@ -255,12 +263,22 @@ export function inspect(text: string): Detection[] {
 export function redact(text: string, detections: Detection[]): string {
   const targets = detections
     .filter((d) => REDACTABLE.includes(d.category))
-    .sort((a, b) => b.start - a.start);
-  let output = text;
+    .sort((a, b) => a.start - b.start || b.end - a.end);
+  // Merge overlaps before replacement: replacing one match changes offsets and
+  // can otherwise leave fragments of a nested credential or corrupt its token.
+  const spans: Array<{ start: number; end: number; category: string }> = [];
   for (const d of targets) {
-    output = `${output.slice(0, d.start)}[REDACTED:${d.category.toUpperCase()}]${output.slice(d.end)}`;
+    const previous = spans[spans.length - 1];
+    if (previous && d.start < previous.end) previous.end = Math.max(previous.end, d.end);
+    else spans.push({ start: d.start, end: d.end, category: d.category });
   }
-  return output;
+  let cursor = 0;
+  let output = "";
+  for (const span of spans) {
+    output += text.slice(cursor, span.start) + `[REDACTED:${span.category.toUpperCase()}]`;
+    cursor = span.end;
+  }
+  return output + text.slice(cursor);
 }
 
 export function maskPreview(text: string, detections: Detection[], limit = 400): string {

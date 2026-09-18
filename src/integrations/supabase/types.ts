@@ -1,1454 +1,949 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
+    PostgrestVersion: "14.5";
+  };
   public: {
     Tables: {
-      agent_calls: {
-        Row: {
-          agent_id: string
-          created_at: string
-          idempotency_key: string
-          org_id: string
-        }
-        Insert: {
-          agent_id: string
-          created_at?: string
-          idempotency_key: string
-          org_id: string
-        }
-        Update: {
-          agent_id?: string
-          created_at?: string
-          idempotency_key?: string
-          org_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agent_calls_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "agents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "agent_calls_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       agent_capabilities: {
         Row: {
-          agent_id: string
-          capability: string
-          created_at: string
-          granted_by: string
-          id: string
-          org_id: string
-        }
+          agent_id: string;
+          capability: string;
+          created_at: string;
+          granted_by: string;
+          id: string;
+          org_id: string;
+        };
         Insert: {
-          agent_id: string
-          capability: string
-          created_at?: string
-          granted_by: string
-          id?: string
-          org_id: string
-        }
+          agent_id: string;
+          capability: string;
+          created_at?: string;
+          granted_by: string;
+          id?: string;
+          org_id: string;
+        };
         Update: {
-          agent_id?: string
-          capability?: string
-          created_at?: string
-          granted_by?: string
-          id?: string
-          org_id?: string
-        }
+          agent_id?: string;
+          capability?: string;
+          created_at?: string;
+          granted_by?: string;
+          id?: string;
+          org_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "agent_capabilities_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "agents"
-            referencedColumns: ["id"]
+            foreignKeyName: "agent_capabilities_agent_id_fkey";
+            columns: ["agent_id"];
+            isOneToOne: false;
+            referencedRelation: "agents";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "agent_capabilities_org_agent_fk"
-            columns: ["org_id", "agent_id"]
-            isOneToOne: false
-            referencedRelation: "agents"
-            referencedColumns: ["org_id", "id"]
+            foreignKeyName: "agent_capabilities_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
-          {
-            foreignKeyName: "agent_capabilities_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      agent_connections: {
-        Row: {
-          agent_id: string | null
-          approved_by: string | null
-          client_name: string
-          created_at: string
-          device_hash: string
-          expires_at: string
-          last_polled_at: string | null
-          org_id: string | null
-          scopes: string[]
-          status: string
-          user_code: string
-        }
-        Insert: {
-          agent_id?: string | null
-          approved_by?: string | null
-          client_name: string
-          created_at?: string
-          device_hash: string
-          expires_at?: string
-          last_polled_at?: string | null
-          org_id?: string | null
-          scopes: string[]
-          status?: string
-          user_code: string
-        }
-        Update: {
-          agent_id?: string | null
-          approved_by?: string | null
-          client_name?: string
-          created_at?: string
-          device_hash?: string
-          expires_at?: string
-          last_polled_at?: string | null
-          org_id?: string | null
-          scopes?: string[]
-          status?: string
-          user_code?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agent_connections_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "agents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "agent_connections_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+        ];
+      };
       agents: {
         Row: {
-          created_at: string
-          credential_expires_at: string | null
-          description: string | null
-          id: string
-          last_used_at: string | null
-          name: string
-          org_id: string
-          owner_id: string
-          slug: string
-          status: Database["public"]["Enums"]["lifecycle_status"]
-          token_hash: string | null
-          token_prefix: string | null
-          updated_at: string
-        }
+          created_at: string;
+          description: string | null;
+          id: string;
+          last_used_at: string | null;
+          name: string;
+          org_id: string;
+          owner_id: string;
+          slug: string;
+          status: Database["public"]["Enums"]["lifecycle_status"];
+          token_hash: string | null;
+          token_prefix: string | null;
+          updated_at: string;
+        };
         Insert: {
-          created_at?: string
-          credential_expires_at?: string | null
-          description?: string | null
-          id?: string
-          last_used_at?: string | null
-          name: string
-          org_id: string
-          owner_id: string
-          slug: string
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-          token_hash?: string | null
-          token_prefix?: string | null
-          updated_at?: string
-        }
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          last_used_at?: string | null;
+          name: string;
+          org_id: string;
+          owner_id: string;
+          slug: string;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+          token_hash?: string | null;
+          token_prefix?: string | null;
+          updated_at?: string;
+        };
         Update: {
-          created_at?: string
-          credential_expires_at?: string | null
-          description?: string | null
-          id?: string
-          last_used_at?: string | null
-          name?: string
-          org_id?: string
-          owner_id?: string
-          slug?: string
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-          token_hash?: string | null
-          token_prefix?: string | null
-          updated_at?: string
-        }
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          last_used_at?: string | null;
+          name?: string;
+          org_id?: string;
+          owner_id?: string;
+          slug?: string;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+          token_hash?: string | null;
+          token_prefix?: string | null;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "agents_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "agents_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       approvals: {
         Row: {
-          action: string
-          approver_id: string | null
-          consumed_at: string | null
-          created_at: string
-          decided_at: string | null
-          decision_token: string
-          execution_result: string | null
-          expires_at: string
-          id: string
-          idempotency_key: string | null
-          org_id: string
-          payload: Json
-          policy_id: string | null
-          policy_revalidated_at: string | null
-          policy_version: number | null
-          reason: string | null
-          request_id: string | null
-          requester_id: string
-          risk: Database["public"]["Enums"]["severity"]
-          status: string
-          target: string | null
-        }
+          action: string;
+          approver_id: string | null;
+          consumed_at: string | null;
+          created_at: string;
+          decided_at: string | null;
+          decision_token: string;
+          execution_result: string | null;
+          expires_at: string;
+          id: string;
+          idempotency_key: string | null;
+          org_id: string;
+          payload: Json;
+          policy_id: string | null;
+          policy_revalidated_at: string | null;
+          policy_version: number | null;
+          reason: string | null;
+          request_id: string | null;
+          requester_id: string;
+          risk: Database["public"]["Enums"]["severity"];
+          status: string;
+          target: string | null;
+        };
         Insert: {
-          action: string
-          approver_id?: string | null
-          consumed_at?: string | null
-          created_at?: string
-          decided_at?: string | null
-          decision_token?: string
-          execution_result?: string | null
-          expires_at?: string
-          id?: string
-          idempotency_key?: string | null
-          org_id: string
-          payload?: Json
-          policy_id?: string | null
-          policy_revalidated_at?: string | null
-          policy_version?: number | null
-          reason?: string | null
-          request_id?: string | null
-          requester_id: string
-          risk?: Database["public"]["Enums"]["severity"]
-          status?: string
-          target?: string | null
-        }
+          action: string;
+          approver_id?: string | null;
+          consumed_at?: string | null;
+          created_at?: string;
+          decided_at?: string | null;
+          decision_token?: string;
+          execution_result?: string | null;
+          expires_at?: string;
+          id?: string;
+          idempotency_key?: string | null;
+          org_id: string;
+          payload?: Json;
+          policy_id?: string | null;
+          policy_revalidated_at?: string | null;
+          policy_version?: number | null;
+          reason?: string | null;
+          request_id?: string | null;
+          requester_id: string;
+          risk?: Database["public"]["Enums"]["severity"];
+          status?: string;
+          target?: string | null;
+        };
         Update: {
-          action?: string
-          approver_id?: string | null
-          consumed_at?: string | null
-          created_at?: string
-          decided_at?: string | null
-          decision_token?: string
-          execution_result?: string | null
-          expires_at?: string
-          id?: string
-          idempotency_key?: string | null
-          org_id?: string
-          payload?: Json
-          policy_id?: string | null
-          policy_revalidated_at?: string | null
-          policy_version?: number | null
-          reason?: string | null
-          request_id?: string | null
-          requester_id?: string
-          risk?: Database["public"]["Enums"]["severity"]
-          status?: string
-          target?: string | null
-        }
+          action?: string;
+          approver_id?: string | null;
+          consumed_at?: string | null;
+          created_at?: string;
+          decided_at?: string | null;
+          decision_token?: string;
+          execution_result?: string | null;
+          expires_at?: string;
+          id?: string;
+          idempotency_key?: string | null;
+          org_id?: string;
+          payload?: Json;
+          policy_id?: string | null;
+          policy_revalidated_at?: string | null;
+          policy_version?: number | null;
+          reason?: string | null;
+          request_id?: string | null;
+          requester_id?: string;
+          risk?: Database["public"]["Enums"]["severity"];
+          status?: string;
+          target?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "approvals_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "approvals_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "approvals_org_request_fk"
-            columns: ["org_id", "request_id"]
-            isOneToOne: false
-            referencedRelation: "requests"
-            referencedColumns: ["org_id", "id"]
+            foreignKeyName: "approvals_request_id_fkey";
+            columns: ["request_id"];
+            isOneToOne: false;
+            referencedRelation: "requests";
+            referencedColumns: ["id"];
           },
-          {
-            foreignKeyName: "approvals_request_id_fkey"
-            columns: ["request_id"]
-            isOneToOne: false
-            referencedRelation: "requests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+        ];
+      };
       audit_events: {
         Row: {
-          action: string
-          actor_id: string | null
-          actor_type: string
-          created_at: string
-          decision: Database["public"]["Enums"]["gov_action"] | null
-          id: string
-          metadata: Json
-          org_id: string
-          policy_id: string | null
-          policy_version: number | null
-          request_id: string | null
-          resource: string
-          resource_id: string | null
-          result: string
-          risk: Database["public"]["Enums"]["severity"]
-          source: string
-        }
+          action: string;
+          actor_id: string | null;
+          actor_type: string;
+          created_at: string;
+          decision: Database["public"]["Enums"]["gov_action"] | null;
+          id: string;
+          metadata: Json;
+          org_id: string;
+          policy_id: string | null;
+          policy_version: number | null;
+          request_id: string | null;
+          resource: string;
+          resource_id: string | null;
+          result: string;
+          risk: Database["public"]["Enums"]["severity"];
+          source: string;
+        };
         Insert: {
-          action: string
-          actor_id?: string | null
-          actor_type?: string
-          created_at?: string
-          decision?: Database["public"]["Enums"]["gov_action"] | null
-          id?: string
-          metadata?: Json
-          org_id: string
-          policy_id?: string | null
-          policy_version?: number | null
-          request_id?: string | null
-          resource: string
-          resource_id?: string | null
-          result?: string
-          risk?: Database["public"]["Enums"]["severity"]
-          source?: string
-        }
+          action: string;
+          actor_id?: string | null;
+          actor_type?: string;
+          created_at?: string;
+          decision?: Database["public"]["Enums"]["gov_action"] | null;
+          id?: string;
+          metadata?: Json;
+          org_id: string;
+          policy_id?: string | null;
+          policy_version?: number | null;
+          request_id?: string | null;
+          resource: string;
+          resource_id?: string | null;
+          result?: string;
+          risk?: Database["public"]["Enums"]["severity"];
+          source?: string;
+        };
         Update: {
-          action?: string
-          actor_id?: string | null
-          actor_type?: string
-          created_at?: string
-          decision?: Database["public"]["Enums"]["gov_action"] | null
-          id?: string
-          metadata?: Json
-          org_id?: string
-          policy_id?: string | null
-          policy_version?: number | null
-          request_id?: string | null
-          resource?: string
-          resource_id?: string | null
-          result?: string
-          risk?: Database["public"]["Enums"]["severity"]
-          source?: string
-        }
+          action?: string;
+          actor_id?: string | null;
+          actor_type?: string;
+          created_at?: string;
+          decision?: Database["public"]["Enums"]["gov_action"] | null;
+          id?: string;
+          metadata?: Json;
+          org_id?: string;
+          policy_id?: string | null;
+          policy_version?: number | null;
+          request_id?: string | null;
+          resource?: string;
+          resource_id?: string | null;
+          result?: string;
+          risk?: Database["public"]["Enums"]["severity"];
+          source?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "audit_events_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "audit_events_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
-        ]
-      }
-      billing_plans: {
-        Row: {
-          active: boolean
-          agent_limit: number | null
-          annual_price_usd: number | null
-          audit_retention_days: number | null
-          mcp_server_limit: number | null
-          monthly_price_usd: number | null
-          monthly_request_limit: number | null
-          name: string
-          plan_key: string
-          seat_limit: number | null
-        }
-        Insert: {
-          active?: boolean
-          agent_limit?: number | null
-          annual_price_usd?: number | null
-          audit_retention_days?: number | null
-          mcp_server_limit?: number | null
-          monthly_price_usd?: number | null
-          monthly_request_limit?: number | null
-          name: string
-          plan_key: string
-          seat_limit?: number | null
-        }
-        Update: {
-          active?: boolean
-          agent_limit?: number | null
-          annual_price_usd?: number | null
-          audit_retention_days?: number | null
-          mcp_server_limit?: number | null
-          monthly_price_usd?: number | null
-          monthly_request_limit?: number | null
-          name?: string
-          plan_key?: string
-          seat_limit?: number | null
-        }
-        Relationships: []
-      }
-      billing_subscriptions: {
-        Row: {
-          cancel_at_period_end: boolean
-          created_at: string
-          current_period_end: string | null
-          current_period_start: string | null
-          last_event_at: string | null
-          last_event_id: string | null
-          org_id: string
-          plan_key: string
-          provider_customer_id: string | null
-          provider_subscription_id: string | null
-          status: string
-          trial_ends_at: string | null
-          updated_at: string
-        }
-        Insert: {
-          cancel_at_period_end?: boolean
-          created_at?: string
-          current_period_end?: string | null
-          current_period_start?: string | null
-          last_event_at?: string | null
-          last_event_id?: string | null
-          org_id: string
-          plan_key: string
-          provider_customer_id?: string | null
-          provider_subscription_id?: string | null
-          status: string
-          trial_ends_at?: string | null
-          updated_at?: string
-        }
-        Update: {
-          cancel_at_period_end?: boolean
-          created_at?: string
-          current_period_end?: string | null
-          current_period_start?: string | null
-          last_event_at?: string | null
-          last_event_id?: string | null
-          org_id?: string
-          plan_key?: string
-          provider_customer_id?: string | null
-          provider_subscription_id?: string | null
-          status?: string
-          trial_ends_at?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "billing_subscriptions_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "billing_subscriptions_plan_key_fkey"
-            columns: ["plan_key"]
-            isOneToOne: false
-            referencedRelation: "billing_plans"
-            referencedColumns: ["plan_key"]
-          },
-        ]
-      }
+        ];
+      };
       budgets: {
         Row: {
-          action_on_exceed: Database["public"]["Enums"]["gov_action"]
-          created_at: string
-          id: string
-          limit_usd: number
-          name: string
-          org_id: string
-          period: string
-          scope: string
-          scope_ref: string | null
-          status: Database["public"]["Enums"]["lifecycle_status"]
-        }
+          action_on_exceed: Database["public"]["Enums"]["gov_action"];
+          created_at: string;
+          id: string;
+          limit_usd: number;
+          name: string;
+          org_id: string;
+          period: string;
+          scope: string;
+          scope_ref: string | null;
+          status: Database["public"]["Enums"]["lifecycle_status"];
+        };
         Insert: {
-          action_on_exceed?: Database["public"]["Enums"]["gov_action"]
-          created_at?: string
-          id?: string
-          limit_usd: number
-          name: string
-          org_id: string
-          period?: string
-          scope?: string
-          scope_ref?: string | null
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-        }
+          action_on_exceed?: Database["public"]["Enums"]["gov_action"];
+          created_at?: string;
+          id?: string;
+          limit_usd: number;
+          name: string;
+          org_id: string;
+          period?: string;
+          scope?: string;
+          scope_ref?: string | null;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+        };
         Update: {
-          action_on_exceed?: Database["public"]["Enums"]["gov_action"]
-          created_at?: string
-          id?: string
-          limit_usd?: number
-          name?: string
-          org_id?: string
-          period?: string
-          scope?: string
-          scope_ref?: string | null
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-        }
+          action_on_exceed?: Database["public"]["Enums"]["gov_action"];
+          created_at?: string;
+          id?: string;
+          limit_usd?: number;
+          name?: string;
+          org_id?: string;
+          period?: string;
+          scope?: string;
+          scope_ref?: string | null;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+        };
         Relationships: [
           {
-            foreignKeyName: "budgets_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "budgets_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
-        ]
-      }
-      gateway_reservations: {
-        Row: {
-          created_at: string
-          idempotency_key: string
-          org_id: string
-          reserved_usd: number
-          settled: boolean
-        }
-        Insert: {
-          created_at?: string
-          idempotency_key: string
-          org_id: string
-          reserved_usd: number
-          settled?: boolean
-        }
-        Update: {
-          created_at?: string
-          idempotency_key?: string
-          org_id?: string
-          reserved_usd?: number
-          settled?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gateway_reservations_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+        ];
+      };
       mcp_servers: {
         Row: {
-          auth_mode: string
-          created_at: string
-          created_by: string
-          id: string
-          name: string
-          org_id: string
-          status: Database["public"]["Enums"]["lifecycle_status"]
-          transport: string
-          updated_at: string
-          url: string
-        }
+          auth_mode: string;
+          created_at: string;
+          created_by: string;
+          id: string;
+          name: string;
+          org_id: string;
+          status: Database["public"]["Enums"]["lifecycle_status"];
+          transport: string;
+          updated_at: string;
+          url: string;
+        };
         Insert: {
-          auth_mode?: string
-          created_at?: string
-          created_by: string
-          id?: string
-          name: string
-          org_id: string
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-          transport?: string
-          updated_at?: string
-          url: string
-        }
+          auth_mode?: string;
+          created_at?: string;
+          created_by: string;
+          id?: string;
+          name: string;
+          org_id: string;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+          transport?: string;
+          updated_at?: string;
+          url: string;
+        };
         Update: {
-          auth_mode?: string
-          created_at?: string
-          created_by?: string
-          id?: string
-          name?: string
-          org_id?: string
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-          transport?: string
-          updated_at?: string
-          url?: string
-        }
+          auth_mode?: string;
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          name?: string;
+          org_id?: string;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+          transport?: string;
+          updated_at?: string;
+          url?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "mcp_servers_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "mcp_servers_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       mcp_tool_grants: {
         Row: {
-          agent_id: string
-          created_at: string
-          granted_by: string
-          id: string
-          org_id: string
-          requires_approval: boolean
-          tool_id: string
-        }
+          agent_id: string;
+          created_at: string;
+          granted_by: string;
+          id: string;
+          org_id: string;
+          requires_approval: boolean;
+          tool_id: string;
+        };
         Insert: {
-          agent_id: string
-          created_at?: string
-          granted_by: string
-          id?: string
-          org_id: string
-          requires_approval?: boolean
-          tool_id: string
-        }
+          agent_id: string;
+          created_at?: string;
+          granted_by: string;
+          id?: string;
+          org_id: string;
+          requires_approval?: boolean;
+          tool_id: string;
+        };
         Update: {
-          agent_id?: string
-          created_at?: string
-          granted_by?: string
-          id?: string
-          org_id?: string
-          requires_approval?: boolean
-          tool_id?: string
-        }
+          agent_id?: string;
+          created_at?: string;
+          granted_by?: string;
+          id?: string;
+          org_id?: string;
+          requires_approval?: boolean;
+          tool_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "mcp_tool_grants_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "agents"
-            referencedColumns: ["id"]
+            foreignKeyName: "mcp_tool_grants_agent_id_fkey";
+            columns: ["agent_id"];
+            isOneToOne: false;
+            referencedRelation: "agents";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "mcp_tool_grants_org_agent_fk"
-            columns: ["org_id", "agent_id"]
-            isOneToOne: false
-            referencedRelation: "agents"
-            referencedColumns: ["org_id", "id"]
+            foreignKeyName: "mcp_tool_grants_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "mcp_tool_grants_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "mcp_tool_grants_tool_id_fkey";
+            columns: ["tool_id"];
+            isOneToOne: false;
+            referencedRelation: "mcp_tools";
+            referencedColumns: ["id"];
           },
-          {
-            foreignKeyName: "mcp_tool_grants_org_tool_fk"
-            columns: ["org_id", "tool_id"]
-            isOneToOne: false
-            referencedRelation: "mcp_tools"
-            referencedColumns: ["org_id", "id"]
-          },
-          {
-            foreignKeyName: "mcp_tool_grants_tool_id_fkey"
-            columns: ["tool_id"]
-            isOneToOne: false
-            referencedRelation: "mcp_tools"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+        ];
+      };
       mcp_tools: {
         Row: {
-          created_at: string
-          definition_hash: string | null
-          description: string | null
-          id: string
-          input_schema: Json
-          org_id: string
-          remote_name: string | null
-          required_capability: string
-          risk: Database["public"]["Enums"]["severity"]
-          server_id: string | null
-          status: Database["public"]["Enums"]["lifecycle_status"]
-          tool_name: string
-        }
+          created_at: string;
+          description: string | null;
+          id: string;
+          org_id: string;
+          required_capability: string;
+          risk: Database["public"]["Enums"]["severity"];
+          server_id: string | null;
+          status: Database["public"]["Enums"]["lifecycle_status"];
+          tool_name: string;
+        };
         Insert: {
-          created_at?: string
-          definition_hash?: string | null
-          description?: string | null
-          id?: string
-          input_schema?: Json
-          org_id: string
-          remote_name?: string | null
-          required_capability: string
-          risk?: Database["public"]["Enums"]["severity"]
-          server_id?: string | null
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-          tool_name: string
-        }
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          org_id: string;
+          required_capability: string;
+          risk?: Database["public"]["Enums"]["severity"];
+          server_id?: string | null;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+          tool_name: string;
+        };
         Update: {
-          created_at?: string
-          definition_hash?: string | null
-          description?: string | null
-          id?: string
-          input_schema?: Json
-          org_id?: string
-          remote_name?: string | null
-          required_capability?: string
-          risk?: Database["public"]["Enums"]["severity"]
-          server_id?: string | null
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-          tool_name?: string
-        }
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          org_id?: string;
+          required_capability?: string;
+          risk?: Database["public"]["Enums"]["severity"];
+          server_id?: string | null;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+          tool_name?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "mcp_tools_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "mcp_tools_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "mcp_tools_org_server_fk"
-            columns: ["org_id", "server_id"]
-            isOneToOne: false
-            referencedRelation: "mcp_servers"
-            referencedColumns: ["org_id", "id"]
+            foreignKeyName: "mcp_tools_server_id_fkey";
+            columns: ["server_id"];
+            isOneToOne: false;
+            referencedRelation: "mcp_servers";
+            referencedColumns: ["id"];
           },
-          {
-            foreignKeyName: "mcp_tools_server_id_fkey"
-            columns: ["server_id"]
-            isOneToOne: false
-            referencedRelation: "mcp_servers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+        ];
+      };
       models: {
         Row: {
-          classification: string
-          context_window: number | null
-          created_at: string
-          display_name: string
-          id: string
-          input_cost_per_1k: number
-          model_key: string
-          org_id: string
-          output_cost_per_1k: number
-          provider_id: string
-          status: Database["public"]["Enums"]["lifecycle_status"]
-        }
+          classification: string;
+          context_window: number | null;
+          created_at: string;
+          display_name: string;
+          id: string;
+          input_cost_per_1k: number;
+          model_key: string;
+          org_id: string;
+          output_cost_per_1k: number;
+          provider_id: string;
+          status: Database["public"]["Enums"]["lifecycle_status"];
+        };
         Insert: {
-          classification?: string
-          context_window?: number | null
-          created_at?: string
-          display_name: string
-          id?: string
-          input_cost_per_1k?: number
-          model_key: string
-          org_id: string
-          output_cost_per_1k?: number
-          provider_id: string
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-        }
+          classification?: string;
+          context_window?: number | null;
+          created_at?: string;
+          display_name: string;
+          id?: string;
+          input_cost_per_1k?: number;
+          model_key: string;
+          org_id: string;
+          output_cost_per_1k?: number;
+          provider_id: string;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+        };
         Update: {
-          classification?: string
-          context_window?: number | null
-          created_at?: string
-          display_name?: string
-          id?: string
-          input_cost_per_1k?: number
-          model_key?: string
-          org_id?: string
-          output_cost_per_1k?: number
-          provider_id?: string
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-        }
+          classification?: string;
+          context_window?: number | null;
+          created_at?: string;
+          display_name?: string;
+          id?: string;
+          input_cost_per_1k?: number;
+          model_key?: string;
+          org_id?: string;
+          output_cost_per_1k?: number;
+          provider_id?: string;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+        };
         Relationships: [
           {
-            foreignKeyName: "models_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "models_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "models_org_provider_fk"
-            columns: ["org_id", "provider_id"]
-            isOneToOne: false
-            referencedRelation: "providers"
-            referencedColumns: ["org_id", "id"]
+            foreignKeyName: "models_provider_id_fkey";
+            columns: ["provider_id"];
+            isOneToOne: false;
+            referencedRelation: "providers";
+            referencedColumns: ["id"];
           },
-          {
-            foreignKeyName: "models_provider_id_fkey"
-            columns: ["provider_id"]
-            isOneToOne: false
-            referencedRelation: "providers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+        ];
+      };
       org_invites: {
         Row: {
-          accepted_at: string | null
-          accepted_by: string | null
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          invited_by: string
-          org_id: string
-          role: Database["public"]["Enums"]["app_role"]
-          status: string
-        }
+          accepted_at: string | null;
+          accepted_by: string | null;
+          created_at: string;
+          email: string;
+          expires_at: string;
+          id: string;
+          invited_by: string;
+          org_id: string;
+          role: Database["public"]["Enums"]["app_role"];
+          status: string;
+        };
         Insert: {
-          accepted_at?: string | null
-          accepted_by?: string | null
-          created_at?: string
-          email: string
-          expires_at?: string
-          id?: string
-          invited_by: string
-          org_id: string
-          role: Database["public"]["Enums"]["app_role"]
-          status?: string
-        }
+          accepted_at?: string | null;
+          accepted_by?: string | null;
+          created_at?: string;
+          email: string;
+          expires_at?: string;
+          id?: string;
+          invited_by: string;
+          org_id: string;
+          role: Database["public"]["Enums"]["app_role"];
+          status?: string;
+        };
         Update: {
-          accepted_at?: string | null
-          accepted_by?: string | null
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          invited_by?: string
-          org_id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          status?: string
-        }
+          accepted_at?: string | null;
+          accepted_by?: string | null;
+          created_at?: string;
+          email?: string;
+          expires_at?: string;
+          id?: string;
+          invited_by?: string;
+          org_id?: string;
+          role?: Database["public"]["Enums"]["app_role"];
+          status?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "org_invites_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "org_invites_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       org_members: {
         Row: {
-          created_at: string
-          id: string
-          org_id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at: string;
+          id: string;
+          org_id: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          org_id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at?: string;
+          id?: string;
+          org_id: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          org_id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
+          created_at?: string;
+          id?: string;
+          org_id?: string;
+          role?: Database["public"]["Enums"]["app_role"];
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "org_members_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "org_members_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       organizations: {
         Row: {
-          created_at: string
-          created_by: string
-          id: string
-          name: string
-          slug: string
-        }
+          created_at: string;
+          created_by: string;
+          id: string;
+          name: string;
+          slug: string;
+        };
         Insert: {
-          created_at?: string
-          created_by: string
-          id?: string
-          name: string
-          slug: string
-        }
+          created_at?: string;
+          created_by: string;
+          id?: string;
+          name: string;
+          slug: string;
+        };
         Update: {
-          created_at?: string
-          created_by?: string
-          id?: string
-          name?: string
-          slug?: string
-        }
-        Relationships: []
-      }
-      paddle_webhook_events: {
-        Row: {
-          event_id: string
-          event_type: string
-          occurred_at: string
-          org_id: string
-          processed_at: string
-          provider_subscription_id: string
-          result: string
-        }
-        Insert: {
-          event_id: string
-          event_type: string
-          occurred_at: string
-          org_id: string
-          processed_at?: string
-          provider_subscription_id: string
-          result: string
-        }
-        Update: {
-          event_id?: string
-          event_type?: string
-          occurred_at?: string
-          org_id?: string
-          processed_at?: string
-          provider_subscription_id?: string
-          result?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "paddle_webhook_events_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          name?: string;
+          slug?: string;
+        };
+        Relationships: [];
+      };
       policies: {
         Row: {
-          action: Database["public"]["Enums"]["gov_action"]
-          conditions: Json
-          created_at: string
-          created_by: string
-          description: string | null
-          effective_from: string
-          id: string
-          name: string
-          org_id: string
-          priority: number
-          scope: string
-          status: Database["public"]["Enums"]["lifecycle_status"]
-          updated_at: string
-          version: number
-        }
+          action: Database["public"]["Enums"]["gov_action"];
+          conditions: Json;
+          created_at: string;
+          created_by: string;
+          description: string | null;
+          effective_from: string;
+          id: string;
+          name: string;
+          org_id: string;
+          priority: number;
+          scope: string;
+          status: Database["public"]["Enums"]["lifecycle_status"];
+          updated_at: string;
+          version: number;
+        };
         Insert: {
-          action: Database["public"]["Enums"]["gov_action"]
-          conditions?: Json
-          created_at?: string
-          created_by: string
-          description?: string | null
-          effective_from?: string
-          id?: string
-          name: string
-          org_id: string
-          priority?: number
-          scope?: string
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-          updated_at?: string
-          version?: number
-        }
+          action: Database["public"]["Enums"]["gov_action"];
+          conditions?: Json;
+          created_at?: string;
+          created_by: string;
+          description?: string | null;
+          effective_from?: string;
+          id?: string;
+          name: string;
+          org_id: string;
+          priority?: number;
+          scope?: string;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+          updated_at?: string;
+          version?: number;
+        };
         Update: {
-          action?: Database["public"]["Enums"]["gov_action"]
-          conditions?: Json
-          created_at?: string
-          created_by?: string
-          description?: string | null
-          effective_from?: string
-          id?: string
-          name?: string
-          org_id?: string
-          priority?: number
-          scope?: string
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-          updated_at?: string
-          version?: number
-        }
+          action?: Database["public"]["Enums"]["gov_action"];
+          conditions?: Json;
+          created_at?: string;
+          created_by?: string;
+          description?: string | null;
+          effective_from?: string;
+          id?: string;
+          name?: string;
+          org_id?: string;
+          priority?: number;
+          scope?: string;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+          updated_at?: string;
+          version?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "policies_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "policies_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       policy_versions: {
         Row: {
-          change_note: string | null
-          created_at: string
-          created_by: string
-          id: string
-          org_id: string
-          policy_id: string
-          snapshot: Json
-          version: number
-        }
+          change_note: string | null;
+          created_at: string;
+          created_by: string;
+          id: string;
+          org_id: string;
+          policy_id: string;
+          snapshot: Json;
+          version: number;
+        };
         Insert: {
-          change_note?: string | null
-          created_at?: string
-          created_by: string
-          id?: string
-          org_id: string
-          policy_id: string
-          snapshot: Json
-          version: number
-        }
+          change_note?: string | null;
+          created_at?: string;
+          created_by: string;
+          id?: string;
+          org_id: string;
+          policy_id: string;
+          snapshot: Json;
+          version: number;
+        };
         Update: {
-          change_note?: string | null
-          created_at?: string
-          created_by?: string
-          id?: string
-          org_id?: string
-          policy_id?: string
-          snapshot?: Json
-          version?: number
-        }
+          change_note?: string | null;
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          org_id?: string;
+          policy_id?: string;
+          snapshot?: Json;
+          version?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "policy_versions_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "policy_versions_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "policy_versions_policy_id_fkey"
-            columns: ["policy_id"]
-            isOneToOne: false
-            referencedRelation: "policies"
-            referencedColumns: ["id"]
+            foreignKeyName: "policy_versions_policy_id_fkey";
+            columns: ["policy_id"];
+            isOneToOne: false;
+            referencedRelation: "policies";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       profiles: {
         Row: {
-          created_at: string
-          email: string | null
-          full_name: string | null
-          id: string
-        }
+          created_at: string;
+          email: string | null;
+          full_name: string | null;
+          id: string;
+        };
         Insert: {
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          id: string
-        }
+          created_at?: string;
+          email?: string | null;
+          full_name?: string | null;
+          id: string;
+        };
         Update: {
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          email?: string | null;
+          full_name?: string | null;
+          id?: string;
+        };
+        Relationships: [];
+      };
       providers: {
         Row: {
-          created_at: string
-          credential_state: string
-          id: string
-          name: string
-          org_id: string
-          region: string | null
-          status: Database["public"]["Enums"]["lifecycle_status"]
-          vendor: string
-        }
+          created_at: string;
+          credential_state: string;
+          id: string;
+          name: string;
+          org_id: string;
+          region: string | null;
+          status: Database["public"]["Enums"]["lifecycle_status"];
+          vendor: string;
+        };
         Insert: {
-          created_at?: string
-          credential_state?: string
-          id?: string
-          name: string
-          org_id: string
-          region?: string | null
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-          vendor: string
-        }
+          created_at?: string;
+          credential_state?: string;
+          id?: string;
+          name: string;
+          org_id: string;
+          region?: string | null;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+          vendor: string;
+        };
         Update: {
-          created_at?: string
-          credential_state?: string
-          id?: string
-          name?: string
-          org_id?: string
-          region?: string | null
-          status?: Database["public"]["Enums"]["lifecycle_status"]
-          vendor?: string
-        }
+          created_at?: string;
+          credential_state?: string;
+          id?: string;
+          name?: string;
+          org_id?: string;
+          region?: string | null;
+          status?: Database["public"]["Enums"]["lifecycle_status"];
+          vendor?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "providers_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "providers_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       requests: {
         Row: {
-          actor_type: string
-          agent_id: string | null
-          cost_usd: number
-          created_at: string
-          decision: Database["public"]["Enums"]["gov_action"]
-          id: string
-          idempotency_key: string | null
-          input_tokens: number
-          latency_ms: number
-          matched_rules: Json
-          model: string | null
-          org_id: string
-          output_tokens: number
-          policy_id: string | null
-          policy_version: number | null
-          prompt_preview: string | null
-          provider: string | null
-          reason: string | null
-          redacted: boolean
-          response_preview: string | null
-          source: string
-          status: string
-          user_id: string | null
-        }
+          actor_type: string;
+          agent_id: string | null;
+          cost_usd: number;
+          created_at: string;
+          decision: Database["public"]["Enums"]["gov_action"];
+          id: string;
+          idempotency_key: string | null;
+          input_tokens: number;
+          latency_ms: number;
+          matched_rules: Json;
+          model: string | null;
+          org_id: string;
+          output_tokens: number;
+          policy_id: string | null;
+          policy_version: number | null;
+          prompt_preview: string | null;
+          provider: string | null;
+          reason: string | null;
+          redacted: boolean;
+          response_preview: string | null;
+          source: string;
+          status: string;
+          user_id: string | null;
+        };
         Insert: {
-          actor_type?: string
-          agent_id?: string | null
-          cost_usd?: number
-          created_at?: string
-          decision: Database["public"]["Enums"]["gov_action"]
-          id?: string
-          idempotency_key?: string | null
-          input_tokens?: number
-          latency_ms?: number
-          matched_rules?: Json
-          model?: string | null
-          org_id: string
-          output_tokens?: number
-          policy_id?: string | null
-          policy_version?: number | null
-          prompt_preview?: string | null
-          provider?: string | null
-          reason?: string | null
-          redacted?: boolean
-          response_preview?: string | null
-          source?: string
-          status?: string
-          user_id?: string | null
-        }
+          actor_type?: string;
+          agent_id?: string | null;
+          cost_usd?: number;
+          created_at?: string;
+          decision: Database["public"]["Enums"]["gov_action"];
+          id?: string;
+          idempotency_key?: string | null;
+          input_tokens?: number;
+          latency_ms?: number;
+          matched_rules?: Json;
+          model?: string | null;
+          org_id: string;
+          output_tokens?: number;
+          policy_id?: string | null;
+          policy_version?: number | null;
+          prompt_preview?: string | null;
+          provider?: string | null;
+          reason?: string | null;
+          redacted?: boolean;
+          response_preview?: string | null;
+          source?: string;
+          status?: string;
+          user_id?: string | null;
+        };
         Update: {
-          actor_type?: string
-          agent_id?: string | null
-          cost_usd?: number
-          created_at?: string
-          decision?: Database["public"]["Enums"]["gov_action"]
-          id?: string
-          idempotency_key?: string | null
-          input_tokens?: number
-          latency_ms?: number
-          matched_rules?: Json
-          model?: string | null
-          org_id?: string
-          output_tokens?: number
-          policy_id?: string | null
-          policy_version?: number | null
-          prompt_preview?: string | null
-          provider?: string | null
-          reason?: string | null
-          redacted?: boolean
-          response_preview?: string | null
-          source?: string
-          status?: string
-          user_id?: string | null
-        }
+          actor_type?: string;
+          agent_id?: string | null;
+          cost_usd?: number;
+          created_at?: string;
+          decision?: Database["public"]["Enums"]["gov_action"];
+          id?: string;
+          idempotency_key?: string | null;
+          input_tokens?: number;
+          latency_ms?: number;
+          matched_rules?: Json;
+          model?: string | null;
+          org_id?: string;
+          output_tokens?: number;
+          policy_id?: string | null;
+          policy_version?: number | null;
+          prompt_preview?: string | null;
+          provider?: string | null;
+          reason?: string | null;
+          redacted?: boolean;
+          response_preview?: string | null;
+          source?: string;
+          status?: string;
+          user_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "requests_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "agents"
-            referencedColumns: ["id"]
+            foreignKeyName: "requests_agent_id_fkey";
+            columns: ["agent_id"];
+            isOneToOne: false;
+            referencedRelation: "agents";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "requests_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "requests_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       security_findings: {
         Row: {
-          affected_resource: string | null
-          category: string
-          confidence: number | null
-          created_at: string
-          detection_source: string
-          evidence: Json
-          id: string
-          org_id: string
-          remediation: string | null
-          request_id: string | null
-          severity: Database["public"]["Enums"]["severity"]
-          status: string
-          title: string
-        }
+          affected_resource: string | null;
+          category: string;
+          confidence: number | null;
+          created_at: string;
+          detection_source: string;
+          evidence: Json;
+          id: string;
+          org_id: string;
+          remediation: string | null;
+          request_id: string | null;
+          severity: Database["public"]["Enums"]["severity"];
+          status: string;
+          title: string;
+        };
         Insert: {
-          affected_resource?: string | null
-          category: string
-          confidence?: number | null
-          created_at?: string
-          detection_source?: string
-          evidence?: Json
-          id?: string
-          org_id: string
-          remediation?: string | null
-          request_id?: string | null
-          severity: Database["public"]["Enums"]["severity"]
-          status?: string
-          title: string
-        }
+          affected_resource?: string | null;
+          category: string;
+          confidence?: number | null;
+          created_at?: string;
+          detection_source?: string;
+          evidence?: Json;
+          id?: string;
+          org_id: string;
+          remediation?: string | null;
+          request_id?: string | null;
+          severity: Database["public"]["Enums"]["severity"];
+          status?: string;
+          title: string;
+        };
         Update: {
-          affected_resource?: string | null
-          category?: string
-          confidence?: number | null
-          created_at?: string
-          detection_source?: string
-          evidence?: Json
-          id?: string
-          org_id?: string
-          remediation?: string | null
-          request_id?: string | null
-          severity?: Database["public"]["Enums"]["severity"]
-          status?: string
-          title?: string
-        }
+          affected_resource?: string | null;
+          category?: string;
+          confidence?: number | null;
+          created_at?: string;
+          detection_source?: string;
+          evidence?: Json;
+          id?: string;
+          org_id?: string;
+          remediation?: string | null;
+          request_id?: string | null;
+          severity?: Database["public"]["Enums"]["severity"];
+          status?: string;
+          title?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "security_findings_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            foreignKeyName: "security_findings_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "security_findings_org_request_fk"
-            columns: ["org_id", "request_id"]
-            isOneToOne: false
-            referencedRelation: "requests"
-            referencedColumns: ["org_id", "id"]
+            foreignKeyName: "security_findings_request_id_fkey";
+            columns: ["request_id"];
+            isOneToOne: false;
+            referencedRelation: "requests";
+            referencedColumns: ["id"];
           },
-          {
-            foreignKeyName: "security_findings_request_id_fkey"
-            columns: ["request_id"]
-            isOneToOne: false
-            referencedRelation: "requests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tool_invocations: {
-        Row: {
-          agent_id: string
-          created_at: string
-          decision: string
-          id: string
-          idempotency_key: string
-          org_id: string
-          reason: string | null
-          status: string
-          tool_id: string
-        }
-        Insert: {
-          agent_id: string
-          created_at?: string
-          decision?: string
-          id?: string
-          idempotency_key: string
-          org_id: string
-          reason?: string | null
-          status?: string
-          tool_id: string
-        }
-        Update: {
-          agent_id?: string
-          created_at?: string
-          decision?: string
-          id?: string
-          idempotency_key?: string
-          org_id?: string
-          reason?: string | null
-          status?: string
-          tool_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tool_invocations_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "agents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tool_invocations_org_agent_fk"
-            columns: ["org_id", "agent_id"]
-            isOneToOne: false
-            referencedRelation: "agents"
-            referencedColumns: ["org_id", "id"]
-          },
-          {
-            foreignKeyName: "tool_invocations_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tool_invocations_org_tool_fk"
-            columns: ["org_id", "tool_id"]
-            isOneToOne: false
-            referencedRelation: "mcp_tools"
-            referencedColumns: ["org_id", "id"]
-          },
-          {
-            foreignKeyName: "tool_invocations_tool_id_fkey"
-            columns: ["tool_id"]
-            isOneToOne: false
-            referencedRelation: "mcp_tools"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
+        ];
+      };
+    };
     Views: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Functions: {
-      nexora_agent_finding: {
-        Args: {
-          p_agent: string
-          p_finding: string
-          p_org: string
-          p_status: string
-        }
-        Returns: undefined
-      }
-      nexora_agent_usage: {
-        Args: { p_org: string }
-        Returns: {
-          agent_id: string
-          cost_usd: number
-          input_tokens: number
-          last_used_at: string
-          output_tokens: number
-          request_count: number
-        }[]
-      }
-      nexora_apply_paddle_event: {
-        Args: {
-          p_cancel_at_period_end: boolean
-          p_customer: string
-          p_event_id: string
-          p_event_type: string
-          p_occurred_at: string
-          p_org: string
-          p_period_end: string
-          p_period_start: string
-          p_plan_key: string
-          p_signed_identity: boolean
-          p_status: string
-          p_subscription: string
-        }
-        Returns: Json
-      }
-      nexora_billing_usage: { Args: { p_org: string }; Returns: Json }
-      nexora_claim_agent: {
-        Args: {
-          p_actor?: string
-          p_agent: string
-          p_hash?: string
-          p_key: string
-        }
-        Returns: Json
-      }
-      nexora_consent_connection: {
-        Args: {
-          p_actor: string
-          p_allow: boolean
-          p_code: string
-          p_org: string
-          p_scopes: string[]
-        }
-        Returns: string
-      }
-      nexora_decide_approval: {
-        Args: {
-          p_actor: string
-          p_decision: string
-          p_id: string
-          p_org: string
-        }
-        Returns: Json
-      }
-      nexora_exchange_connection: {
-        Args: { p_hash: string; p_prefix: string; p_token_hash: string }
-        Returns: Json
-      }
-      nexora_monthly_spend: { Args: { p_org: string }; Returns: number }
-      nexora_reserve: {
-        Args: { p_cost: number; p_key: string; p_org: string }
-        Returns: Json
-      }
-      nexora_revoke_connection: {
-        Args: { p_actor: string; p_agent: string; p_org: string }
-        Returns: undefined
-      }
-      nexora_rotate_agent: {
-        Args: {
-          p_actor: string
-          p_agent: string
-          p_hash: string
-          p_org: string
-          p_prefix: string
-        }
-        Returns: undefined
-      }
-      nexora_settle: {
-        Args: { p_key: string; p_org: string }
-        Returns: undefined
-      }
-      nexora_start_connection: {
-        Args: {
-          p_code: string
-          p_hash: string
-          p_name: string
-          p_scopes: string[]
-        }
-        Returns: undefined
-      }
-    }
+      [_ in never]: never;
+    };
     Enums: {
       app_role:
         | "platform_admin"
@@ -1459,133 +954,127 @@ export type Database = {
         | "security_analyst"
         | "auditor"
         | "developer"
-        | "viewer"
-      gov_action: "ALLOW" | "LOG" | "REDACT" | "REQUIRE_APPROVAL" | "BLOCK"
-      lifecycle_status: "draft" | "active" | "suspended" | "archived"
-      severity: "critical" | "high" | "medium" | "low" | "info"
-    }
+        | "viewer";
+      gov_action: "ALLOW" | "LOG" | "REDACT" | "REQUIRE_APPROVAL" | "BLOCK";
+      lifecycle_status: "draft" | "active" | "suspended" | "archived";
+      severity: "critical" | "high" | "medium" | "low" | "info";
+    };
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
+      [_ in never]: never;
+    };
+  };
+};
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+      Row: infer R;
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
       }
       ? R
       : never
-    : never
+    : never;
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+      Insert: infer I;
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
+        Insert: infer I;
       }
       ? I
       : never
-    : never
+    : never;
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+      Update: infer U;
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
+        Update: infer U;
       }
       ? U
       : never
-    : never
+    : never;
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+    : never;
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+    : never;
 
 export const Constants = {
   public: {
@@ -1606,4 +1095,4 @@ export const Constants = {
       severity: ["critical", "high", "medium", "low", "info"],
     },
   },
-} as const
+} as const;

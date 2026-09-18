@@ -14,7 +14,10 @@ export const Route = createFileRoute("/_authenticated/governance/budgets")({
           "Server-side cost governance: organization budgets, periods and the enforcement action taken when a limit is exceeded.",
       },
       { property: "og:title", content: "Budgets & Quotas — NEXORA" },
-      { property: "og:description", content: "Cost governance and enforcement actions." },
+      {
+        property: "og:description",
+        content: "Cost governance and enforcement actions.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -37,7 +40,10 @@ function Budgets() {
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <Metric label="Month-to-date spend" value={`$${spend.toFixed(4)}`} tone="primary" />
-        <Metric label="Active budgets" value={budgets.filter((b) => b.status === "active").length} />
+        <Metric
+          label="Active budgets"
+          value={budgets.filter((b) => b.status === "active").length}
+        />
         <Metric
           label="Headroom"
           value={`$${Math.max(0, Number(budgets[0]?.limit_usd ?? 0) - spend).toFixed(2)}`}

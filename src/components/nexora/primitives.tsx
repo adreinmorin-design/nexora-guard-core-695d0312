@@ -18,7 +18,9 @@ export function PageHeader({
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1 className="text-2xl font-semibold">{title}</h1>
-        {subtitle ? <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{subtitle}</p> : null}
+        {subtitle ? (
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{subtitle}</p>
+        ) : null}
       </div>
       {actions}
     </div>
@@ -125,13 +127,7 @@ export function NotConfigured({ module, note }: { module: string; note?: string 
   );
 }
 
-export function DataTable({
-  columns,
-  rows,
-}: {
-  columns: string[];
-  rows: ReactNode[][];
-}) {
+export function DataTable({ columns, rows }: { columns: string[]; rows: ReactNode[][] }) {
   return (
     <div className="panel overflow-x-auto">
       <table className="w-full min-w-[720px] text-sm">

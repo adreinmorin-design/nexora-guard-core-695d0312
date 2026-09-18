@@ -4,12 +4,22 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "test:security": "node --import ./tests/resolve-ts.mjs --test tests/security-suite.test.mjs",
+    "test:agents": "node --import ./tests/resolve-ts.mjs --test tests/agent-integration.test.mjs",
+    "test:providers": "node --import ./tests/resolve-ts.mjs --test tests/providers.test.mjs",
+    "test:paddle": "node --import ./tests/resolve-ts.mjs --test tests/paddle.test.mjs",
+    "test:billing": "node --import ./tests/resolve-ts.mjs --test tests/billing.test.mjs",
+    "test:gateway": "node --import ./tests/resolve-ts.mjs --test tests/gateway.test.mjs",
+    "test:database": "node --test tests/database.test.mjs",
     "dev": "vite dev",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "lint": "eslint .",
-    "format": "prettier --write ."
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:hardening": "node --import ./tests/resolve-ts.mjs --test tests/hardening.test.mjs tests/auth-runtime.test.mjs",
+    "test:monitoring": "node --import ./tests/resolve-ts.mjs --test tests/monitoring.test.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -70,6 +80,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "^2.20.0",
     "@types/node": "^22.16.5",
@@ -87,5 +98,6 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5"
-  }
+  },
+  "packageManager": "bun@1.4.2"
 }
