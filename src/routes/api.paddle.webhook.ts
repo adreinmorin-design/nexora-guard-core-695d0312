@@ -90,8 +90,17 @@ export const Route = createFileRoute("/api/paddle/webhook")({
         }
         const { verifyPaddleWebhook, resolvePaddleWebhookIdentity } =
           await import("@/lib/paddle.server");
-        if (!verifyPaddleWebhook(raw, request.headers.get("paddle-signature")))
+        if (!verifyPaddleWebhook(raw, request.headers.get("paddle-signature"))) {
+          const { notifySlackAlert } = await import("@/lib/monitoring.server");
+          await notifySlackAlert({
+            category: "security",
+            severity: "warning",
+            summary: "Rejected Paddle webhook with an invalid signature",
+            route: "/api/paddle/webhook",
+            status: 401,
+          });
           return new Response("Invalid signature", { status: 401 });
+        }
 
         let event;
         try {
