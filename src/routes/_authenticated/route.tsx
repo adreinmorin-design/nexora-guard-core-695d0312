@@ -45,7 +45,9 @@ function AuthenticatedLayout() {
       <div className="grid min-h-screen place-items-center bg-background px-4">
         <div className="panel w-full max-w-md p-6">
           <p className="label-caps">NEXORA</p>
-          <h1 className="mt-2 font-display text-lg font-semibold">Workspace initialization failed</h1>
+          <h1 className="mt-2 font-display text-lg font-semibold">
+            Workspace initialization failed
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Your sign-in succeeded, but the control plane could not initialize your organization.
             This is a backend or deployment configuration error, not an invalid password.
