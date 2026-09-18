@@ -30,10 +30,16 @@ test("public Supabase config safely falls back to server values", () => {
   assert.deepEqual(config.missing, []);
 });
 
-test("public Supabase config reports incomplete deployment configuration", () => {
+test("public Supabase config falls back to browser-safe deployment defaults", () => {
   const config = resolvePublicSupabaseConfig({}, {});
 
-  assert.equal(config.url, undefined);
-  assert.equal(config.publishableKey, undefined);
-  assert.deepEqual(config.missing, ["SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY"]);
+  assert.equal(
+    config.url,
+    "https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud",
+  );
+  assert.equal(
+    config.publishableKey,
+    "sb_publishable_eWI2U31KL-zYV8Mn_AzGlw_40-gaGMC",
+  );
+  assert.deepEqual(config.missing, []);
 });
