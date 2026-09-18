@@ -50,6 +50,27 @@ async function alertServerFailure(request: Request, response: Response) {
   });
 }
 
+async function healthResponse(): Promise<Response> {
+  try {
+    const { supabaseAdmin } = await import("./integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("organizations")
+      .select("id", { head: true, count: "exact" })
+      .limit(1);
+    if (error) throw error;
+    return Response.json(
+      { status: "ok" },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (error) {
+    console.error(error);
+    return Response.json(
+      { status: "degraded" },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+}
+
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
@@ -79,6 +100,13 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+      if (request.method === "GET" && url.pathname === "/api/health") {
+        const response = await healthResponse();
+        await alertServerFailure(request, response);
+        return applySecurityHeaders(request, response);
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       const normalized = await normalizeCatastrophicSsrResponse(response);
