@@ -36,6 +36,28 @@ jobs:
       - run: bun run test:paddle
       - run: bun run test:billing
       - run: bun run test:database
+      - run: bun run test:monitoring
       - run: bun run test:hardening
       - run: bunx tsc --noEmit
       - run: bun run build
+      - name: Alert Slack on CI failure
+        if: ${{ failure() }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_WEBHOOK_URL is not configured; CI failure alert skipped."
+            exit 0
+          fi
+          payload="$(node -e 'const p={text:`[NEXORA CRITICAL] CI failed for ${process.env.REPO}@${process.env.REF} (${process.env.SHA.slice(0,7)}) by ${process.env.ACTOR}. ${process.env.RUN_URL}`}; process.stdout.write(JSON.stringify(p))')"
+          curl --fail --silent --show-error --max-time 10 \
+            -H "Content-Type: application/json" \
+            --data "$payload" \
+            "$SLACK_WEBHOOK_URL" \
+            || echo "::warning::Slack CI alert delivery failed."
