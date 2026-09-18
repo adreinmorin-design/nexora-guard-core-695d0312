@@ -92,6 +92,21 @@ Paddle activation requires a client token, signed checkout secret, webhook
 secret and four recurring price IDs. See [`docs/billing.md`](docs/billing.md).
 Never put server secrets in `VITE_` variables.
 
+Optional Slack operational alerts:
+
+```text
+NEXORA_ENVIRONMENT=production
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+```
+
+`SLACK_WEBHOOK_URL` must be an Incoming Webhook URL for `hooks.slack.com`
+(or Slack Gov). It remains server-only. Nexora sends bounded operational
+metadata only: severity, category, environment, route, HTTP status, provider
+and event type. Prompts, request bodies, credentials, tenant identifiers and
+user identifiers are intentionally excluded. Repeated identical runtime alerts
+are deduplicated for 60 seconds. CI also uses the same secret to report failed
+validation runs.
+
 ## Local development
 
 ```bash
@@ -109,6 +124,7 @@ npm run test:providers
 npm run test:paddle
 npm run test:billing
 npm run test:database
+npm run test:monitoring
 npm run lint
 npx tsc --noEmit
 npm run build
@@ -150,7 +166,8 @@ production use outside the owner's organization.
 ## Security-sensitive deployment configuration
 
 - Keep `SUPABASE_SERVICE_ROLE_KEY`, provider API keys, MCP bearer tokens,
-  `PADDLE_WEBHOOK_SECRET`, and `PADDLE_CHECKOUT_SIGNING_SECRET` server-only.
+  `PADDLE_WEBHOOK_SECRET`, `PADDLE_CHECKOUT_SIGNING_SECRET`, and
+  `SLACK_WEBHOOK_URL` server-only.
 - Configure `PROVIDER_ALLOWED_ORIGINS` for every non-default or OpenAI-compatible
   provider endpoint. Endpoints that are not HTTPS or not explicitly allowlisted
   fail closed.
