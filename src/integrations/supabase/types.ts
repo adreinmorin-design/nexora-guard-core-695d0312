@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_calls: {
+        Row: {
+          agent_id: string
+          created_at: string
+          idempotency_key: string
+          org_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          idempotency_key: string
+          org_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          idempotency_key?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_calls_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_calls_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_capabilities: {
         Row: {
           agent_id: string
@@ -48,7 +84,71 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "agent_capabilities_org_agent_fk"
+            columns: ["org_id", "agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
             foreignKeyName: "agent_capabilities_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_connections: {
+        Row: {
+          agent_id: string | null
+          approved_by: string | null
+          client_name: string
+          created_at: string
+          device_hash: string
+          expires_at: string
+          last_polled_at: string | null
+          org_id: string | null
+          scopes: string[]
+          status: string
+          user_code: string
+        }
+        Insert: {
+          agent_id?: string | null
+          approved_by?: string | null
+          client_name: string
+          created_at?: string
+          device_hash: string
+          expires_at?: string
+          last_polled_at?: string | null
+          org_id?: string | null
+          scopes: string[]
+          status?: string
+          user_code: string
+        }
+        Update: {
+          agent_id?: string | null
+          approved_by?: string | null
+          client_name?: string
+          created_at?: string
+          device_hash?: string
+          expires_at?: string
+          last_polled_at?: string | null
+          org_id?: string | null
+          scopes?: string[]
+          status?: string
+          user_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_connections_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_connections_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -59,6 +159,7 @@ export type Database = {
       agents: {
         Row: {
           created_at: string
+          credential_expires_at: string | null
           description: string | null
           id: string
           last_used_at: string | null
@@ -73,6 +174,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          credential_expires_at?: string | null
           description?: string | null
           id?: string
           last_used_at?: string | null
@@ -87,6 +189,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          credential_expires_at?: string | null
           description?: string | null
           id?: string
           last_used_at?: string | null
@@ -188,6 +291,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "approvals_org_request_fk"
+            columns: ["org_id", "request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
             foreignKeyName: "approvals_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
@@ -261,6 +371,108 @@ export type Database = {
           },
         ]
       }
+      billing_plans: {
+        Row: {
+          active: boolean
+          agent_limit: number | null
+          annual_price_usd: number | null
+          audit_retention_days: number | null
+          mcp_server_limit: number | null
+          monthly_price_usd: number | null
+          monthly_request_limit: number | null
+          name: string
+          plan_key: string
+          seat_limit: number | null
+        }
+        Insert: {
+          active?: boolean
+          agent_limit?: number | null
+          annual_price_usd?: number | null
+          audit_retention_days?: number | null
+          mcp_server_limit?: number | null
+          monthly_price_usd?: number | null
+          monthly_request_limit?: number | null
+          name: string
+          plan_key: string
+          seat_limit?: number | null
+        }
+        Update: {
+          active?: boolean
+          agent_limit?: number | null
+          annual_price_usd?: number | null
+          audit_retention_days?: number | null
+          mcp_server_limit?: number | null
+          monthly_price_usd?: number | null
+          monthly_request_limit?: number | null
+          name?: string
+          plan_key?: string
+          seat_limit?: number | null
+        }
+        Relationships: []
+      }
+      billing_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          last_event_at: string | null
+          last_event_id: string | null
+          org_id: string
+          plan_key: string
+          provider_customer_id: string | null
+          provider_subscription_id: string | null
+          status: string
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          last_event_at?: string | null
+          last_event_id?: string | null
+          org_id: string
+          plan_key: string
+          provider_customer_id?: string | null
+          provider_subscription_id?: string | null
+          status: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          last_event_at?: string | null
+          last_event_id?: string | null
+          org_id?: string
+          plan_key?: string
+          provider_customer_id?: string | null
+          provider_subscription_id?: string | null
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_subscriptions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_subscriptions_plan_key_fkey"
+            columns: ["plan_key"]
+            isOneToOne: false
+            referencedRelation: "billing_plans"
+            referencedColumns: ["plan_key"]
+          },
+        ]
+      }
       budgets: {
         Row: {
           action_on_exceed: Database["public"]["Enums"]["gov_action"]
@@ -301,6 +513,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "budgets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gateway_reservations: {
+        Row: {
+          created_at: string
+          idempotency_key: string
+          org_id: string
+          reserved_usd: number
+          settled: boolean
+        }
+        Insert: {
+          created_at?: string
+          idempotency_key: string
+          org_id: string
+          reserved_usd: number
+          settled?: boolean
+        }
+        Update: {
+          created_at?: string
+          idempotency_key?: string
+          org_id?: string
+          reserved_usd?: number
+          settled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gateway_reservations_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -392,11 +636,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "mcp_tool_grants_org_agent_fk"
+            columns: ["org_id", "agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
             foreignKeyName: "mcp_tool_grants_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcp_tool_grants_org_tool_fk"
+            columns: ["org_id", "tool_id"]
+            isOneToOne: false
+            referencedRelation: "mcp_tools"
+            referencedColumns: ["org_id", "id"]
           },
           {
             foreignKeyName: "mcp_tool_grants_tool_id_fkey"
@@ -410,9 +668,12 @@ export type Database = {
       mcp_tools: {
         Row: {
           created_at: string
+          definition_hash: string | null
           description: string | null
           id: string
+          input_schema: Json
           org_id: string
+          remote_name: string | null
           required_capability: string
           risk: Database["public"]["Enums"]["severity"]
           server_id: string | null
@@ -421,9 +682,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          definition_hash?: string | null
           description?: string | null
           id?: string
+          input_schema?: Json
           org_id: string
+          remote_name?: string | null
           required_capability: string
           risk?: Database["public"]["Enums"]["severity"]
           server_id?: string | null
@@ -432,9 +696,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          definition_hash?: string | null
           description?: string | null
           id?: string
+          input_schema?: Json
           org_id?: string
+          remote_name?: string | null
           required_capability?: string
           risk?: Database["public"]["Enums"]["severity"]
           server_id?: string | null
@@ -448,6 +715,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcp_tools_org_server_fk"
+            columns: ["org_id", "server_id"]
+            isOneToOne: false
+            referencedRelation: "mcp_servers"
+            referencedColumns: ["org_id", "id"]
           },
           {
             foreignKeyName: "mcp_tools_server_id_fkey"
@@ -505,6 +779,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "models_org_provider_fk"
+            columns: ["org_id", "provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["org_id", "id"]
           },
           {
             foreignKeyName: "models_provider_id_fkey"
@@ -617,6 +898,44 @@ export type Database = {
           slug?: string
         }
         Relationships: []
+      }
+      paddle_webhook_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          occurred_at: string
+          org_id: string
+          processed_at: string
+          provider_subscription_id: string
+          result: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          occurred_at: string
+          org_id: string
+          processed_at?: string
+          provider_subscription_id: string
+          result: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          occurred_at?: string
+          org_id?: string
+          processed_at?: string
+          provider_subscription_id?: string
+          result?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paddle_webhook_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       policies: {
         Row: {
@@ -935,10 +1254,89 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "security_findings_org_request_fk"
+            columns: ["org_id", "request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
             foreignKeyName: "security_findings_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
             referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tool_invocations: {
+        Row: {
+          agent_id: string
+          created_at: string
+          decision: string
+          id: string
+          idempotency_key: string
+          org_id: string
+          reason: string | null
+          status: string
+          tool_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          decision?: string
+          id?: string
+          idempotency_key: string
+          org_id: string
+          reason?: string | null
+          status?: string
+          tool_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          idempotency_key?: string
+          org_id?: string
+          reason?: string | null
+          status?: string
+          tool_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tool_invocations_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_invocations_org_agent_fk"
+            columns: ["org_id", "agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "tool_invocations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_invocations_org_tool_fk"
+            columns: ["org_id", "tool_id"]
+            isOneToOne: false
+            referencedRelation: "mcp_tools"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "tool_invocations_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "mcp_tools"
             referencedColumns: ["id"]
           },
         ]
@@ -948,7 +1346,108 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      nexora_agent_finding: {
+        Args: {
+          p_agent: string
+          p_finding: string
+          p_org: string
+          p_status: string
+        }
+        Returns: undefined
+      }
+      nexora_agent_usage: {
+        Args: { p_org: string }
+        Returns: {
+          agent_id: string
+          cost_usd: number
+          input_tokens: number
+          last_used_at: string
+          output_tokens: number
+          request_count: number
+        }[]
+      }
+      nexora_apply_paddle_event: {
+        Args: {
+          p_cancel_at_period_end: boolean
+          p_customer: string
+          p_event_id: string
+          p_event_type: string
+          p_occurred_at: string
+          p_org: string
+          p_period_end: string
+          p_period_start: string
+          p_plan_key: string
+          p_signed_identity: boolean
+          p_status: string
+          p_subscription: string
+        }
+        Returns: Json
+      }
+      nexora_billing_usage: { Args: { p_org: string }; Returns: Json }
+      nexora_claim_agent: {
+        Args: {
+          p_actor?: string
+          p_agent: string
+          p_hash?: string
+          p_key: string
+        }
+        Returns: Json
+      }
+      nexora_consent_connection: {
+        Args: {
+          p_actor: string
+          p_allow: boolean
+          p_code: string
+          p_org: string
+          p_scopes: string[]
+        }
+        Returns: string
+      }
+      nexora_decide_approval: {
+        Args: {
+          p_actor: string
+          p_decision: string
+          p_id: string
+          p_org: string
+        }
+        Returns: Json
+      }
+      nexora_exchange_connection: {
+        Args: { p_hash: string; p_prefix: string; p_token_hash: string }
+        Returns: Json
+      }
+      nexora_monthly_spend: { Args: { p_org: string }; Returns: number }
+      nexora_reserve: {
+        Args: { p_cost: number; p_key: string; p_org: string }
+        Returns: Json
+      }
+      nexora_revoke_connection: {
+        Args: { p_actor: string; p_agent: string; p_org: string }
+        Returns: undefined
+      }
+      nexora_rotate_agent: {
+        Args: {
+          p_actor: string
+          p_agent: string
+          p_hash: string
+          p_org: string
+          p_prefix: string
+        }
+        Returns: undefined
+      }
+      nexora_settle: {
+        Args: { p_key: string; p_org: string }
+        Returns: undefined
+      }
+      nexora_start_connection: {
+        Args: {
+          p_code: string
+          p_hash: string
+          p_name: string
+          p_scopes: string[]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
