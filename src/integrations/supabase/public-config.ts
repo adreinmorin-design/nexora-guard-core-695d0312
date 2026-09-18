@@ -19,9 +19,7 @@ export function resolvePublicSupabaseConfig(
   serverEnv: PublicSupabaseEnv | undefined,
 ): PublicSupabaseConfig {
   const url =
-    viteEnv?.["VITE_SUPABASE_URL"] ||
-    serverEnv?.["SUPABASE_URL"] ||
-    DEFAULT_SUPABASE_URL;
+    viteEnv?.["VITE_SUPABASE_URL"] || serverEnv?.["SUPABASE_URL"] || DEFAULT_SUPABASE_URL;
   const publishableKey =
     viteEnv?.["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
     serverEnv?.["SUPABASE_PUBLISHABLE_KEY"] ||
