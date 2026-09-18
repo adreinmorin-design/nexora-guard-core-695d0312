@@ -38,7 +38,7 @@ async function alertServerFailure(request: Request, response: Response) {
   const category = monitoringCategory(pathname);
   await notifySlackAlert({
     category,
-    severity: response.status >= 500 ? "critical" : "warning",
+    severity: "critical",
     summary:
       category === "billing"
         ? "Billing endpoint returned a server error"
@@ -58,10 +58,7 @@ async function healthResponse(): Promise<Response> {
       .select("id", { head: true, count: "exact" })
       .limit(1);
     if (error) throw error;
-    return Response.json(
-      { status: "ok" },
-      { headers: { "Cache-Control": "no-store" } },
-    );
+    return Response.json({ status: "ok" }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error(error);
     return Response.json(
