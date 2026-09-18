@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { notifySlackAlert, type AlertCategory } from "./lib/monitoring.server";
 import { applySecurityHeaders } from "./lib/security-headers";
 
 type ServerEntry = {
@@ -17,6 +18,54 @@ async function getServerEntry(): Promise<ServerEntry> {
     );
   }
   return serverEntryPromise;
+}
+
+function monitoringCategory(pathname: string): AlertCategory {
+  if (pathname === "/api/paddle/webhook") return "billing";
+  if (
+    pathname.startsWith("/api/agent") ||
+    pathname.startsWith("/api/mcp") ||
+    pathname.includes("gateway")
+  ) {
+    return "provider";
+  }
+  return "runtime";
+}
+
+async function alertServerFailure(request: Request, response: Response) {
+  if (response.status < 500) return;
+  const pathname = new URL(request.url).pathname;
+  const category = monitoringCategory(pathname);
+  await notifySlackAlert({
+    category,
+    severity: "critical",
+    summary:
+      category === "billing"
+        ? "Billing endpoint returned a server error"
+        : category === "provider"
+          ? "AI gateway or agent endpoint returned a server error"
+          : "Application returned a server error",
+    route: pathname,
+    status: response.status,
+  });
+}
+
+async function healthResponse(): Promise<Response> {
+  try {
+    const { supabaseAdmin } = await import("./integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("organizations")
+      .select("id", { head: true, count: "exact" })
+      .limit(1);
+    if (error) throw error;
+    return Response.json({ status: "ok" }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error(error);
+    return Response.json(
+      { status: "degraded" },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
 }
 
 // h3 swallows in-handler throws into a normal 500 Response with body
@@ -48,18 +97,26 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+      if (request.method === "GET" && url.pathname === "/api/health") {
+        const response = await healthResponse();
+        await alertServerFailure(request, response);
+        return applySecurityHeaders(request, response);
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return applySecurityHeaders(request, await normalizeCatastrophicSsrResponse(response));
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      await alertServerFailure(request, normalized);
+      return applySecurityHeaders(request, normalized);
     } catch (error) {
       console.error(error);
-      return applySecurityHeaders(
-        request,
-        new Response(renderErrorPage(), {
-          status: 500,
-          headers: { "content-type": "text/html; charset=utf-8" },
-        }),
-      );
+      const response = new Response(renderErrorPage(), {
+        status: 500,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+      await alertServerFailure(request, response);
+      return applySecurityHeaders(request, response);
     }
   },
 };
