@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { notifySlackAlert, type AlertCategory } from "./lib/monitoring.server";
 import { applySecurityHeaders } from "./lib/security-headers";
 
 type ServerEntry = {
@@ -17,6 +18,36 @@ async function getServerEntry(): Promise<ServerEntry> {
     );
   }
   return serverEntryPromise;
+}
+
+function monitoringCategory(pathname: string): AlertCategory {
+  if (pathname === "/api/paddle/webhook") return "billing";
+  if (
+    pathname.startsWith("/api/agent") ||
+    pathname.startsWith("/api/mcp") ||
+    pathname.includes("gateway")
+  ) {
+    return "provider";
+  }
+  return "runtime";
+}
+
+async function alertServerFailure(request: Request, response: Response) {
+  if (response.status < 500) return;
+  const pathname = new URL(request.url).pathname;
+  const category = monitoringCategory(pathname);
+  await notifySlackAlert({
+    category,
+    severity: response.status >= 500 ? "critical" : "warning",
+    summary:
+      category === "billing"
+        ? "Billing endpoint returned a server error"
+        : category === "provider"
+          ? "AI gateway or agent endpoint returned a server error"
+          : "Application returned a server error",
+    route: pathname,
+    status: response.status,
+  });
 }
 
 // h3 swallows in-handler throws into a normal 500 Response with body
@@ -50,16 +81,17 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return applySecurityHeaders(request, await normalizeCatastrophicSsrResponse(response));
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      await alertServerFailure(request, normalized);
+      return applySecurityHeaders(request, normalized);
     } catch (error) {
       console.error(error);
-      return applySecurityHeaders(
-        request,
-        new Response(renderErrorPage(), {
-          status: 500,
-          headers: { "content-type": "text/html; charset=utf-8" },
-        }),
-      );
+      const response = new Response(renderErrorPage(), {
+        status: 500,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+      await alertServerFailure(request, response);
+      return applySecurityHeaders(request, response);
     }
   },
 };
