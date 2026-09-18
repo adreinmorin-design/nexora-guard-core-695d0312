@@ -1,9 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  buildSlackAlertPayload,
-  notifySlackAlert,
-} from "../src/lib/monitoring.server.ts";
+import { buildSlackAlertPayload, notifySlackAlert } from "../src/lib/monitoring.server.ts";
 
 const saved = { ...process.env };
 const originalFetch = globalThis.fetch;
