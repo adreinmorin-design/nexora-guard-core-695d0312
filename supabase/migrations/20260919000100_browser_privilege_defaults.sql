@@ -28,6 +28,12 @@ REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC, anon, authenticated;
 -- access; migrations must grant only the operations they intentionally expose.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   REVOKE ALL ON TABLES FROM PUBLIC, anon, authenticated;
+-- PostgreSQL grants EXECUTE on new functions to PUBLIC at the global
+-- default level. A per-schema REVOKE cannot subtract that global grant, so
+-- remove it globally for objects subsequently created by the migration owner.
+-- Any callable function must be granted explicitly after creation.
+ALTER DEFAULT PRIVILEGES
+  REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon, authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon, authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
