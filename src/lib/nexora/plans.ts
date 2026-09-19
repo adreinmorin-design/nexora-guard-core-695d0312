@@ -127,7 +127,8 @@ export const PLANS: readonly Plan[] = [
         },
         {
           title: "Security testing",
-          description: "Use the security test suite and attack simulation workflows to validate controls.",
+          description:
+            "Use the security test suite and attack simulation workflows to validate controls.",
         },
         {
           title: "Team-scale access",
@@ -186,7 +187,8 @@ export const PLANS: readonly Plan[] = [
       benefits: [
         {
           title: "Contracted scale and retention",
-          description: "Set organization-specific capacity, seat, agent and retention requirements.",
+          description:
+            "Set organization-specific capacity, seat, agent and retention requirements.",
           delivery: "contracted",
         },
         {

@@ -1,24 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  CheckCircle2,
-  Gauge,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, Gauge, Sparkles, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getBillingState, getPaddleCheckout } from "@/lib/nexora.functions";
-import {
-  PLANS,
-  formatLimit,
-  planByKey,
-  type Plan,
-  type PlanKey,
-} from "@/lib/nexora/plans";
+import { PLANS, formatLimit, planByKey, type Plan, type PlanKey } from "@/lib/nexora/plans";
 import { Metric, PageHeader, Panel, Tag } from "@/components/nexora/primitives";
 import { cn } from "@/lib/utils";
 
@@ -129,10 +115,7 @@ function PlanWizard({
             {steps.map((label, index) => (
               <div key={label}>
                 <div
-                  className={cn(
-                    "h-1 rounded-full",
-                    index <= step ? "bg-primary" : "bg-muted",
-                  )}
+                  className={cn("h-1 rounded-full", index <= step ? "bg-primary" : "bg-muted")}
                 />
                 <div
                   className={cn(
@@ -204,7 +187,10 @@ function PlanWizard({
               </p>
               <div className="mt-5 space-y-3">
                 {plan.guide.benefits.map((benefit) => (
-                  <div key={benefit.title} className="flex gap-3 rounded-lg border border-border p-4">
+                  <div
+                    key={benefit.title}
+                    className="flex gap-3 rounded-lg border border-border p-4"
+                  >
                     <div className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/10">
                       <Check className="h-4 w-4 text-primary" />
                     </div>
@@ -266,8 +252,8 @@ function PlanWizard({
                 {isCurrentActive ? "Get value from your plan" : "What happens after activation"}
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                NEXORA keeps the full platform available while guiding you to the controls that matter
-                first.
+                NEXORA keeps the full platform available while guiding you to the controls that
+                matter first.
               </p>
 
               <div className="mt-5 space-y-3">
@@ -317,7 +303,13 @@ function PlanWizard({
             onClick={() => (step === 0 ? onClose() : onStep(step - 1))}
             className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent"
           >
-            {step === 0 ? "Close" : <><ArrowLeft className="h-4 w-4" /> Back</>}
+            {step === 0 ? (
+              "Close"
+            ) : (
+              <>
+                <ArrowLeft className="h-4 w-4" /> Back
+              </>
+            )}
           </button>
 
           {step < 3 ? (
