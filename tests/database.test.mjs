@@ -92,6 +92,43 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       seat_trigger: false,
     });
 
+    const billingPrivileges = await db.query(`SELECT
+      has_table_privilege('anon','billing_plans','SELECT') AS public_plan_read,
+      has_table_privilege('anon','billing_plans','TRUNCATE') AS public_plan_truncate,
+      has_table_privilege('authenticated','billing_plans','UPDATE') AS plan_write,
+      has_table_privilege('authenticated','billing_subscriptions','SELECT') AS subscription_read,
+      has_table_privilege('authenticated','billing_subscriptions','UPDATE') AS subscription_write,
+      has_table_privilege('anon','profiles','SELECT') AS anonymous_profile_read,
+      has_function_privilege('anon','update_updated_at_column()','EXECUTE') AS timestamp_rpc,
+      has_function_privilege('authenticated','nexora_billing_usage(uuid)','EXECUTE') AS billing_rpc`);
+    assert.deepEqual(billingPrivileges.rows[0], {
+      public_plan_read: true,
+      public_plan_truncate: false,
+      plan_write: false,
+      subscription_read: true,
+      subscription_write: false,
+      anonymous_profile_read: false,
+      timestamp_rpc: false,
+      billing_rpc: false,
+    });
+
+    await db.exec(`
+      CREATE TABLE public.default_privilege_probe(id integer);
+      CREATE FUNCTION public.default_function_probe()
+      RETURNS integer LANGUAGE sql AS $ SELECT 1 $;
+    `);
+    const defaultPrivileges = await db.query(`SELECT
+      has_table_privilege('anon','default_privilege_probe','SELECT') AS anon_table,
+      has_table_privilege('authenticated','default_privilege_probe','SELECT') AS authenticated_table,
+      has_function_privilege('anon','default_function_probe()','EXECUTE') AS anon_function,
+      has_function_privilege('authenticated','default_function_probe()','EXECUTE') AS authenticated_function`);
+    assert.deepEqual(defaultPrivileges.rows[0], {
+      anon_table: false,
+      authenticated_table: false,
+      anon_function: false,
+      authenticated_function: false,
+    });
+
     const deviceHash = "a".repeat(64);
     const tokenHash = "b".repeat(64);
     const key = "00000000-0000-4000-8000-000000000006";
