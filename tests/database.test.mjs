@@ -115,7 +115,7 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
     await db.exec(`
       CREATE TABLE public.default_privilege_probe(id integer);
       CREATE FUNCTION public.default_function_probe()
-      RETURNS integer LANGUAGE sql AS $ SELECT 1 $;
+      RETURNS integer LANGUAGE sql AS 'SELECT 1';
     `);
     const defaultPrivileges = await db.query(`SELECT
       has_table_privilege('anon','default_privilege_probe','SELECT') AS anon_table,
