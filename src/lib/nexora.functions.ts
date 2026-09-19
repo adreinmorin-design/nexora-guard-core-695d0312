@@ -71,15 +71,17 @@ export const ensureWorkspace = createServerFn({ method: "POST" })
   .handler(async ({ context }: { context: any }) => {
     const email = (context.claims?.email as string | undefined) ?? null;
 
-    await context.supabase
+    const profile = await context.supabase
       .from("profiles")
       .upsert({ id: context.userId, email }, { onConflict: "id" });
+    if (profile.error) throw new Error(profile.error.message);
 
     const existing = await context.supabase
       .from("org_members")
       .select("org_id")
       .eq("user_id", context.userId)
       .limit(1);
+    if (existing.error) throw new Error(existing.error.message);
 
     if (existing.data && existing.data.length > 0) {
       const ws = await resolveWorkspace(context);
@@ -90,105 +92,127 @@ export const ensureWorkspace = createServerFn({ method: "POST" })
     const label = domain.charAt(0).toUpperCase() + domain.slice(1);
     const slug = `${domain}-${Math.random().toString(36).slice(2, 8)}`;
 
-    const org = await context.supabase
+    // Bootstrap is a server-only operation. Using the service role here avoids
+    // the first-member RLS deadlock while keeping tenant access derived from the
+    // already verified user identity above. Normal reads and user mutations
+    // continue to use the authenticated client and RLS.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as any;
+
+    const org = await db
       .from("organizations")
       .insert({ name: `${label} Organization`, slug, created_by: context.userId })
       .select("id, name")
       .single();
 
-    if (org.error) throw new Error(org.error.message);
+    if (org.error || !org.data) {
+      throw new Error(org.error?.message ?? "Organization could not be created.");
+    }
     const orgId = org.data.id as string;
 
-    // The founding user becomes org admin first, which authorizes the rest.
-    const first = await context.supabase
-      .from("org_members")
-      .insert({ org_id: orgId, user_id: context.userId, role: "org_admin" });
-    if (first.error) throw new Error(first.error.message);
-
-    await context.supabase.from("org_members").insert(
-      ["security_admin", "governance_admin", "agent_admin"].map((role) => ({
-        org_id: orgId,
-        user_id: context.userId,
-        role,
-      })),
-    );
-
-    const providers = await context.supabase
-      .from("providers")
-      .insert(SEED_PROVIDERS.map((p) => ({ ...p, org_id: orgId })))
-      .select("id, vendor");
-    if (providers.error) throw new Error(providers.error.message);
-
-    const byVendor = new Map<string, string>(
-      (providers.data as Array<{ id: string; vendor: string }>).map((p) => [p.vendor, p.id]),
-    );
-
-    await context.supabase.from("models").insert(
-      SEED_MODELS.map((m) => ({
-        org_id: orgId,
-        provider_id: byVendor.get(m.vendor)!,
-        model_key: m.model_key,
-        display_name: m.display_name,
-        context_window: m.context_window,
-        input_cost_per_1k: m.input_cost_per_1k,
-        output_cost_per_1k: m.output_cost_per_1k,
-        classification: m.classification,
-        status: m.status,
-      })),
-    );
-
-    const policies = await context.supabase
-      .from("policies")
-      .insert(
-        SEED_POLICIES.map((p) => ({
+    try {
+      const membership = await db.from("org_members").insert(
+        ["org_admin", "security_admin", "governance_admin", "agent_admin"].map((role) => ({
           org_id: orgId,
-          name: p.name,
-          description: p.description,
-          scope: p.scope,
-          priority: p.priority,
-          action: p.action,
-          conditions: p.conditions,
-          created_by: context.userId,
-        })),
-      )
-      .select("id, name, action, priority, conditions, version");
-
-    if (policies.data) {
-      await context.supabase.from("policy_versions").insert(
-        (policies.data as any[]).map((p) => ({
-          org_id: orgId,
-          policy_id: p.id,
-          version: p.version,
-          snapshot: p,
-          change_note: "Initial baseline policy",
-          created_by: context.userId,
+          user_id: context.userId,
+          role,
         })),
       );
+      if (membership.error) throw new Error(membership.error.message);
+
+      const providers = await db
+        .from("providers")
+        .insert(SEED_PROVIDERS.map((p) => ({ ...p, org_id: orgId })))
+        .select("id, vendor");
+      if (providers.error) throw new Error(providers.error.message);
+
+      const byVendor = new Map<string, string>(
+        (providers.data as Array<{ id: string; vendor: string }>).map((p) => [p.vendor, p.id]),
+      );
+
+      const models = await db.from("models").insert(
+        SEED_MODELS.map((m) => ({
+          org_id: orgId,
+          provider_id: byVendor.get(m.vendor)!,
+          model_key: m.model_key,
+          display_name: m.display_name,
+          context_window: m.context_window,
+          input_cost_per_1k: m.input_cost_per_1k,
+          output_cost_per_1k: m.output_cost_per_1k,
+          classification: m.classification,
+          status: m.status,
+        })),
+      );
+      if (models.error) throw new Error(models.error.message);
+
+      const policies = await db
+        .from("policies")
+        .insert(
+          SEED_POLICIES.map((p) => ({
+            org_id: orgId,
+            name: p.name,
+            description: p.description,
+            scope: p.scope,
+            priority: p.priority,
+            action: p.action,
+            conditions: p.conditions,
+            created_by: context.userId,
+          })),
+        )
+        .select("id, name, action, priority, conditions, version");
+      if (policies.error) throw new Error(policies.error.message);
+
+      if (policies.data?.length) {
+        const policyVersions = await db.from("policy_versions").insert(
+          (policies.data as any[]).map((p) => ({
+            org_id: orgId,
+            policy_id: p.id,
+            version: p.version,
+            snapshot: p,
+            change_note: "Initial baseline policy",
+            created_by: context.userId,
+          })),
+        );
+        if (policyVersions.error) throw new Error(policyVersions.error.message);
+      }
+
+      const budget = await db.from("budgets").insert({
+        org_id: orgId,
+        name: "Organization monthly budget",
+        scope: "organization",
+        period: "monthly",
+        limit_usd: 250,
+        action_on_exceed: "REQUIRE_APPROVAL",
+      });
+      if (budget.error) throw new Error(budget.error.message);
+
+      await writeAudit(context, orgId, {
+        action: "organization.provisioned",
+        resource: "organization",
+        resource_id: orgId,
+        risk: "info",
+        metadata: { seeded: true },
+      });
+
+      return {
+        orgId,
+        orgName: org.data.name as string,
+        roles: ["org_admin", "security_admin", "governance_admin", "agent_admin"],
+        provisioned: true,
+      };
+    } catch (error) {
+      // A failed bootstrap must not leave another orphan organization behind.
+      // The organization owns its seeded rows through cascading foreign keys.
+      const cleanup = await db
+        .from("organizations")
+        .delete()
+        .eq("id", orgId)
+        .eq("created_by", context.userId);
+      if (cleanup.error) {
+        console.error("[NEXORA] Failed to clean up incomplete workspace", cleanup.error);
+      }
+      throw error;
     }
-
-    await context.supabase.from("budgets").insert({
-      org_id: orgId,
-      name: "Organization monthly budget",
-      scope: "organization",
-      period: "monthly",
-      limit_usd: 250,
-      action_on_exceed: "REQUIRE_APPROVAL",
-    });
-
-    await writeAudit(context, orgId, {
-      action: "organization.provisioned",
-      resource: "organization",
-      resource_id: orgId,
-      risk: "info",
-      metadata: { seeded: true },
-    });
-
-    return {
-      orgId,
-      orgName: org.data.name as string,
-      roles: ["org_admin", "security_admin", "governance_admin", "agent_admin"],
-      provisioned: true,
-    };
   });
 
 /* ------------------------------------------------------------------ */
