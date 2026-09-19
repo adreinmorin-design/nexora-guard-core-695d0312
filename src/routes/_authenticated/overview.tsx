@@ -74,7 +74,11 @@ function Overview() {
           label="Open findings"
           value={t.openFindings}
           tone={t.criticalFindings > 0 ? "critical" : t.openFindings > 0 ? "high" : "allow"}
-          hint={t.criticalFindings > 0 ? String(t.criticalFindings) + " critical" : "no critical findings"}
+          hint={
+            t.criticalFindings > 0
+              ? String(t.criticalFindings) + " critical"
+              : "no critical findings"
+          }
         />
         <Metric label="Spend" value={"$" + t.spend.toFixed(2)} hint={"$" + t.budget + " budget"} />
       </div>
@@ -84,9 +88,14 @@ function Overview() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-sm font-medium">Traffic</div>
-              <div className="mt-0.5 text-xs text-muted-foreground">Allowed and blocked requests</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                Allowed and blocked requests
+              </div>
             </div>
-            <Link to="/gateway/requests" className="text-xs font-medium text-primary hover:underline">
+            <Link
+              to="/gateway/requests"
+              className="text-xs font-medium text-primary hover:underline"
+            >
               View requests
             </Link>
           </div>

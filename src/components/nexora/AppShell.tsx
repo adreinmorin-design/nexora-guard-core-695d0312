@@ -71,10 +71,7 @@ const ADVANCED_NAV: NavGroup[] = [
   },
 ];
 
-export const NAV: NavGroup[] = [
-  { group: "Core", items: PRIMARY_NAV },
-  ...ADVANCED_NAV,
-];
+export const NAV: NavGroup[] = [{ group: "Core", items: PRIMARY_NAV }, ...ADVANCED_NAV];
 
 export function AppShell({
   children,
@@ -215,7 +212,9 @@ export function AppShell({
               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
                 Protected
-                {roles?.length ? <span className="hidden sm:inline">· {roles[0]?.replaceAll("_", " ")}</span> : null}
+                {roles?.length ? (
+                  <span className="hidden sm:inline">· {roles[0]?.replaceAll("_", " ")}</span>
+                ) : null}
               </div>
             </div>
           </div>

@@ -68,8 +68,8 @@ function Landing() {
               Keep it under control.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-7 text-muted-foreground lg:text-lg">
-              One control plane for AI security, governance, agents, cost and audit. NEXORA keeps the
-              complexity underneath so operators can work from a simple interface.
+              One control plane for AI security, governance, agents, cost and audit. NEXORA keeps
+              the complexity underneath so operators can work from a simple interface.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
