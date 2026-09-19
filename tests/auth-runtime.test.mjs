@@ -33,13 +33,7 @@ test("public Supabase config safely falls back to server values", () => {
 test("public Supabase config falls back to browser-safe deployment defaults", () => {
   const config = resolvePublicSupabaseConfig({}, {});
 
-  assert.equal(
-    config.url,
-    "https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud",
-  );
-  assert.equal(
-    config.publishableKey,
-    "sb_publishable_eWI2U31KL-zYV8Mn_AzGlw_40-gaGMC",
-  );
+  assert.equal(config.url, "https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud");
+  assert.equal(config.publishableKey, "sb_publishable_eWI2U31KL-zYV8Mn_AzGlw_40-gaGMC");
   assert.deepEqual(config.missing, []);
 });
