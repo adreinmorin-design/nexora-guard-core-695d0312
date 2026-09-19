@@ -11,7 +11,7 @@ export const Route = createFileRoute("/auth")({
       )
         ? search["next"]
         : "/overview",
-    recovery: search["recovery"] === "1" || search["recovery"] === true ? true : undefined,
+    ...(search["recovery"] === "1" || search["recovery"] === true ? { recovery: true } : {}),
   }),
   head: () => ({
     meta: [
