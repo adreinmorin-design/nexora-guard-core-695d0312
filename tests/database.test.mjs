@@ -92,6 +92,15 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       seat_trigger: false,
     });
 
+    const seatLimitHardening = await db.query(`SELECT
+      p.prosecdef AS security_definer
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public'
+        AND p.proname = 'nexora_enforce_seat_limit'`);
+    assert.equal(seatLimitHardening.rows.length, 1);
+    assert.equal(seatLimitHardening.rows[0].security_definer, true);
+
     const billingPrivileges = await db.query(`SELECT
       has_table_privilege('anon','billing_plans','SELECT') AS public_plan_read,
       has_table_privilege('anon','billing_plans','TRUNCATE') AS public_plan_truncate,
