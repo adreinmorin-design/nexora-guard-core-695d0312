@@ -55,6 +55,7 @@ function Overview() {
           </Link>
           <Link
             to="/connect-agent"
+            search={{ code: "" }}
             className="rounded-md border border-border px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             Connect agent
