@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { next: string; recovery?: boolean } => ({
     next:
       typeof search["next"] === "string" &&
       /^(?:\/connect-agent(?:\?code=[A-Fa-f0-9]{10})?|\/admin\/billing(?:\?plan=(?:solo|team|enterprise))?)$/.test(
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/auth")({
       )
         ? search["next"]
         : "/overview",
-    recovery: search["recovery"] === "1" || search["recovery"] === true,
+    recovery: search["recovery"] === "1" || search["recovery"] === true ? true : undefined,
   }),
   head: () => ({
     meta: [
