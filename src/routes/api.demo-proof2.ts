@@ -177,18 +177,7 @@ export const Route = createFileRoute("/api/demo-proof2")({
         });
         const modelBody = await modelResponse.json().catch(() => null);
 
-        let diagnosticError: string | null = null;
-        if (!modelResponse.ok || modelBody?.status === "provider_error") {
-          try {
-            const { executeProviderRequest } = await import("@/lib/ai-gateway.server");
-            await executeProviderRequest(
-              "openai/gpt-4o-mini",
-              "Diagnostic provider connectivity check.",
-            );
-          } catch (error) {
-            diagnosticError = error instanceof Error ? error.message : "unknown error";
-          }
-        }
+        const diagnosticError: string | null = null;
 
         const toolResponse = await fetch(agentUrl, {
           method: "POST",
