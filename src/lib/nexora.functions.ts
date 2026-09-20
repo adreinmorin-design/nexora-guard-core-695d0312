@@ -1343,8 +1343,7 @@ export const getLiveExecutionControl = createServerFn({ method: "POST" })
       })
       .parse(input ?? {}),
   )
-  .handler(
-    async ({ data, context }: { data: { executionId?: string; limit: number }; context: any }) => {
+  .handler(async ({ data, context }) => {
       const ws = await resolveWorkspace(context);
       let eventsQuery = context.supabase
         .from("execution_events")
