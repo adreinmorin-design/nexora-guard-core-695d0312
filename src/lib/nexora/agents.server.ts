@@ -5,6 +5,8 @@ import { executeProviderRequest } from "../ai-gateway.server";
 import { agentBearer, hashCredential } from "./agent-credentials";
 import type { PolicyRecord } from "./policy-engine";
 import { requireOrgEntitlement } from "./entitlements.server";
+import { requireAiExecutionAllowed } from "./ai-controls.server";
+import { writeExecutionEvent } from "./execution-trace.server";
 
 const db: any = supabaseAdmin;
 
@@ -92,13 +94,48 @@ export async function executeAgentModel(
   input: { prompt: string; modelKey: string; idempotencyKey: string },
   approvedPolicies?: PolicyRecord[],
 ) {
+  const executionId = input.idempotencyKey;
   const agent = await activeAgent(orgId, agentId);
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    agentId,
+    actorType: "agent",
+    stage: "identity",
+    status: "passed",
+    summary: "Agent credential, lifecycle and owner membership verified.",
+  });
+
+  const controls = await requireAiExecutionAllowed(orgId, "agent");
   await requireCapability(orgId, agentId, "model:invoke");
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    agentId,
+    actorType: "agent",
+    stage: "permissions",
+    status: "passed",
+    summary: "Agent has model:invoke capability and owner authority.",
+  });
+
   return runGovernedRequest({
     store: makeStore({ supabase: db }, orgId),
     principal: { kind: "agent", id: agentId, orgId, ownerId: agent.owner_id, source: "api" },
     ...input,
     ...(approvedPolicies ? { approvedPolicies } : {}),
+    maxRequestCostUsd: controls.max_request_cost_usd,
+    trace: (event) =>
+      writeExecutionEvent({
+        orgId,
+        executionId,
+        agentId,
+        actorType: "agent",
+        stage: event.stage,
+        status: event.status,
+        summary: event.summary,
+        detail: event.detail,
+        requestId: event.requestId ?? null,
+      }),
     execute: executeProviderRequest,
   });
 }
@@ -109,6 +146,7 @@ export async function runAgentOperation(
   input: import("./agent-input").AgentTaskInput,
 ) {
   await activeAgent(orgId, agentId);
+  await requireAiExecutionAllowed(orgId, "agent");
   if (input.kind === "model") return executeAgentModel(orgId, agentId, input);
   if (input.kind === "tool") {
     await requireOrgEntitlement(orgId, "mcp_controls");
