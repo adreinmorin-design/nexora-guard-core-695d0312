@@ -241,7 +241,7 @@ export const getOverview = createServerFn({ method: "POST" })
       context.supabase.from("policies").select("id, status").eq("org_id", ws.orgId),
       context.supabase.from("budgets").select("limit_usd, period").eq("org_id", ws.orgId),
       context.supabase.from("org_members").select("user_id").eq("org_id", ws.orgId),
-      context.supabase
+      db
         .from("agents")
         .select("id", { count: "exact", head: true })
         .eq("org_id", ws.orgId)
@@ -333,7 +333,7 @@ export const listCatalog = createServerFn({ method: "POST" })
     const ws = await resolveWorkspace(context);
     const [providers, models] = await Promise.all([
       context.supabase.from("providers").select("*").eq("org_id", ws.orgId).order("name"),
-      context.supabase
+      db
         .from("models")
         .select("*, providers(vendor)")
         .eq("org_id", ws.orgId)
@@ -1345,7 +1345,8 @@ export const getLiveExecutionControl = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const ws = await resolveWorkspace(context);
-    let eventsQuery = context.supabase
+    const db: any = context.supabase;
+    let eventsQuery = db
       .from("execution_events")
       .select(
         "id,execution_id,request_id,agent_id,actor_type,stage,status,summary,detail,created_at",
@@ -1357,8 +1358,8 @@ export const getLiveExecutionControl = createServerFn({ method: "POST" })
 
     const [events, agents, controls] = await Promise.all([
       eventsQuery,
-      context.supabase.from("agents").select("id,name,slug,status").eq("org_id", ws.orgId),
-      context.supabase
+      db.from("agents").select("id,name,slug,status").eq("org_id", ws.orgId),
+      db
         .from("org_ai_controls")
         .select("execution_enabled,console_enabled,agents_enabled,max_request_cost_usd,updated_at")
         .eq("org_id", ws.orgId)
@@ -1447,12 +1448,13 @@ export const getAdminAiControl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }: { context: any }) => {
     const ws = await resolveWorkspace(context);
+    const db: any = context.supabase;
     const canControl = ws.roles.some((role) => ["platform_admin", "org_admin"].includes(role));
     if (!canControl) throw new Error("Organization administrator role required.");
 
     const [controls, providers, models, agents, budgets] = await Promise.all([
       context.supabase.from("org_ai_controls").select("*").eq("org_id", ws.orgId).maybeSingle(),
-      context.supabase
+      db
         .from("providers")
         .select("id,name,vendor,status,credential_state")
         .eq("org_id", ws.orgId)
@@ -1467,7 +1469,7 @@ export const getAdminAiControl = createServerFn({ method: "POST" })
         .select("id,name,slug,status,last_used_at")
         .eq("org_id", ws.orgId)
         .order("name"),
-      context.supabase
+      db
         .from("budgets")
         .select("id,name,limit_usd,action_on_exceed,status")
         .eq("org_id", ws.orgId)
