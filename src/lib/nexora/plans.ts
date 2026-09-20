@@ -111,6 +111,7 @@ export const PLANS: readonly Plan[] = [
       "Human approval workflows",
       "MCP discovery and tool controls",
       "Security test suite",
+      "Device AI discovery for enrolled endpoints",
       "10 operator seats and 25 agents",
       "180-day audit retention",
     ],
@@ -159,6 +160,12 @@ export const PLANS: readonly Plan[] = [
           title: "Run security tests",
           description: "Validate your policies before expanding AI usage.",
           href: "/module/security-tests",
+        },
+        {
+          title: "Enroll endpoint discovery",
+          description:
+            "Use an enrolled NEXORA agent to report recognized AI desktop apps and local runtimes.",
+          href: "/module/ai-discovery",
         },
       ],
     },
