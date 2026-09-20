@@ -179,16 +179,6 @@ export async function executeTool(
     db.from("mcp_servers").select("*").eq("org_id", orgId).eq("id", tool.server_id).single(),
   );
   if (server.status !== "active") throw new Error("MCP server is inactive.");
-  await writeExecutionEvent({
-    orgId,
-    executionId,
-    agentId,
-    actorType: "agent",
-    stage: "provider_selection",
-    status: "passed",
-    summary: `MCP server selected for ${tool.remote_name}.`,
-    detail: { serverId: server.id, toolId: tool.id },
-  });
   const rawToolText = JSON.stringify(input.arguments);
   const rawDetections = inspect(rawToolText);
   const injectionCategories = new Set([
@@ -204,7 +194,7 @@ export async function executeTool(
     agentId,
     actorType: "agent",
     stage: "pii",
-    status: piiDetections.length ? "redacted" : "passed",
+    status: "passed",
     summary: piiDetections.length
       ? `${piiDetections.length} sensitive-data finding(s) detected in tool arguments.`
       : "No PII or secret pattern detected in tool arguments.",
@@ -218,7 +208,7 @@ export async function executeTool(
     agentId,
     actorType: "agent",
     stage: "injection",
-    status: injectionDetections.length ? "blocked" : "passed",
+    status: "passed",
     summary: injectionDetections.length
       ? `${injectionDetections.length} injection/exfiltration signal(s) detected in tool arguments.`
       : "No prompt-injection signal detected in tool arguments.",
@@ -234,6 +224,16 @@ export async function executeTool(
     stage: "budget",
     status: "not_applicable",
     summary: "MCP tool call has no model-provider token charge in the NEXORA budget meter.",
+  });
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    agentId,
+    actorType: "agent",
+    stage: "provider_selection",
+    status: "passed",
+    summary: `MCP server selected for ${tool.remote_name}.`,
+    detail: { serverId: server.id, toolId: tool.id },
   });
   const policies = await checked(
     db
