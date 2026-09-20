@@ -116,6 +116,37 @@ export const Route = createFileRoute("/api/demo-proof2")({
           { onConflict: "id" },
         );
 
+        const persistenceChecks: Record<string, unknown> = {};
+        const modelCheck = await db
+          .from("models")
+          .select("*, providers(vendor, status, org_id)")
+          .eq("org_id", org.id)
+          .eq("model_key", "openai/gpt-4o-mini")
+          .maybeSingle();
+        persistenceChecks.model = { ok: !modelCheck.error, error: modelCheck.error?.message ?? null };
+        const spendCheck = await db.rpc("nexora_monthly_spend", { p_org: org.id });
+        persistenceChecks.monthlySpend = {
+          ok: !spendCheck.error,
+          error: spendCheck.error?.message ?? null,
+        };
+        const policyCheck = await db
+          .from("policies")
+          .select("id,name,priority,action,version,status,scope,conditions")
+          .eq("org_id", org.id);
+        persistenceChecks.policies = {
+          ok: !policyCheck.error,
+          error: policyCheck.error?.message ?? null,
+        };
+        const budgetCheck = await db
+          .from("budgets")
+          .select("*")
+          .eq("org_id", org.id)
+          .eq("status", "active");
+        persistenceChecks.budgets = {
+          ok: !budgetCheck.error,
+          error: budgetCheck.error?.message ?? null,
+        };
+
         const agentUrl = new URL("/api/agent", request.url);
         const headers = {
           Authorization: `Bearer ${credential.token}`,
@@ -204,6 +235,7 @@ export const Route = createFileRoute("/api/demo-proof2")({
             demo: "Nexora two-minute live proof",
             organization: { id: org.id, name: org.name },
             controls: { perRequestCeilingUsd: 0.02 },
+            persistenceChecks,
             modelInvocation: {
               executionId: modelExecutionId,
               httpStatus: modelResponse.status,
