@@ -19,7 +19,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:hardening": "node --import ./tests/resolve-ts.mjs --test tests/hardening.test.mjs tests/auth-runtime.test.mjs",
-    "test:monitoring": "node --import ./tests/resolve-ts.mjs --test tests/monitoring.test.mjs"
+    "test:monitoring": "node --import ./tests/resolve-ts.mjs --test tests/monitoring.test.mjs",
+    "desktop:discover": "node scripts/nexora-desktop-discovery.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
