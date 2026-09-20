@@ -1337,11 +1337,11 @@ export const getLiveExecutionControl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>
     z
-    .object({
-      executionId: z.string().uuid().optional(),
-      limit: z.number().int().min(1).max(50).default(12),
-    })
-    .parse(input ?? {}),
+      .object({
+        executionId: z.string().uuid().optional(),
+        limit: z.number().int().min(1).max(50).default(12),
+      })
+      .parse(input ?? {}),
   )
   .handler(async ({ data, context }) => {
     const ws = await resolveWorkspace(context);
@@ -1360,9 +1360,7 @@ export const getLiveExecutionControl = createServerFn({ method: "POST" })
       context.supabase.from("agents").select("id,name,slug,status").eq("org_id", ws.orgId),
       context.supabase
         .from("org_ai_controls")
-        .select(
-          "execution_enabled,console_enabled,agents_enabled,max_request_cost_usd,updated_at",
-        )
+        .select("execution_enabled,console_enabled,agents_enabled,max_request_cost_usd,updated_at")
         .eq("org_id", ws.orgId)
         .maybeSingle(),
     ]);
@@ -1411,8 +1409,7 @@ export const getLiveExecutionControl = createServerFn({ method: "POST" })
       },
       executions,
     };
-    },
-  );
+  });
 
 const aiAdminMutation = z.discriminatedUnion("action", [
   z.object({
