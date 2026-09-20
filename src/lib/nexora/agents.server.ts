@@ -4,6 +4,7 @@ import { runGovernedRequest } from "./pipeline";
 import { executeProviderRequest } from "../ai-gateway.server";
 import { agentBearer, hashCredential } from "./agent-credentials";
 import type { PolicyRecord } from "./policy-engine";
+import { requireOrgEntitlement } from "./entitlements.server";
 
 const db: any = supabaseAdmin;
 
@@ -109,8 +110,10 @@ export async function runAgentOperation(
 ) {
   await activeAgent(orgId, agentId);
   if (input.kind === "model") return executeAgentModel(orgId, agentId, input);
-  if (input.kind === "tool")
+  if (input.kind === "tool") {
+    await requireOrgEntitlement(orgId, "mcp_controls");
     return (await import("./mcp.server")).executeTool(orgId, agentId, input);
+  }
   if (input.kind === "finding") {
     await requireCapability(orgId, agentId, "findings:resolve");
     await checked(
