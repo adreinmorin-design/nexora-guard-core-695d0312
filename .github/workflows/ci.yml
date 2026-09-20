@@ -36,6 +36,7 @@ jobs:
       - run: bun run test:paddle
       - run: bun run test:billing
       - run: bun run test:database
+      - run: bun run test:email
       - run: bun run test:monitoring
       - run: bun run test:hardening
       - run: bunx tsc --noEmit

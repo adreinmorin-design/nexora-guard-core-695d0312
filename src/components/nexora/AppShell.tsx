@@ -68,6 +68,7 @@ const ADVANCED_NAV: NavGroup[] = [
       { label: "AI control", to: "/admin/ai-control" },
       { label: "Users & roles", to: "/admin/users" },
       { label: "Plans & billing", to: "/admin/billing" },
+      { label: "Email", to: "/email" },
       { label: "Integrations", to: "/module/integrations" },
       { label: "Settings", to: "/module/settings" },
     ],

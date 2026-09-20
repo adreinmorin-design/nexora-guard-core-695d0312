@@ -17,6 +17,7 @@ import { Route as AuthenticatedAiEfficiencyRouteImport } from './routes/_authent
 import { Route as AuthenticatedApprovalsRouteImport } from './routes/_authenticated/approvals'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedConnectAgentRouteImport } from './routes/_authenticated/connect-agent'
+import { Route as AuthenticatedEmailRouteImport } from './routes/_authenticated/email'
 import { Route as AuthenticatedExecutionControlRouteImport } from './routes/_authenticated/execution-control'
 import { Route as AuthenticatedOverviewRouteImport } from './routes/_authenticated/overview'
 import { Route as ApiAgentRouteImport } from './routes/api.agent'
@@ -80,6 +81,11 @@ const AuthenticatedConnectAgentRoute =
     path: '/connect-agent',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedEmailRoute = AuthenticatedEmailRouteImport.update({
+  id: '/email',
+  path: '/email',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedExecutionControlRoute =
   AuthenticatedExecutionControlRouteImport.update({
     id: '/execution-control',
@@ -206,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/approvals': typeof AuthenticatedApprovalsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/connect-agent': typeof AuthenticatedConnectAgentRoute
+  '/email': typeof AuthenticatedEmailRoute
   '/execution-control': typeof AuthenticatedExecutionControlRoute
   '/overview': typeof AuthenticatedOverviewRoute
   '/api/agent': typeof ApiAgentRouteWithChildren
@@ -236,6 +243,7 @@ export interface FileRoutesByTo {
   '/approvals': typeof AuthenticatedApprovalsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/connect-agent': typeof AuthenticatedConnectAgentRoute
+  '/email': typeof AuthenticatedEmailRoute
   '/execution-control': typeof AuthenticatedExecutionControlRoute
   '/overview': typeof AuthenticatedOverviewRoute
   '/api/agent': typeof ApiAgentRouteWithChildren
@@ -268,6 +276,7 @@ export interface FileRoutesById {
   '/_authenticated/approvals': typeof AuthenticatedApprovalsRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/connect-agent': typeof AuthenticatedConnectAgentRoute
+  '/_authenticated/email': typeof AuthenticatedEmailRoute
   '/_authenticated/execution-control': typeof AuthenticatedExecutionControlRoute
   '/_authenticated/overview': typeof AuthenticatedOverviewRoute
   '/api/agent': typeof ApiAgentRouteWithChildren
@@ -300,6 +309,7 @@ export interface FileRouteTypes {
     | '/approvals'
     | '/audit'
     | '/connect-agent'
+    | '/email'
     | '/execution-control'
     | '/overview'
     | '/api/agent'
@@ -330,6 +340,7 @@ export interface FileRouteTypes {
     | '/approvals'
     | '/audit'
     | '/connect-agent'
+    | '/email'
     | '/execution-control'
     | '/overview'
     | '/api/agent'
@@ -361,6 +372,7 @@ export interface FileRouteTypes {
     | '/_authenticated/approvals'
     | '/_authenticated/audit'
     | '/_authenticated/connect-agent'
+    | '/_authenticated/email'
     | '/_authenticated/execution-control'
     | '/_authenticated/overview'
     | '/api/agent'
@@ -450,6 +462,13 @@ declare module '@tanstack/react-router' {
       path: '/connect-agent'
       fullPath: '/connect-agent'
       preLoaderRoute: typeof AuthenticatedConnectAgentRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/email': {
+      id: '/_authenticated/email'
+      path: '/email'
+      fullPath: '/email'
+      preLoaderRoute: typeof AuthenticatedEmailRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/execution-control': {
@@ -607,6 +626,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedApprovalsRoute: typeof AuthenticatedApprovalsRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedConnectAgentRoute: typeof AuthenticatedConnectAgentRoute
+  AuthenticatedEmailRoute: typeof AuthenticatedEmailRoute
   AuthenticatedExecutionControlRoute: typeof AuthenticatedExecutionControlRoute
   AuthenticatedOverviewRoute: typeof AuthenticatedOverviewRoute
   AuthenticatedAdminAiControlRoute: typeof AuthenticatedAdminAiControlRoute
@@ -629,6 +649,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedApprovalsRoute: AuthenticatedApprovalsRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedConnectAgentRoute: AuthenticatedConnectAgentRoute,
+  AuthenticatedEmailRoute: AuthenticatedEmailRoute,
   AuthenticatedExecutionControlRoute: AuthenticatedExecutionControlRoute,
   AuthenticatedOverviewRoute: AuthenticatedOverviewRoute,
   AuthenticatedAdminAiControlRoute: AuthenticatedAdminAiControlRoute,

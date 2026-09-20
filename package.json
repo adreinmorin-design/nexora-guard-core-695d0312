@@ -20,7 +20,8 @@
     "format:check": "prettier --check .",
     "test:hardening": "node --import ./tests/resolve-ts.mjs --test tests/hardening.test.mjs tests/auth-runtime.test.mjs",
     "test:monitoring": "node --import ./tests/resolve-ts.mjs --test tests/monitoring.test.mjs",
-    "desktop:discover": "node scripts/nexora-desktop-discovery.mjs"
+    "desktop:discover": "node scripts/nexora-desktop-discovery.mjs",
+    "test:email": "node --import ./tests/resolve-ts.mjs --test tests/email.test.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -64,8 +65,11 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
+    "imapflow": "2.0.5",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.575.0",
+    "nodemailer": "10.0.10",
+    "postal-mime": "3.0.0",
     "react": "^19.2.0",
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.0",
@@ -85,6 +89,7 @@
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "^2.20.0",
     "@types/node": "^22.16.5",
+    "@types/nodemailer": "8.0.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.2.0",
