@@ -1337,80 +1337,80 @@ export const getLiveExecutionControl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>
     z
-      .object({
-        executionId: z.string().uuid().optional(),
-        limit: z.number().int().min(1).max(50).default(12),
-      })
-      .parse(input ?? {}),
+    .object({
+      executionId: z.string().uuid().optional(),
+      limit: z.number().int().min(1).max(50).default(12),
+    })
+    .parse(input ?? {}),
   )
   .handler(async ({ data, context }) => {
-      const ws = await resolveWorkspace(context);
-      let eventsQuery = context.supabase
-        .from("execution_events")
+    const ws = await resolveWorkspace(context);
+    let eventsQuery = context.supabase
+      .from("execution_events")
+      .select(
+        "id,execution_id,request_id,agent_id,actor_type,stage,status,summary,detail,created_at",
+      )
+      .eq("org_id", ws.orgId)
+      .order("created_at", { ascending: false })
+      .limit(data.executionId ? 200 : Math.min(500, data.limit * 20));
+    if (data.executionId) eventsQuery = eventsQuery.eq("execution_id", data.executionId);
+
+    const [events, agents, controls] = await Promise.all([
+      eventsQuery,
+      context.supabase.from("agents").select("id,name,slug,status").eq("org_id", ws.orgId),
+      context.supabase
+        .from("org_ai_controls")
         .select(
-          "id,execution_id,request_id,agent_id,actor_type,stage,status,summary,detail,created_at",
+          "execution_enabled,console_enabled,agents_enabled,max_request_cost_usd,updated_at",
         )
         .eq("org_id", ws.orgId)
-        .order("created_at", { ascending: false })
-        .limit(data.executionId ? 200 : Math.min(500, data.limit * 20));
-      if (data.executionId) eventsQuery = eventsQuery.eq("execution_id", data.executionId);
+        .maybeSingle(),
+    ]);
+    if (events.error || agents.error || controls.error)
+      throw new Error("Live execution control could not be loaded.");
 
-      const [events, agents, controls] = await Promise.all([
-        eventsQuery,
-        context.supabase.from("agents").select("id,name,slug,status").eq("org_id", ws.orgId),
-        context.supabase
-          .from("org_ai_controls")
-          .select(
-            "execution_enabled,console_enabled,agents_enabled,max_request_cost_usd,updated_at",
-          )
-          .eq("org_id", ws.orgId)
-          .maybeSingle(),
-      ]);
-      if (events.error || agents.error || controls.error)
-        throw new Error("Live execution control could not be loaded.");
-
-      const agentMap = new Map((agents.data ?? []).map((a: any) => [a.id, a]));
-      const grouped = new Map<string, any>();
-      for (const event of events.data ?? []) {
-        const key = String(event.execution_id);
-        const current = grouped.get(key) ?? {
-          executionId: key,
-          requestId: event.request_id ?? null,
-          actorType: event.actor_type,
-          agent: event.agent_id ? (agentMap.get(event.agent_id) ?? null) : null,
-          latestAt: event.created_at,
-          stages: [],
-        };
-        current.requestId = current.requestId ?? event.request_id ?? null;
-        current.latestAt =
-          new Date(event.created_at).getTime() > new Date(current.latestAt).getTime()
-            ? event.created_at
-            : current.latestAt;
-        current.stages.push(event);
-        grouped.set(key, current);
-      }
-
-      const executions = [...grouped.values()]
-        .map((execution) => ({
-          ...execution,
-          stages: execution.stages.sort(
-            (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-          ),
-        }))
-        .sort((a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime())
-        .slice(0, data.limit);
-
-      return {
-        workspace: ws,
-        controls: controls.data ?? {
-          execution_enabled: true,
-          console_enabled: true,
-          agents_enabled: true,
-          max_request_cost_usd: null,
-          updated_at: null,
-        },
-        executions,
+    const agentMap = new Map((agents.data ?? []).map((a: any) => [a.id, a]));
+    const grouped = new Map<string, any>();
+    for (const event of events.data ?? []) {
+      const key = String(event.execution_id);
+      const current = grouped.get(key) ?? {
+        executionId: key,
+        requestId: event.request_id ?? null,
+        actorType: event.actor_type,
+        agent: event.agent_id ? (agentMap.get(event.agent_id) ?? null) : null,
+        latestAt: event.created_at,
+        stages: [],
       };
+      current.requestId = current.requestId ?? event.request_id ?? null;
+      current.latestAt =
+        new Date(event.created_at).getTime() > new Date(current.latestAt).getTime()
+          ? event.created_at
+          : current.latestAt;
+      current.stages.push(event);
+      grouped.set(key, current);
+    }
+
+    const executions = [...grouped.values()]
+      .map((execution) => ({
+        ...execution,
+        stages: execution.stages.sort(
+          (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        ),
+      }))
+      .sort((a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime())
+      .slice(0, data.limit);
+
+    return {
+      workspace: ws,
+      controls: controls.data ?? {
+        execution_enabled: true,
+        console_enabled: true,
+        agents_enabled: true,
+        max_request_cost_usd: null,
+        updated_at: null,
+      },
+      executions,
+    };
     },
   );
 
