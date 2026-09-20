@@ -13,8 +13,19 @@ control plane does not trust browser checkout state.
   implementation work are not included in the platform price.
 
 New organizations receive a 14-day Team trial. Seat, agent, MCP-server and
-monthly request limits are enforced server-side. Enterprise limits are set by
-contract.
+monthly request limits are enforced server-side. Premium capabilities are also
+checked against the current subscription on the server and again at the
+database boundary where applicable.
+
+Solo does not receive Team-only entitlements. Team and Enterprise receive:
+human approval workflows, MCP discovery/tool controls, the security test suite,
+attack simulation, and consented device AI discovery. An expired trial,
+past-due subscription, canceled subscription, or incomplete subscription fails
+closed for those premium operations.
+
+Enterprise limits and Enterprise-specific identity, SIEM, deployment, and
+support terms are set by contract; the self-service app does not pretend those
+contracted services are automatically provisioned.
 
 ## Paddle activation
 

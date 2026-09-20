@@ -25,6 +25,8 @@ const NOTES: Record<string, string> = {
     "Manage capability assignments for registered agents. MCP tools also require an explicit tool grant before execution.",
   "mcp-gateway":
     "Register HTTPS MCP endpoints. Discovery and invocation require an administrator allowlist, server credentials, approved tool definitions, capabilities and per-agent grants.",
+  "ai-discovery":
+    "Inventory AI desktop apps and local runtimes reported by enrolled NEXORA device agents. Browser pages cannot inspect a desktop directly; discovery starts only after an agent is installed and explicitly connected.",
   threats: "Tenant-scoped security findings with resolution tracking. Latest 200 records.",
   "security-tests":
     "Run synthetic request and response fixtures against your active policies and content detectors. Tests do not call AI providers or verify model behavior.",
@@ -63,6 +65,15 @@ const FIELDS: Record<string, [string, string][]> = {
     ["Endpoint", "url"],
     ["Transport", "transport"],
     ["Status", "status"],
+  ],
+  "ai-discovery": [
+    ["Device", "device_label"],
+    ["Platform", "platform"],
+    ["AI product", "app_name"],
+    ["Vendor", "vendor"],
+    ["Detection", "observation_type"],
+    ["Status", "active"],
+    ["Last seen", "last_seen"],
   ],
   threats: [
     ["Finding", "title"],
@@ -339,9 +350,13 @@ function ModuleContent({ slug }: { slug: string }) {
                 ...fields.map(([, key]) =>
                   key === "agent_name"
                     ? (r.agents?.name ?? r.agent_id)
-                    : key === "created_at"
+                    : key === "created_at" || key === "last_seen"
                       ? new Date(r[key]).toLocaleString()
-                      : String(r[key] ?? "—"),
+                      : key === "active"
+                        ? r[key]
+                          ? "Active"
+                          : "Not currently seen"
+                        : String(r[key] ?? "—"),
                 ),
                 ...(actions
                   ? [

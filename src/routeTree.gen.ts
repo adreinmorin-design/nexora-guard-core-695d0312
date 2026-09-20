@@ -33,6 +33,7 @@ import { Route as AuthenticatedModuleSlugRouteImport } from './routes/_authentic
 import { Route as AuthenticatedObservabilityUsageRouteImport } from './routes/_authenticated/observability.usage'
 import { Route as AuthenticatedSecurityFindingsRouteImport } from './routes/_authenticated/security.findings'
 import { Route as ApiAgentConnectRouteImport } from './routes/api.agent.connect'
+import { Route as ApiAgentInventoryRouteImport } from './routes/api.agent.inventory'
 import { Route as ApiAgentTokenRouteImport } from './routes/api.agent.token'
 import { Route as ApiPaddleWebhookRouteImport } from './routes/api.paddle.webhook'
 
@@ -167,6 +168,11 @@ const ApiAgentConnectRoute = ApiAgentConnectRouteImport.update({
   path: '/connect',
   getParentRoute: () => ApiAgentRoute,
 } as any)
+const ApiAgentInventoryRoute = ApiAgentInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => ApiAgentRoute,
+} as any)
 const ApiAgentTokenRoute = ApiAgentTokenRouteImport.update({
   id: '/token',
   path: '/token',
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/observability/usage': typeof AuthenticatedObservabilityUsageRoute
   '/security/findings': typeof AuthenticatedSecurityFindingsRoute
   '/api/agent/connect': typeof ApiAgentConnectRoute
+  '/api/agent/inventory': typeof ApiAgentInventoryRoute
   '/api/agent/token': typeof ApiAgentTokenRoute
   '/api/paddle/webhook': typeof ApiPaddleWebhookRoute
 }
@@ -229,6 +236,7 @@ export interface FileRoutesByTo {
   '/observability/usage': typeof AuthenticatedObservabilityUsageRoute
   '/security/findings': typeof AuthenticatedSecurityFindingsRoute
   '/api/agent/connect': typeof ApiAgentConnectRoute
+  '/api/agent/inventory': typeof ApiAgentInventoryRoute
   '/api/agent/token': typeof ApiAgentTokenRoute
   '/api/paddle/webhook': typeof ApiPaddleWebhookRoute
 }
@@ -258,6 +266,7 @@ export interface FileRoutesById {
   '/_authenticated/observability/usage': typeof AuthenticatedObservabilityUsageRoute
   '/_authenticated/security/findings': typeof AuthenticatedSecurityFindingsRoute
   '/api/agent/connect': typeof ApiAgentConnectRoute
+  '/api/agent/inventory': typeof ApiAgentInventoryRoute
   '/api/agent/token': typeof ApiAgentTokenRoute
   '/api/paddle/webhook': typeof ApiPaddleWebhookRoute
 }
@@ -287,6 +296,7 @@ export interface FileRouteTypes {
     | '/observability/usage'
     | '/security/findings'
     | '/api/agent/connect'
+    | '/api/agent/inventory'
     | '/api/agent/token'
     | '/api/paddle/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/observability/usage'
     | '/security/findings'
     | '/api/agent/connect'
+    | '/api/agent/inventory'
     | '/api/agent/token'
     | '/api/paddle/webhook'
   id:
@@ -342,6 +353,7 @@ export interface FileRouteTypes {
     | '/_authenticated/observability/usage'
     | '/_authenticated/security/findings'
     | '/api/agent/connect'
+    | '/api/agent/inventory'
     | '/api/agent/token'
     | '/api/paddle/webhook'
   fileRoutesById: FileRoutesById
@@ -526,6 +538,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAgentConnectRouteImport
       parentRoute: typeof ApiAgentRoute
     }
+    '/api/agent/inventory': {
+      id: '/api/agent/inventory'
+      path: '/inventory'
+      fullPath: '/api/agent/inventory'
+      preLoaderRoute: typeof ApiAgentInventoryRouteImport
+      parentRoute: typeof ApiAgentRoute
+    }
     '/api/agent/token': {
       id: '/api/agent/token'
       path: '/token'
@@ -588,11 +607,13 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface ApiAgentRouteChildren {
   ApiAgentConnectRoute: typeof ApiAgentConnectRoute
+  ApiAgentInventoryRoute: typeof ApiAgentInventoryRoute
   ApiAgentTokenRoute: typeof ApiAgentTokenRoute
 }
 
 const ApiAgentRouteChildren: ApiAgentRouteChildren = {
   ApiAgentConnectRoute: ApiAgentConnectRoute,
+  ApiAgentInventoryRoute: ApiAgentInventoryRoute,
   ApiAgentTokenRoute: ApiAgentTokenRoute,
 }
 

@@ -39,6 +39,7 @@ const ADVANCED_NAV: NavGroup[] = [
       { label: "Registry", to: "/module/agent-registry" },
       { label: "Tasks", to: "/module/agent-tasks" },
       { label: "Tools", to: "/module/agent-tools" },
+      { label: "AI discovery", to: "/module/ai-discovery" },
       { label: "MCP gateway", to: "/module/mcp-gateway" },
     ],
   },

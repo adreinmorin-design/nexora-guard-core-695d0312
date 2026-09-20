@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import type { GovAction } from "./nexora/policy-engine";
 import { SEED_MODELS, SEED_POLICIES, SEED_PROVIDERS } from "./nexora/catalog";
+import { requireOrgEntitlement } from "./nexora/entitlements.server";
 
 const GOV_ROLES = ["platform_admin", "org_admin", "governance_admin", "security_admin"];
 
@@ -413,6 +414,7 @@ export const listApprovals = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }: { context: any }) => {
     const ws = await resolveWorkspace(context);
+    await requireOrgEntitlement(ws.orgId, "human_approvals");
     const { data } = await context.supabase
       .from("approvals")
       .select("*")
@@ -494,6 +496,9 @@ export const savePolicy = createServerFn({ method: "POST" })
     const ws = await resolveWorkspace(context);
     if (!ws.roles.some((r) => GOV_ROLES.includes(r))) {
       throw new Error("Forbidden: policy authoring requires a governance or admin role.");
+    }
+    if (data.action === "REQUIRE_APPROVAL") {
+      await requireOrgEntitlement(ws.orgId, "human_approvals");
     }
 
     let policyId = data.id ?? null;
@@ -582,6 +587,7 @@ export const decideApproval = createServerFn({ method: "POST" })
     if (!ws.roles.some((r) => GOV_ROLES.includes(r))) {
       throw new Error("Forbidden: you are not an approver in this organization.");
     }
+    await requireOrgEntitlement(ws.orgId, "human_approvals");
 
     const { decideAndExecute } = await import("./nexora/gateway.server");
     return decideAndExecute(context, ws.orgId, data.id, data.decision);
@@ -617,6 +623,15 @@ export const listControlPlane = createServerFn({ method: "POST" })
   .validator((input: unknown) => z.object({ module: z.string().min(1) }).parse(input))
   .handler(async ({ data, context }: { data: { module: string }; context: any }) => {
     const ws = await resolveWorkspace(context);
+    const premiumModuleEntitlement = {
+      "mcp-gateway": "mcp_controls",
+      "security-tests": "security_tests",
+      "attack-simulation": "attack_simulation",
+      "ai-discovery": "device_ai_discovery",
+    } as const;
+    const premiumEntitlement =
+      premiumModuleEntitlement[data.module as keyof typeof premiumModuleEntitlement];
+    if (premiumEntitlement) await requireOrgEntitlement(ws.orgId, premiumEntitlement);
     const q = (table: string, columns: string) =>
       context.supabase
         .from(table)
@@ -670,6 +685,12 @@ export const listControlPlane = createServerFn({ method: "POST" })
         query = q("requests", "id,agent_id,model,decision,status,created_at").eq(
           "actor_type",
           "agent",
+        );
+        break;
+      case "ai-discovery":
+        query = q(
+          "device_ai_inventory",
+          "id,device_label,platform,app_name,vendor,observation_type,version,active,last_seen,created_at",
         );
         break;
       case "integrations": {
@@ -744,6 +765,10 @@ export const runSecurityTests = createServerFn({ method: "POST" })
   .validator((input: unknown) => z.object({ adversarial: z.boolean() }).parse(input))
   .handler(async ({ data, context }: { data: { adversarial: boolean }; context: any }) => {
     const ws = await resolveWorkspace(context);
+    await requireOrgEntitlement(
+      ws.orgId,
+      data.adversarial ? "attack_simulation" : "security_tests",
+    );
     if (!ws.roles.some((r) => GOV_ROLES.includes(r)))
       throw new Error("Security administration role required.");
     const { data: policies, error } = await context.supabase
@@ -825,6 +850,9 @@ export const manageControlPlane = createServerFn({ method: "POST" })
           : ["platform_admin", "org_admin", "security_admin", "agent_admin"];
     if (!ws.roles.some((r) => allowed.includes(r)))
       throw new Error("Administration role required.");
+    if (data.action === "register-mcp") {
+      await requireOrgEntitlement(ws.orgId, "mcp_controls");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
     let query: any;
@@ -970,6 +998,9 @@ export const executeAgentTask = createServerFn({ method: "POST" })
       )
     )
       throw new Error("Agent administration role required.");
+    if (data.task.kind === "tool") {
+      await requireOrgEntitlement(ws.orgId, "mcp_controls");
+    }
     const { claimAgent, runAgentOperation } = await import("./nexora/agents.server");
     const { data: agent, error } = await context.supabase
       .from("agents")
@@ -1008,6 +1039,7 @@ export const manageAgentTools = createServerFn({ method: "POST" })
   .validator((input: unknown) => toolAdminInput.parse(input))
   .handler(async ({ data, context }) => {
     const ws = await resolveWorkspace(context);
+    await requireOrgEntitlement(ws.orgId, "mcp_controls");
     if (
       !ws.roles.some((r) =>
         ["platform_admin", "org_admin", "security_admin", "agent_admin"].includes(r),
