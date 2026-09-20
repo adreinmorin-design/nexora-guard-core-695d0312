@@ -109,7 +109,8 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       has_table_privilege('authenticated','billing_subscriptions','UPDATE') AS subscription_write,
       has_table_privilege('anon','profiles','SELECT') AS anonymous_profile_read,
       has_function_privilege('anon','update_updated_at_column()','EXECUTE') AS timestamp_rpc,
-      has_function_privilege('authenticated','nexora_billing_usage(uuid)','EXECUTE') AS billing_rpc`);
+      has_function_privilege('authenticated','nexora_billing_usage(uuid)','EXECUTE') AS billing_rpc,
+      has_table_privilege('authenticated','device_ai_inventory','INSERT') AS device_inventory_write`);
     assert.deepEqual(billingPrivileges.rows[0], {
       public_plan_read: true,
       public_plan_truncate: false,
@@ -119,6 +120,7 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       anonymous_profile_read: false,
       timestamp_rpc: false,
       billing_rpc: false,
+      device_inventory_write: false,
     });
 
     await db.exec(`
@@ -199,6 +201,16 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       ["evt_new", "2026-09-17T10:00:00Z", "subscription.updated", org],
     );
     assert.equal(applied.rows[0].result.result, "processed");
+    assert.equal(
+      (
+        await db.query(
+          "SELECT private.has_feature_entitlement($1,'mcp_controls') AS allowed",
+          [org],
+        )
+      ).rows[0].allowed,
+      true,
+    );
+
     const duplicate = await db.query(
       "SELECT nexora_apply_paddle_event($1,$2,$3,$4,true,'team','active','ctm_1','sub_1',NULL,NULL,false) AS result",
       ["evt_new", "2026-09-17T10:00:00Z", "subscription.updated", org],
@@ -257,6 +269,22 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       provider_subscription_id: "sub_2",
       last_event_id: "evt_replace",
     });
+    assert.equal(
+      (
+        await db.query(
+          "SELECT private.has_feature_entitlement($1,'mcp_controls') AS allowed",
+          [org],
+        )
+      ).rows[0].allowed,
+      false,
+    );
+    await assert.rejects(
+      db.query(
+        "INSERT INTO device_ai_inventory(org_id,agent_id,device_fingerprint,platform,observation_key,observation_type,app_name) VALUES($1,$2,$3,'linux',$4,'desktop_app','ChatGPT')",
+        [org, agent, "c".repeat(64), "d".repeat(64)],
+      ),
+    );
+
 
     await assert.rejects(
       db.query("SELECT nexora_claim_agent($1,$2,$3,NULL)", [
