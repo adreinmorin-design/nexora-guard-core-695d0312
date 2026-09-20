@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeProviderRequest, providerReadiness } from "../ai-gateway.server";
 import { runGovernedRequest, type GatewayStore } from "./pipeline";
 import type { PolicyRecord } from "./policy-engine";
+import { requireOrgEntitlement } from "./entitlements.server";
 
 // Every query is checked. Supabase returns errors as values, not exceptions.
 export async function checked(query: PromiseLike<any>): Promise<any> {
@@ -70,6 +71,7 @@ export function makeStore(context: any, orgId: string): GatewayStore {
     },
     async insertApproval(row) {
       scoped(String(row["org_id"]));
+      await requireOrgEntitlement(orgId, "human_approvals");
       return checked(admin.from("approvals").insert(row).select("id").single());
     },
     async insertAudit(row) {
@@ -135,6 +137,7 @@ export async function decideAndExecute(
   id: string,
   decision: "approved" | "rejected",
 ) {
+  await requireOrgEntitlement(orgId, "human_approvals");
   // RPC atomically checks role, requester, expiry and current status.
   const admin: any = supabaseAdmin;
   const approval = await checked(
