@@ -165,7 +165,7 @@ export async function runConsoleRequest(
         stage: event.stage,
         status: event.status,
         summary: event.summary,
-        detail: event.detail,
+        ...(event.detail ? { detail: event.detail } : {}),
         requestId: event.requestId ?? null,
       }),
     execute: executeProviderRequest,
