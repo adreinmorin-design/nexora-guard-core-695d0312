@@ -333,11 +333,7 @@ export const listCatalog = createServerFn({ method: "POST" })
     const ws = await resolveWorkspace(context);
     const [providers, models] = await Promise.all([
       context.supabase.from("providers").select("*").eq("org_id", ws.orgId).order("name"),
-      db
-        .from("models")
-        .select("*, providers(vendor)")
-        .eq("org_id", ws.orgId)
-        .order("display_name"),
+      db.from("models").select("*, providers(vendor)").eq("org_id", ws.orgId).order("display_name"),
     ]);
     if (providers.error || models.error) throw new Error("Catalog could not be loaded.");
     const { providerCredentialVariable, providerReadiness } = await import("./ai-gateway.server");
