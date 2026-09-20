@@ -130,6 +130,19 @@ export const Route = createFileRoute("/api/demo-proof")({
           }),
         });
         const modelBody = await modelResponse.json().catch(() => null);
+        let diagnosticError: string | null = null;
+        if (!modelResponse.ok) {
+          try {
+            const { executeAgentModel } = await import("@/lib/nexora/agents.server");
+            await executeAgentModel(org.id, AGENT_ID, {
+              modelKey: "openai/gpt-4o-mini",
+              prompt: "Diagnostic governed provider request.",
+              idempotencyKey: "b13bd35b-a9a2-49ef-9007-b594e0db0e29",
+            });
+          } catch (error) {
+            diagnosticError = error instanceof Error ? error.message : "unknown error";
+          }
+        }
 
         const toolResponse = await fetch(agentUrl, {
           method: "POST",
@@ -188,6 +201,7 @@ export const Route = createFileRoute("/api/demo-proof")({
               httpStatus: modelResponse.status,
               outcome: modelBody,
               persistedRequest: requestRow,
+              diagnosticError,
             },
             toolInvocation: {
               httpStatus: toolResponse.status,
