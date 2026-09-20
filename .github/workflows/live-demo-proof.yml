@@ -19,7 +19,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          URL="https://nexora-guard-core.lovable.app/api/demo-proof?nonce=J0_8_cPqDb-GbxkBIkIK_YSxHrqGtAFe"
+          URL="https://nexora-guard-core.lovable.app/api/demo-proof2?proof=nexora-live-proof-20260920"
           code=""
           for i in {1..12}; do
             code="$(curl -sS -o proof.json -w '%{http_code}' --max-time 60 "$URL" || true)"
@@ -44,11 +44,13 @@ jobs:
           assert float(m["persistedRequest"]["cost_usd"]) <= d["controls"]["perRequestCeilingUsd"], m
           assert t["httpStatus"] == 403, t
           stages=[(x["execution_id"],x["stage"],x["status"]) for x in d["executionTrace"]]
-          assert any(x[0]=="9e2068ba-26dd-475d-89ec-d2e58efd58aa" and x[1]=="permissions" and x[2]=="passed" for x in stages), stages
-          assert any(x[0]=="9e2068ba-26dd-475d-89ec-d2e58efd58aa" and x[1]=="budget" and x[2]=="passed" for x in stages), stages
-          assert any(x[0]=="9e2068ba-26dd-475d-89ec-d2e58efd58aa" and x[1]=="provider_selection" and x[2]=="passed" for x in stages), stages
-          assert any(x[0]=="9e2068ba-26dd-475d-89ec-d2e58efd58aa" and x[1]=="execution" and x[2]=="completed" for x in stages), stages
-          assert any(x[0]=="0c3e7432-8110-4393-a23a-df75821daea1" and x[1]=="tool_authorization" and x[2]=="blocked" for x in stages), stages
+          model_id=m["executionId"]
+          tool_id=t["executionId"]
+          assert any(x[0]==model_id and x[1]=="permissions" and x[2]=="passed" for x in stages), stages
+          assert any(x[0]==model_id and x[1]=="budget" and x[2]=="passed" for x in stages), stages
+          assert any(x[0]==model_id and x[1]=="provider_selection" and x[2]=="passed" for x in stages), stages
+          assert any(x[0]==model_id and x[1]=="execution" and x[2]=="completed" for x in stages), stages
+          assert any(x[0]==tool_id and x[1]=="tool_authorization" and x[2]=="blocked" for x in stages), stages
           assert any(a["action"]=="gateway.request" for a in d["auditEvidence"]), d["auditEvidence"]
           assert d["credentialRevoked"] is True
           print("\nLIVE_PROOF_PASS")
