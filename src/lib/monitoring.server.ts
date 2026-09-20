@@ -144,6 +144,10 @@ export function buildSlackAlertPayload(alert: SlackAlert) {
 }
 
 export async function notifySlackAlert(alert: SlackAlert): Promise<SlackAlertResult> {
+  if (process.env["NEXORA_ALERT_MAILBOX_ID"] && !isEmailDuplicate(alert)) {
+    const { notifyEmailAlert } = await import("./email-alerts.server");
+    await notifyEmailAlert(alert);
+  }
   const configured = configuredSlackWebhook();
   if (!configured.url) {
     return { sent: false, reason: configured.reason ?? "not_configured" };
@@ -172,4 +176,16 @@ export async function notifySlackAlert(alert: SlackAlert): Promise<SlackAlertRes
   } finally {
     clearTimeout(timeout);
   }
+}
+
+const recentEmailAlerts = new Map<string, number>();
+function isEmailDuplicate(alert: SlackAlert): boolean {
+  const now = Date.now();
+  for (const [key, timestamp] of recentEmailAlerts) {
+    if (now - timestamp > DEDUPE_WINDOW_MS) recentEmailAlerts.delete(key);
+  }
+  const key = alertKey(alert);
+  if (recentEmailAlerts.has(key)) return true;
+  recentEmailAlerts.set(key, now);
+  return false;
 }
