@@ -23,20 +23,23 @@ export function makeStore(context: any, orgId: string): GatewayStore {
     async getModel(id, key) {
       scoped(id);
       const row = await checked(
-        db
-          .from("models")
-          .select("*, providers(vendor, status, org_id)")
-          .eq("org_id", id)
-          .eq("model_key", key)
-          .maybeSingle(),
+        db.from("models").select("*").eq("org_id", id).eq("model_key", key).maybeSingle(),
       );
       if (!row) return null;
-      if (row.providers?.org_id !== id) throw new Error("Invalid provider workspace.");
+      const provider = await checked(
+        db
+          .from("providers")
+          .select("vendor, status, org_id")
+          .eq("org_id", id)
+          .eq("id", row.provider_id)
+          .maybeSingle(),
+      );
+      if (!provider || provider.org_id !== id) throw new Error("Invalid provider workspace.");
       return {
         ...row,
-        provider_vendor: row.providers.vendor,
-        provider_status: row.providers.status,
-        provider_credential_state: providerReadiness(row.providers.vendor),
+        provider_vendor: provider.vendor,
+        provider_status: provider.status,
+        provider_credential_state: providerReadiness(provider.vendor),
       };
     },
     async monthlySpend(id) {
