@@ -65,9 +65,7 @@ export const Route = createFileRoute("/api/agent/inventory")({
         }
 
         try {
-          const { requireOrgEntitlement } = await import(
-            "@/lib/nexora/entitlements.server"
-          );
+          const { requireOrgEntitlement } = await import("@/lib/nexora/entitlements.server");
           await requireOrgEntitlement(agent.org_id, "device_ai_discovery");
 
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

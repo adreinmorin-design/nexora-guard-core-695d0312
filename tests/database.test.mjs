@@ -203,10 +203,9 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
     assert.equal(applied.rows[0].result.result, "processed");
     assert.equal(
       (
-        await db.query(
-          "SELECT private.has_feature_entitlement($1,'mcp_controls') AS allowed",
-          [org],
-        )
+        await db.query("SELECT private.has_feature_entitlement($1,'mcp_controls') AS allowed", [
+          org,
+        ])
       ).rows[0].allowed,
       true,
     );
@@ -271,10 +270,9 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
     });
     assert.equal(
       (
-        await db.query(
-          "SELECT private.has_feature_entitlement($1,'mcp_controls') AS allowed",
-          [org],
-        )
+        await db.query("SELECT private.has_feature_entitlement($1,'mcp_controls') AS allowed", [
+          org,
+        ])
       ).rows[0].allowed,
       false,
     );
@@ -284,7 +282,6 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
         [org, agent, "c".repeat(64), "d".repeat(64)],
       ),
     );
-
 
     await assert.rejects(
       db.query("SELECT nexora_claim_agent($1,$2,$3,NULL)", [

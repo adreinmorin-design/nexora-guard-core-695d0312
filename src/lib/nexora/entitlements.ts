@@ -15,10 +15,7 @@ const TEAM_AND_ABOVE = new Set<EntitlementKey>([
   "device_ai_discovery",
 ]);
 
-export function planAllowsEntitlement(
-  plan: EntitlementPlan,
-  entitlement: EntitlementKey,
-): boolean {
+export function planAllowsEntitlement(plan: EntitlementPlan, entitlement: EntitlementKey): boolean {
   if (plan === "enterprise") return true;
   if (plan === "team") return TEAM_AND_ABOVE.has(entitlement);
   return false;

@@ -17,7 +17,6 @@ test("commercial plans have increasing paid value and safe limits", () => {
   assert.equal(planByKey("unknown").key, "team");
 });
 
-
 test("premium entitlements are denied to Solo and enabled for Team and Enterprise", () => {
   const premium = [
     "human_approvals",

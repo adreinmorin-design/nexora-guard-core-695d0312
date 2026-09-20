@@ -46,9 +46,7 @@ export async function requireOrgEntitlement(
     throw new Error("An active NEXORA subscription is required for this feature.");
   }
   if (!planAllowsEntitlement(state.plan, entitlement)) {
-    throw new Error(
-      `${ENTITLEMENT_LABELS[entitlement]} requires the Team or Enterprise tier.`,
-    );
+    throw new Error(`${ENTITLEMENT_LABELS[entitlement]} requires the Team or Enterprise tier.`);
   }
   return state;
 }
