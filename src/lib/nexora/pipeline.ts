@@ -73,6 +73,21 @@ export type GatewayStore = {
   settle(orgId: string, key: string): Promise<void>;
 };
 
+export type PipelineTraceEvent = {
+  stage:
+    | "pii"
+    | "injection"
+    | "budget"
+    | "provider_selection"
+    | "tool_authorization"
+    | "execution"
+    | "audit";
+  status: "running" | "passed" | "blocked" | "redacted" | "not_applicable" | "failed" | "completed";
+  summary: string;
+  detail?: Record<string, unknown>;
+  requestId?: string | null;
+};
+
 export type GatewayOutcome = {
   decision: GovAction;
   reason: string;
@@ -122,8 +137,18 @@ export async function runGovernedRequest(params: {
   execute: ProviderExecutor;
   idempotencyKey?: string | null;
   approvedPolicies?: PolicyRecord[];
+  maxRequestCostUsd?: number | null;
+  trace?: (event: PipelineTraceEvent) => Promise<void>;
 }): Promise<GatewayOutcome> {
   const { store, principal, prompt, modelKey, execute } = params;
+  const trace = async (event: PipelineTraceEvent) => {
+    try {
+      await params.trace?.(event);
+    } catch {
+      // Execution tracing is operational visibility, not the security audit
+      // authority. A trace outage must not weaken policy enforcement.
+    }
+  };
   const idempotencyKey = params.idempotencyKey ?? crypto.randomUUID();
   const startedAt = Date.now();
   const actorColumns =
@@ -204,6 +229,12 @@ export async function runGovernedRequest(params: {
   };
 
   // 1. Model must be registered, active and configured inside this tenant.
+  await trace({
+    stage: "provider_selection",
+    status: "running",
+    summary: "Resolving approved model and provider.",
+    detail: { modelKey },
+  });
   const model = await store.getModel(principal.orgId, modelKey);
   if (!model) {
     return failClosed("Model is not registered in this organization's model registry.", "high");
@@ -212,11 +243,58 @@ export async function runGovernedRequest(params: {
     return failClosed("Model or provider is not in an active state.");
   }
   if (model.provider_credential_state !== "CONFIGURED") {
+    await trace({
+      stage: "provider_selection",
+      status: "blocked",
+      summary: "Provider credential is not configured.",
+      detail: { provider: model.provider_vendor, modelKey },
+    });
     return failClosed(`Provider execution for ${model.provider_vendor} is NOT_CONFIGURED.`);
   }
+  await trace({
+    stage: "provider_selection",
+    status: "passed",
+    summary: `${model.provider_vendor} selected for ${model.display_name}.`,
+    detail: { provider: model.provider_vendor, modelKey, classification: model.classification },
+  });
 
   // 2. Deterministic inspection.
   const detections = inspect(prompt);
+  const injectionCategories = new Set([
+    "prompt_injection",
+    "system_prompt_extraction",
+    "data_exfiltration",
+  ]);
+  const injectionDetections = detections.filter((d) => injectionCategories.has(d.category));
+  const piiDetections = detections.filter((d) => !injectionCategories.has(d.category));
+  await trace({
+    stage: "pii",
+    status: piiDetections.length ? "redacted" : "passed",
+    summary: piiDetections.length
+      ? `${piiDetections.length} sensitive-data finding(s) detected for policy evaluation.`
+      : "No PII or secret pattern detected.",
+    detail: {
+      detections: piiDetections.map((d) => ({
+        category: d.category,
+        severity: d.severity,
+        confidence: d.confidence,
+      })),
+    },
+  });
+  await trace({
+    stage: "injection",
+    status: injectionDetections.length ? "blocked" : "passed",
+    summary: injectionDetections.length
+      ? `${injectionDetections.length} injection/exfiltration signal(s) detected.`
+      : "No prompt-injection signal detected.",
+    detail: {
+      detections: injectionDetections.map((d) => ({
+        category: d.category,
+        severity: d.severity,
+        confidence: d.confidence,
+      })),
+    },
+  });
 
   // 3. Server-side cost context.
   const monthlySpend = await store.monthlySpend(principal.orgId);
@@ -230,6 +308,22 @@ export async function runGovernedRequest(params: {
     return failClosed("Model pricing is missing or invalid.");
   }
   const estimatedCost = (estTokens * prices[0] + MAX_OUTPUT_TOKENS * prices[1]) / 1000;
+  if (
+    params.maxRequestCostUsd != null &&
+    Number.isFinite(params.maxRequestCostUsd) &&
+    estimatedCost > params.maxRequestCostUsd
+  ) {
+    await trace({
+      stage: "budget",
+      status: "blocked",
+      summary: "Estimated request cost exceeds the administrator per-request ceiling.",
+      detail: {
+        estimatedCostUsd: Number(estimatedCost.toFixed(6)),
+        maxRequestCostUsd: params.maxRequestCostUsd,
+      },
+    });
+    return failClosed("Estimated request cost exceeds the administrator per-request ceiling.");
+  }
 
   // 4. Versioned, tenant-scoped policy evaluation.
   const policies = await store.listPolicies(principal.orgId);
@@ -266,6 +360,27 @@ export async function runGovernedRequest(params: {
       }
     }
   }
+
+  await trace({
+    stage: "budget",
+    status: ["BLOCK", "REQUIRE_APPROVAL"].includes(finalAction) ? "blocked" : "passed",
+    summary:
+      finalAction === "BLOCK"
+        ? finalReason
+        : finalAction === "REQUIRE_APPROVAL"
+          ? `Budget/policy gate requires approval: ${finalReason}`
+          : `Budget admitted. Estimated cost ${estimatedCost.toFixed(6)}.`,
+    detail: {
+      monthlySpendUsd: Number(monthlySpend.toFixed(6)),
+      estimatedCostUsd: Number(estimatedCost.toFixed(6)),
+      action: finalAction,
+    },
+  });
+  await trace({
+    stage: "tool_authorization",
+    status: "not_applicable",
+    summary: "No external tool requested; model execution path only.",
+  });
 
   const findingsToWrite: Array<Record<string, unknown>> = detections.map((d) => ({
     severity: d.severity,
@@ -305,6 +420,23 @@ export async function runGovernedRequest(params: {
 
   if (finalAction === "BLOCK") status = "blocked";
   else if (finalAction === "REQUIRE_APPROVAL") status = "pending_approval";
+
+  await trace({
+    stage: "execution",
+    status:
+      finalAction === "BLOCK"
+        ? "blocked"
+        : finalAction === "REQUIRE_APPROVAL"
+          ? "blocked"
+          : "running",
+    summary:
+      finalAction === "BLOCK"
+        ? "Execution stopped before provider egress."
+        : finalAction === "REQUIRE_APPROVAL"
+          ? "Execution paused for human approval."
+          : `Dispatch authorized with ${finalAction} decision.`,
+    detail: { action: finalAction },
+  });
 
   // 6. Execution gate. BLOCK / REQUIRE_APPROVAL structurally cannot reach the
   //    executor; REDACT can only forward the redacted string.
@@ -358,6 +490,22 @@ export async function runGovernedRequest(params: {
         output = result.text;
       }
 
+      await trace({
+        stage: "execution",
+        status: status === "response_blocked" ? "blocked" : "completed",
+        summary:
+          status === "response_blocked"
+            ? "Provider responded, but response controls withheld the output."
+            : "Provider execution completed.",
+        detail: {
+          latencyMs: latency,
+          inputTokens,
+          outputTokens,
+          costUsd: Number(costUsd.toFixed(6)),
+          responseFindings: responseDetections.length,
+        },
+      });
+
       for (const d of responseDetections) {
         findingsToWrite.push({
           severity: d.severity,
@@ -374,6 +522,11 @@ export async function runGovernedRequest(params: {
   } catch (error) {
     status = "provider_error";
     finalReason = `${finalReason} · provider request failed; details withheld`;
+    await trace({
+      stage: "execution",
+      status: "failed",
+      summary: "Provider execution failed; upstream details withheld.",
+    });
   }
 
   // 8. Persist request, findings, approval and the append-only audit event.
@@ -430,6 +583,12 @@ export async function runGovernedRequest(params: {
     approvalId = approval?.id ?? null;
   }
 
+  await trace({
+    stage: "audit",
+    status: "running",
+    summary: "Writing governed request and immutable audit evidence.",
+    requestId: requestRow?.id ?? null,
+  });
   await audit({
     action: "gateway.request",
     resource: "model",
@@ -441,6 +600,14 @@ export async function runGovernedRequest(params: {
     risk: finalAction === "BLOCK" ? "high" : finalAction === "REQUIRE_APPROVAL" ? "medium" : "info",
     result: status,
     metadata: { detections: detections.length, cost: costUsd, principal: principal.kind },
+  });
+
+  await trace({
+    stage: "audit",
+    status: "completed",
+    summary: "Governed request, findings and audit evidence persisted.",
+    requestId: requestRow?.id ?? null,
+    detail: { decision: finalAction, status },
   });
 
   // Unknown provider failures retain the reservation: the upstream may have
