@@ -1453,18 +1453,18 @@ export const getAdminAiControl = createServerFn({ method: "POST" })
     if (!canControl) throw new Error("Organization administrator role required.");
 
     const [controls, providers, models, agents, budgets] = await Promise.all([
-      context.supabase.from("org_ai_controls").select("*").eq("org_id", ws.orgId).maybeSingle(),
+      db.from("org_ai_controls").select("*").eq("org_id", ws.orgId).maybeSingle(),
       db
         .from("providers")
         .select("id,name,vendor,status,credential_state")
         .eq("org_id", ws.orgId)
         .order("name"),
-      context.supabase
+      db
         .from("models")
         .select("id,model_key,display_name,classification,status,provider_id")
         .eq("org_id", ws.orgId)
         .order("display_name"),
-      context.supabase
+      db
         .from("agents")
         .select("id,name,slug,status,last_used_at")
         .eq("org_id", ws.orgId)
