@@ -5,6 +5,7 @@ import { hashCredential } from "./agent-credentials";
 import { canonicalJson, toolDecision } from "./tool-policy";
 import { withMcp, validateMcpEndpoint } from "./mcp-transport";
 import type { PolicyRecord } from "./policy-engine";
+import { requireOrgEntitlement } from "./entitlements.server";
 
 const db: any = supabaseAdmin;
 const allowedOrigins = () =>
@@ -64,6 +65,7 @@ async function listRemote(
 }
 
 export async function discoverMcp(orgId: string, serverId: string, actor: string) {
+  await requireOrgEntitlement(orgId, "mcp_controls");
   const server = await checked(
     db.from("mcp_servers").select("*").eq("org_id", orgId).eq("id", serverId).single(),
   );
@@ -118,6 +120,7 @@ export async function executeTool(
   },
   approved?: { policies: PolicyRecord[]; definitionHash: string },
 ) {
+  await requireOrgEntitlement(orgId, "mcp_controls");
   const agent = await activeAgent(orgId, agentId);
   const tool = await checked(
     db.from("mcp_tools").select("*").eq("org_id", orgId).eq("id", input.toolId).single(),
