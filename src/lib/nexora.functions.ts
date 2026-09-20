@@ -241,7 +241,7 @@ export const getOverview = createServerFn({ method: "POST" })
       context.supabase.from("policies").select("id, status").eq("org_id", ws.orgId),
       context.supabase.from("budgets").select("limit_usd, period").eq("org_id", ws.orgId),
       context.supabase.from("org_members").select("user_id").eq("org_id", ws.orgId),
-      db
+      context.supabase
         .from("agents")
         .select("id", { count: "exact", head: true })
         .eq("org_id", ws.orgId)
@@ -333,7 +333,11 @@ export const listCatalog = createServerFn({ method: "POST" })
     const ws = await resolveWorkspace(context);
     const [providers, models] = await Promise.all([
       context.supabase.from("providers").select("*").eq("org_id", ws.orgId).order("name"),
-      db.from("models").select("*, providers(vendor)").eq("org_id", ws.orgId).order("display_name"),
+      context.supabase
+        .from("models")
+        .select("*, providers(vendor)")
+        .eq("org_id", ws.orgId)
+        .order("display_name"),
     ]);
     if (providers.error || models.error) throw new Error("Catalog could not be loaded.");
     const { providerCredentialVariable, providerReadiness } = await import("./ai-gateway.server");
