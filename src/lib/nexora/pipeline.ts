@@ -228,18 +228,25 @@ export async function runGovernedRequest(params: {
     };
   };
 
-  // 1. Model must be registered, active and configured inside this tenant.
-  await trace({
-    stage: "provider_selection",
-    status: "running",
-    summary: "Resolving approved model and provider.",
-    detail: { modelKey },
-  });
+  // 1. Resolve the model internally. The buyer-facing provider-selection
+  // event is emitted after data and budget controls on the successful path.
   const model = await store.getModel(principal.orgId, modelKey);
   if (!model) {
+    await trace({
+      stage: "provider_selection",
+      status: "blocked",
+      summary: "Requested model is not registered for this organization.",
+      detail: { modelKey },
+    });
     return failClosed("Model is not registered in this organization's model registry.", "high");
   }
   if (model.status !== "active" || model.provider_status !== "active") {
+    await trace({
+      stage: "provider_selection",
+      status: "blocked",
+      summary: "Model or provider is suspended.",
+      detail: { provider: model.provider_vendor, modelKey },
+    });
     return failClosed("Model or provider is not in an active state.");
   }
   if (model.provider_credential_state !== "CONFIGURED") {
@@ -251,13 +258,6 @@ export async function runGovernedRequest(params: {
     });
     return failClosed(`Provider execution for ${model.provider_vendor} is NOT_CONFIGURED.`);
   }
-  await trace({
-    stage: "provider_selection",
-    status: "passed",
-    summary: `${model.provider_vendor} selected for ${model.display_name}.`,
-    detail: { provider: model.provider_vendor, modelKey, classification: model.classification },
-  });
-
   // 2. Deterministic inspection.
   const detections = inspect(prompt);
   const injectionCategories = new Set([
@@ -269,7 +269,7 @@ export async function runGovernedRequest(params: {
   const piiDetections = detections.filter((d) => !injectionCategories.has(d.category));
   await trace({
     stage: "pii",
-    status: piiDetections.length ? "redacted" : "passed",
+    status: "passed",
     summary: piiDetections.length
       ? `${piiDetections.length} sensitive-data finding(s) detected for policy evaluation.`
       : "No PII or secret pattern detected.",
@@ -283,7 +283,7 @@ export async function runGovernedRequest(params: {
   });
   await trace({
     stage: "injection",
-    status: injectionDetections.length ? "blocked" : "passed",
+    status: "passed",
     summary: injectionDetections.length
       ? `${injectionDetections.length} injection/exfiltration signal(s) detected.`
       : "No prompt-injection signal detected.",
@@ -349,32 +349,45 @@ export async function runGovernedRequest(params: {
   // 5. Budgets and quotas.
   let finalAction = decision.action;
   let finalReason = decision.reason;
+  let budgetGate: { action: GovAction; reason: string } | null = null;
   for (const b of await store.listBudgets(principal.orgId)) {
     // Authoritative, period-aware admission happens atomically in reserve().
     if (b.period !== "monthly") continue;
     if (monthlySpend + estimatedCost > Number(b.limit_usd)) {
       const action = b.action_on_exceed;
+      const reason = `Budget "${b.name}" exceeded (${monthlySpend.toFixed(4)} of ${Number(b.limit_usd).toFixed(2)}).`;
+      if (!budgetGate || ORDER.indexOf(action) > ORDER.indexOf(budgetGate.action)) {
+        budgetGate = { action, reason };
+      }
       if (ORDER.indexOf(action) > ORDER.indexOf(finalAction)) {
         finalAction = action;
-        finalReason = `Budget "${b.name}" exceeded ($${monthlySpend.toFixed(4)} of $${Number(b.limit_usd).toFixed(2)}).`;
+        finalReason = reason;
       }
     }
   }
 
   await trace({
     stage: "budget",
-    status: ["BLOCK", "REQUIRE_APPROVAL"].includes(finalAction) ? "blocked" : "passed",
-    summary:
-      finalAction === "BLOCK"
-        ? finalReason
-        : finalAction === "REQUIRE_APPROVAL"
-          ? `Budget/policy gate requires approval: ${finalReason}`
-          : `Budget admitted. Estimated cost ${estimatedCost.toFixed(6)}.`,
+    status:
+      budgetGate?.action === "BLOCK" || budgetGate?.action === "REQUIRE_APPROVAL"
+        ? "blocked"
+        : "passed",
+    summary: budgetGate
+      ? budgetGate.action === "REQUIRE_APPROVAL"
+        ? `Budget threshold reached; human approval is required. ${budgetGate.reason}`
+        : budgetGate.reason
+      : `Budget admitted. Estimated cost $${estimatedCost.toFixed(6)}.`,
     detail: {
       monthlySpendUsd: Number(monthlySpend.toFixed(6)),
       estimatedCostUsd: Number(estimatedCost.toFixed(6)),
-      action: finalAction,
+      budgetAction: budgetGate?.action ?? "ALLOW",
     },
+  });
+  await trace({
+    stage: "provider_selection",
+    status: "passed",
+    summary: `${model.provider_vendor} selected for ${model.display_name}.`,
+    detail: { provider: model.provider_vendor, modelKey, classification: model.classification },
   });
   await trace({
     stage: "tool_authorization",
