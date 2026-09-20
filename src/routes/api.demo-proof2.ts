@@ -119,11 +119,22 @@ export const Route = createFileRoute("/api/demo-proof2")({
         const persistenceChecks: Record<string, unknown> = {};
         const modelCheck = await db
           .from("models")
-          .select("*, providers(vendor, status, org_id)")
+          .select("id,provider_id,model_key,status")
           .eq("org_id", org.id)
           .eq("model_key", "openai/gpt-4o-mini")
           .maybeSingle();
-        persistenceChecks.model = { ok: !modelCheck.error, error: modelCheck.error?.message ?? null };
+        const providerCheck = modelCheck.data?.provider_id
+          ? await db
+              .from("providers")
+              .select("id,vendor,status")
+              .eq("org_id", org.id)
+              .eq("id", modelCheck.data.provider_id)
+              .maybeSingle()
+          : { error: new Error("Model provider unavailable.") };
+        persistenceChecks.model = {
+          ok: !modelCheck.error && !providerCheck.error,
+          error: modelCheck.error?.message ?? providerCheck.error?.message ?? null,
+        };
         const spendCheck = await db.rpc("nexora_monthly_spend", { p_org: org.id });
         persistenceChecks.monthlySpend = {
           ok: !spendCheck.error,
@@ -167,14 +178,13 @@ export const Route = createFileRoute("/api/demo-proof2")({
         const modelBody = await modelResponse.json().catch(() => null);
 
         let diagnosticError: string | null = null;
-        if (!modelResponse.ok) {
+        if (!modelResponse.ok || modelBody?.status === "provider_error") {
           try {
-            const { executeAgentModel } = await import("@/lib/nexora/agents.server");
-            await executeAgentModel(org.id, AGENT_ID, {
-              modelKey: "openai/gpt-4o-mini",
-              prompt: "Diagnostic governed provider request.",
-              idempotencyKey: crypto.randomUUID(),
-            });
+            const { executeProviderRequest } = await import("@/lib/ai-gateway.server");
+            await executeProviderRequest(
+              "openai/gpt-4o-mini",
+              "Diagnostic provider connectivity check.",
+            );
           } catch (error) {
             diagnosticError = error instanceof Error ? error.message : "unknown error";
           }
