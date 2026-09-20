@@ -188,7 +188,6 @@ test("missing policy coverage fails closed", async () => {
   assert.equal(f.calls.length, 0);
 });
 
-
 test("live trace emits buyer-visible control stages without raw prompt content", async () => {
   const f = fixture();
   const events = [];

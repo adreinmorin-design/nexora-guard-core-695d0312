@@ -1329,7 +1329,6 @@ export const getPaddleCheckout = createServerFn({ method: "POST" })
     return config ?? { enabled: false as const, reason: "PADDLE_NOT_CONFIGURED" as const };
   });
 
-
 /* ------------------------------------------------------------------ */
 /* Live execution control                                              */
 /* ------------------------------------------------------------------ */
@@ -1344,78 +1343,77 @@ export const getLiveExecutionControl = createServerFn({ method: "POST" })
       })
       .parse(input ?? {}),
   )
-  .handler(async ({ data, context }: { data: { executionId?: string; limit: number }; context: any }) => {
-    const ws = await resolveWorkspace(context);
-    let eventsQuery = context.supabase
-      .from("execution_events")
-      .select("id,execution_id,request_id,agent_id,actor_type,stage,status,summary,detail,created_at")
-      .eq("org_id", ws.orgId)
-      .order("created_at", { ascending: false })
-      .limit(data.executionId ? 200 : Math.min(500, data.limit * 20));
-    if (data.executionId) eventsQuery = eventsQuery.eq("execution_id", data.executionId);
-
-    const [events, agents, controls] = await Promise.all([
-      eventsQuery,
-      context.supabase
-        .from("agents")
-        .select("id,name,slug,status")
-        .eq("org_id", ws.orgId),
-      context.supabase
-        .from("org_ai_controls")
-        .select("execution_enabled,console_enabled,agents_enabled,max_request_cost_usd,updated_at")
+  .handler(
+    async ({ data, context }: { data: { executionId?: string; limit: number }; context: any }) => {
+      const ws = await resolveWorkspace(context);
+      let eventsQuery = context.supabase
+        .from("execution_events")
+        .select(
+          "id,execution_id,request_id,agent_id,actor_type,stage,status,summary,detail,created_at",
+        )
         .eq("org_id", ws.orgId)
-        .maybeSingle(),
-    ]);
-    if (events.error || agents.error || controls.error)
-      throw new Error("Live execution control could not be loaded.");
+        .order("created_at", { ascending: false })
+        .limit(data.executionId ? 200 : Math.min(500, data.limit * 20));
+      if (data.executionId) eventsQuery = eventsQuery.eq("execution_id", data.executionId);
 
-    const agentMap = new Map((agents.data ?? []).map((a: any) => [a.id, a]));
-    const grouped = new Map<string, any>();
-    for (const event of events.data ?? []) {
-      const key = String(event.execution_id);
-      const current =
-        grouped.get(key) ??
-        {
+      const [events, agents, controls] = await Promise.all([
+        eventsQuery,
+        context.supabase.from("agents").select("id,name,slug,status").eq("org_id", ws.orgId),
+        context.supabase
+          .from("org_ai_controls")
+          .select(
+            "execution_enabled,console_enabled,agents_enabled,max_request_cost_usd,updated_at",
+          )
+          .eq("org_id", ws.orgId)
+          .maybeSingle(),
+      ]);
+      if (events.error || agents.error || controls.error)
+        throw new Error("Live execution control could not be loaded.");
+
+      const agentMap = new Map((agents.data ?? []).map((a: any) => [a.id, a]));
+      const grouped = new Map<string, any>();
+      for (const event of events.data ?? []) {
+        const key = String(event.execution_id);
+        const current = grouped.get(key) ?? {
           executionId: key,
           requestId: event.request_id ?? null,
           actorType: event.actor_type,
-          agent: event.agent_id ? agentMap.get(event.agent_id) ?? null : null,
+          agent: event.agent_id ? (agentMap.get(event.agent_id) ?? null) : null,
           latestAt: event.created_at,
           stages: [],
         };
-      current.requestId = current.requestId ?? event.request_id ?? null;
-      current.latestAt =
-        new Date(event.created_at).getTime() > new Date(current.latestAt).getTime()
-          ? event.created_at
-          : current.latestAt;
-      current.stages.push(event);
-      grouped.set(key, current);
-    }
+        current.requestId = current.requestId ?? event.request_id ?? null;
+        current.latestAt =
+          new Date(event.created_at).getTime() > new Date(current.latestAt).getTime()
+            ? event.created_at
+            : current.latestAt;
+        current.stages.push(event);
+        grouped.set(key, current);
+      }
 
-    const executions = [...grouped.values()]
-      .map((execution) => ({
-        ...execution,
-        stages: execution.stages.sort(
-          (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-        ),
-      }))
-      .sort(
-        (a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime(),
-      )
-      .slice(0, data.limit);
+      const executions = [...grouped.values()]
+        .map((execution) => ({
+          ...execution,
+          stages: execution.stages.sort(
+            (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+          ),
+        }))
+        .sort((a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime())
+        .slice(0, data.limit);
 
-    return {
-      workspace: ws,
-      controls: controls.data ?? {
-        execution_enabled: true,
-        console_enabled: true,
-        agents_enabled: true,
-        max_request_cost_usd: null,
-        updated_at: null,
-      },
-      executions,
-    };
-  });
+      return {
+        workspace: ws,
+        controls: controls.data ?? {
+          execution_enabled: true,
+          console_enabled: true,
+          agents_enabled: true,
+          max_request_cost_usd: null,
+          updated_at: null,
+        },
+        executions,
+      };
+    },
+  );
 
 const aiAdminMutation = z.discriminatedUnion("action", [
   z.object({
@@ -1457,11 +1455,7 @@ export const getAdminAiControl = createServerFn({ method: "POST" })
     if (!canControl) throw new Error("Organization administrator role required.");
 
     const [controls, providers, models, agents, budgets] = await Promise.all([
-      context.supabase
-        .from("org_ai_controls")
-        .select("*")
-        .eq("org_id", ws.orgId)
-        .maybeSingle(),
+      context.supabase.from("org_ai_controls").select("*").eq("org_id", ws.orgId).maybeSingle(),
       context.supabase
         .from("providers")
         .select("id,name,vendor,status,credential_state")
@@ -1488,14 +1482,12 @@ export const getAdminAiControl = createServerFn({ method: "POST" })
 
     return {
       workspace: ws,
-      controls:
-        controls.data ??
-        {
-          execution_enabled: true,
-          console_enabled: true,
-          agents_enabled: true,
-          max_request_cost_usd: null,
-        },
+      controls: controls.data ?? {
+        execution_enabled: true,
+        console_enabled: true,
+        agents_enabled: true,
+        max_request_cost_usd: null,
+      },
       providers: providers.data ?? [],
       models: models.data ?? [],
       agents: agents.data ?? [],

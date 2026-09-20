@@ -61,7 +61,8 @@ function stageTone(status?: string) {
 }
 
 function statusIcon(status?: string) {
-  if (["blocked", "failed"].includes(status ?? "")) return <Ban className="h-4 w-4 text-critical" />;
+  if (["blocked", "failed"].includes(status ?? ""))
+    return <Ban className="h-4 w-4 text-critical" />;
   if (["passed", "completed", "redacted"].includes(status ?? ""))
     return <CheckCircle2 className="h-4 w-4 text-primary" />;
   if (status === "running") return <CircleDot className="h-4 w-4 animate-pulse text-sky-500" />;
@@ -84,7 +85,9 @@ function LiveExecutionControl() {
   for (const event of active?.stages ?? []) latest.set(event.stage as StageKey, event);
 
   const finalEvent = active?.stages?.at(-1);
-  const blocked = active?.stages?.some((event: any) => ["blocked", "failed"].includes(event.status));
+  const blocked = active?.stages?.some((event: any) =>
+    ["blocked", "failed"].includes(event.status),
+  );
   const completed = latest.get("audit")?.status === "completed";
 
   return (
@@ -108,29 +111,43 @@ function LiveExecutionControl() {
         </div>
       </div>
 
-      {isLoading ? <p className="text-sm text-muted-foreground">Loading live execution stream…</p> : null}
-      {error ? <p role="alert" className="text-sm text-critical">{error.message}</p> : null}
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Loading live execution stream…</p>
+      ) : null}
+      {error ? (
+        <p role="alert" className="text-sm text-critical">
+          {error.message}
+        </p>
+      ) : null}
 
       {data ? (
         <div className="mb-4 grid gap-3 sm:grid-cols-4">
           <Panel className="p-4">
-            <div className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">Master execution</div>
+            <div className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+              Master execution
+            </div>
             <div className="mt-2 text-lg font-semibold">
               {data.controls.execution_enabled ? "Enabled" : "Suspended"}
             </div>
           </Panel>
           <Panel className="p-4">
-            <div className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">Agent channel</div>
+            <div className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+              Agent channel
+            </div>
             <div className="mt-2 text-lg font-semibold">
               {data.controls.agents_enabled ? "Enabled" : "Suspended"}
             </div>
           </Panel>
           <Panel className="p-4">
-            <div className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">Live executions</div>
+            <div className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+              Live executions
+            </div>
             <div className="mt-2 text-lg font-semibold">{executions.length}</div>
           </Panel>
           <Panel className="p-4">
-            <div className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">Per-request ceiling</div>
+            <div className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+              Per-request ceiling
+            </div>
             <div className="mt-2 text-lg font-semibold">
               {data.controls.max_request_cost_usd == null
                 ? "Not set"
@@ -161,19 +178,27 @@ function LiveExecutionControl() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  {active.actorType === "agent" ? <Bot className="h-4 w-4 text-primary" /> : <Activity className="h-4 w-4 text-primary" />}
+                  {active.actorType === "agent" ? (
+                    <Bot className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Activity className="h-4 w-4 text-primary" />
+                  )}
                   <h2 className="font-display text-xl font-semibold">
-                    {active.agent?.name ?? (active.actorType === "agent" ? "Agent request" : "Console request")}
+                    {active.agent?.name ??
+                      (active.actorType === "agent" ? "Agent request" : "Console request")}
                   </h2>
                   <Tag value={completed ? "completed" : blocked ? "blocked" : "live"} />
                 </div>
                 <div className="mt-1 font-mono text-[11px] text-muted-foreground">
-                  execution {active.executionId.slice(0, 8)}… · {new Date(active.latestAt).toLocaleTimeString()}
+                  execution {active.executionId.slice(0, 8)}… ·{" "}
+                  {new Date(active.latestAt).toLocaleTimeString()}
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-xs text-muted-foreground">Latest event</div>
-                <div className="mt-1 text-sm font-medium">{finalEvent?.summary ?? "Evaluating…"}</div>
+                <div className="mt-1 text-sm font-medium">
+                  {finalEvent?.summary ?? "Evaluating…"}
+                </div>
               </div>
             </div>
 
@@ -185,7 +210,12 @@ function LiveExecutionControl() {
                   return (
                     <div key={stage.key} className="flex flex-1 items-start">
                       <div className="min-w-0 flex-1">
-                        <div className={cn("rounded-xl border p-3 transition-all", stageTone(event?.status))}>
+                        <div
+                          className={cn(
+                            "rounded-xl border p-3 transition-all",
+                            stageTone(event?.status),
+                          )}
+                        >
                           <div className="flex items-center justify-between gap-2">
                             <Icon className="h-4 w-4 text-muted-foreground" />
                             {statusIcon(event?.status)}
@@ -200,7 +230,12 @@ function LiveExecutionControl() {
                         </div>
                       </div>
                       {index < STAGES.length - 1 ? (
-                        <div className={cn("mt-10 h-px w-4 shrink-0", event ? "bg-primary/50" : "bg-border")} />
+                        <div
+                          className={cn(
+                            "mt-10 h-px w-4 shrink-0",
+                            event ? "bg-primary/50" : "bg-border",
+                          )}
+                        />
                       ) : null}
                     </div>
                   );
@@ -216,20 +251,28 @@ function LiveExecutionControl() {
                 <span className="text-xs text-muted-foreground">{active.stages.length} events</span>
               </div>
               <div className="mt-4 space-y-2">
-                {[...active.stages].reverse().slice(0, 12).map((event: any) => (
-                  <div key={event.id} className="flex gap-3 rounded-lg border border-border/70 p-3">
-                    <div className="mt-0.5">{statusIcon(event.status)}</div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="text-xs font-medium capitalize">{event.stage.replaceAll("_", " ")}</div>
-                        <div className="font-mono text-[10px] text-muted-foreground">
-                          {new Date(event.created_at).toLocaleTimeString()}
+                {[...active.stages]
+                  .reverse()
+                  .slice(0, 12)
+                  .map((event: any) => (
+                    <div
+                      key={event.id}
+                      className="flex gap-3 rounded-lg border border-border/70 p-3"
+                    >
+                      <div className="mt-0.5">{statusIcon(event.status)}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="text-xs font-medium capitalize">
+                            {event.stage.replaceAll("_", " ")}
+                          </div>
+                          <div className="font-mono text-[10px] text-muted-foreground">
+                            {new Date(event.created_at).toLocaleTimeString()}
+                          </div>
                         </div>
+                        <p className="mt-1 text-xs text-muted-foreground">{event.summary}</p>
                       </div>
-                      <p className="mt-1 text-xs text-muted-foreground">{event.summary}</p>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </Panel>
 
@@ -239,7 +282,10 @@ function LiveExecutionControl() {
                 {executions.slice(0, 8).map((execution: any) => {
                   const last = execution.stages.at(-1);
                   return (
-                    <div key={execution.executionId} className="rounded-lg border border-border/70 p-3">
+                    <div
+                      key={execution.executionId}
+                      className="rounded-lg border border-border/70 p-3"
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-xs font-medium">
                           {execution.agent?.name ?? execution.actorType}

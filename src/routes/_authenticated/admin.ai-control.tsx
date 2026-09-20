@@ -117,7 +117,12 @@ function AdminAiControl() {
   }
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading AI controls…</p>;
-  if (error) return <p role="alert" className="text-sm text-critical">{error.message}</p>;
+  if (error)
+    return (
+      <p role="alert" className="text-sm text-critical">
+        {error.message}
+      </p>
+    );
   if (!data) return null;
 
   return (
@@ -135,7 +140,11 @@ function AdminAiControl() {
         </Link>
       </div>
 
-      {mutation.error ? <p role="alert" className="mb-4 text-sm text-critical">{mutation.error.message}</p> : null}
+      {mutation.error ? (
+        <p role="alert" className="mb-4 text-sm text-critical">
+          {mutation.error.message}
+        </p>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)]">
         <Panel>
@@ -170,7 +179,8 @@ function AdminAiControl() {
               <div className="text-sm font-medium">Per-request cost ceiling</div>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Requests whose conservative preflight estimate exceeds this amount are blocked before provider dispatch.
+              Requests whose conservative preflight estimate exceeds this amount are blocked before
+              provider dispatch.
             </p>
             <div className="mt-3 flex gap-2">
               <input
@@ -186,7 +196,9 @@ function AdminAiControl() {
               <button
                 type="button"
                 onClick={saveGlobal}
-                disabled={mutation.isPending || (costValue !== "" && !Number.isFinite(Number(costValue)))}
+                disabled={
+                  mutation.isPending || (costValue !== "" && !Number.isFinite(Number(costValue)))
+                }
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
               >
                 Save controls
@@ -205,11 +217,22 @@ function AdminAiControl() {
               ["Organization AI", executionEnabled ? "enabled" : "suspended"],
               ["Console", consoleEnabled ? "enabled" : "suspended"],
               ["Agents", agentsEnabled ? "enabled" : "suspended"],
-              ["Providers", String(data.providers.filter((item: any) => item.status === "active").length) + " active"],
-              ["Models", String(data.models.filter((item: any) => item.status === "active").length) + " active"],
+              [
+                "Providers",
+                String(data.providers.filter((item: any) => item.status === "active").length) +
+                  " active",
+              ],
+              [
+                "Models",
+                String(data.models.filter((item: any) => item.status === "active").length) +
+                  " active",
+              ],
               ["Agents enrolled", String(data.agents.length)],
             ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between border-b border-border/70 pb-3 last:border-0 last:pb-0">
+              <div
+                key={label}
+                className="flex items-center justify-between border-b border-border/70 pb-3 last:border-0 last:pb-0"
+              >
                 <span className="text-sm text-muted-foreground">{label}</span>
                 <span className="text-sm font-medium">{value}</span>
               </div>
@@ -218,7 +241,8 @@ function AdminAiControl() {
           <div className="mt-5 rounded-lg border border-critical/25 bg-critical/5 p-3">
             <div className="text-xs font-semibold text-critical">Emergency action</div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Suspending organization AI stops new governed execution without deleting configuration or audit history.
+              Suspending organization AI stops new governed execution without deleting configuration
+              or audit history.
             </p>
             <button
               type="button"
@@ -250,10 +274,15 @@ function AdminAiControl() {
           </p>
           <div className="mt-4 space-y-2">
             {data.providers.map((provider: any) => (
-              <div key={provider.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+              <div
+                key={provider.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+              >
                 <div>
                   <div className="text-sm font-medium">{provider.name}</div>
-                  <div className="mt-1 font-mono text-[10px] text-muted-foreground">{provider.vendor}</div>
+                  <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+                    {provider.vendor}
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -284,10 +313,15 @@ function AdminAiControl() {
           </p>
           <div className="mt-4 max-h-[28rem] space-y-2 overflow-y-auto pr-1">
             {data.models.map((model: any) => (
-              <div key={model.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+              <div
+                key={model.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+              >
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium">{model.display_name}</div>
-                  <div className="mt-1 truncate font-mono text-[10px] text-muted-foreground">{model.model_key}</div>
+                  <div className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
+                    {model.model_key}
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -317,28 +351,37 @@ function AdminAiControl() {
             Suspend a specific identity immediately without revoking the rest of the organization.
           </p>
           <div className="mt-4 space-y-2">
-            {data.agents.length ? data.agents.map((agent: any) => (
-              <div key={agent.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-                <div>
-                  <div className="text-sm font-medium">{agent.name}</div>
-                  <div className="mt-1 font-mono text-[10px] text-muted-foreground">{agent.slug}</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    mutation.mutate({
-                      action: "agent-status",
-                      id: agent.id,
-                      status: agent.status === "active" ? "suspended" : "active",
-                    })
-                  }
-                  className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs"
+            {data.agents.length ? (
+              data.agents.map((agent: any) => (
+                <div
+                  key={agent.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
                 >
-                  <Tag value={agent.status} />
-                  {agent.status === "active" ? "Suspend" : "Enable"}
-                </button>
-              </div>
-            )) : <p className="text-sm text-muted-foreground">No enrolled agents yet.</p>}
+                  <div>
+                    <div className="text-sm font-medium">{agent.name}</div>
+                    <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+                      {agent.slug}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      mutation.mutate({
+                        action: "agent-status",
+                        id: agent.id,
+                        status: agent.status === "active" ? "suspended" : "active",
+                      })
+                    }
+                    className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs"
+                  >
+                    <Tag value={agent.status} />
+                    {agent.status === "active" ? "Suspend" : "Enable"}
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">No enrolled agents yet.</p>
+            )}
           </div>
         </Panel>
 

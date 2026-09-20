@@ -36,7 +36,8 @@ export async function requireAiExecutionAllowed(
   actorType: "agent" | "user",
 ): Promise<AiControlState> {
   const state = await getAiControlState(orgId);
-  if (!state.execution_enabled) throw new Error("AI execution is suspended by an organization administrator.");
+  if (!state.execution_enabled)
+    throw new Error("AI execution is suspended by an organization administrator.");
   if (actorType === "agent" && !state.agents_enabled)
     throw new Error("Agent execution is suspended by an organization administrator.");
   if (actorType === "user" && !state.console_enabled)
