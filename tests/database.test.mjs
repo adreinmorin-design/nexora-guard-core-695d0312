@@ -140,6 +140,33 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       authenticated_function: false,
     });
 
+    const controlPrivileges = await db.query(`SELECT
+      has_table_privilege('authenticated','org_ai_controls','SELECT') AS controls_read,
+      has_table_privilege('authenticated','org_ai_controls','UPDATE') AS controls_write,
+      has_table_privilege('authenticated','execution_events','SELECT') AS events_read,
+      has_table_privilege('authenticated','execution_events','INSERT') AS events_write,
+      has_table_privilege('anon','execution_events','SELECT') AS anon_events_read`);
+    assert.deepEqual(controlPrivileges.rows[0], {
+      controls_read: true,
+      controls_write: false,
+      events_read: true,
+      events_write: false,
+      anon_events_read: false,
+    });
+
+    const seededControls = (
+      await db.query(
+        "SELECT execution_enabled,console_enabled,agents_enabled,max_request_cost_usd FROM org_ai_controls WHERE org_id=$1",
+        [org],
+      )
+    ).rows[0];
+    assert.deepEqual(seededControls, {
+      execution_enabled: true,
+      console_enabled: true,
+      agents_enabled: true,
+      max_request_cost_usd: null,
+    });
+
     const deviceHash = "a".repeat(64);
     const tokenHash = "b".repeat(64);
     const key = "00000000-0000-4000-8000-000000000006";

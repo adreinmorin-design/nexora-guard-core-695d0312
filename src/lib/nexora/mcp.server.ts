@@ -6,6 +6,9 @@ import { canonicalJson, toolDecision } from "./tool-policy";
 import { withMcp, validateMcpEndpoint } from "./mcp-transport";
 import type { PolicyRecord } from "./policy-engine";
 import { requireOrgEntitlement } from "./entitlements.server";
+import { requireAiExecutionAllowed } from "./ai-controls.server";
+import { writeExecutionEvent } from "./execution-trace.server";
+import { inspect } from "./dlp";
 
 const db: any = supabaseAdmin;
 const allowedOrigins = () =>
@@ -120,14 +123,35 @@ export async function executeTool(
   },
   approved?: { policies: PolicyRecord[]; definitionHash: string },
 ) {
+  const executionId = input.idempotencyKey;
   await requireOrgEntitlement(orgId, "mcp_controls");
+  await requireAiExecutionAllowed(orgId, "agent");
   const agent = await activeAgent(orgId, agentId);
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    agentId,
+    actorType: "agent",
+    stage: "identity",
+    status: "passed",
+    summary: "Agent credential, lifecycle and owner membership verified.",
+  });
   const tool = await checked(
     db.from("mcp_tools").select("*").eq("org_id", orgId).eq("id", input.toolId).single(),
   );
   if (tool.status !== "active" || !tool.definition_hash || !tool.remote_name)
     throw new Error("Tool has not been approved for execution.");
   await requireCapability(orgId, agentId, tool.required_capability);
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    agentId,
+    actorType: "agent",
+    stage: "permissions",
+    status: "passed",
+    summary: `Agent capability ${tool.required_capability} is authorized.`,
+    detail: { capability: tool.required_capability },
+  });
   const grant = await checked(
     db
       .from("mcp_tool_grants")
@@ -137,13 +161,80 @@ export async function executeTool(
       .eq("tool_id", tool.id)
       .maybeSingle(),
   );
-  if (!grant) throw new Error("Agent has no grant for this tool.");
+  if (!grant) {
+    await writeExecutionEvent({
+      orgId,
+      executionId,
+      agentId,
+      actorType: "agent",
+      stage: "tool_authorization",
+      status: "blocked",
+      summary: "Agent has no explicit grant for this tool.",
+    });
+    throw new Error("Agent has no grant for this tool.");
+  }
   if (approved && approved.definitionHash !== tool.definition_hash)
     throw new Error("Tool definition changed after approval.");
   const server = await checked(
     db.from("mcp_servers").select("*").eq("org_id", orgId).eq("id", tool.server_id).single(),
   );
   if (server.status !== "active") throw new Error("MCP server is inactive.");
+  const rawToolText = JSON.stringify(input.arguments);
+  const rawDetections = inspect(rawToolText);
+  const injectionCategories = new Set([
+    "prompt_injection",
+    "system_prompt_extraction",
+    "data_exfiltration",
+  ]);
+  const injectionDetections = rawDetections.filter((d) => injectionCategories.has(d.category));
+  const piiDetections = rawDetections.filter((d) => !injectionCategories.has(d.category));
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    agentId,
+    actorType: "agent",
+    stage: "pii",
+    status: "passed",
+    summary: piiDetections.length
+      ? `${piiDetections.length} sensitive-data finding(s) detected in tool arguments.`
+      : "No PII or secret pattern detected in tool arguments.",
+    detail: {
+      detections: piiDetections.map((d) => ({ category: d.category, severity: d.severity })),
+    },
+  });
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    agentId,
+    actorType: "agent",
+    stage: "injection",
+    status: "passed",
+    summary: injectionDetections.length
+      ? `${injectionDetections.length} injection/exfiltration signal(s) detected in tool arguments.`
+      : "No prompt-injection signal detected in tool arguments.",
+    detail: {
+      detections: injectionDetections.map((d) => ({ category: d.category, severity: d.severity })),
+    },
+  });
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    agentId,
+    actorType: "agent",
+    stage: "budget",
+    status: "not_applicable",
+    summary: "MCP tool call has no model-provider token charge in the NEXORA budget meter.",
+  });
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    agentId,
+    actorType: "agent",
+    stage: "provider_selection",
+    status: "passed",
+    summary: `MCP server selected for ${tool.remote_name}.`,
+    detail: { serverId: server.id, toolId: tool.id },
+  });
   const policies = await checked(
     db
       .from("policies")
@@ -157,6 +248,26 @@ export async function executeTool(
     "request",
     approved?.policies,
   );
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    agentId,
+    actorType: "agent",
+    stage: "tool_authorization",
+    status:
+      evaluated.decision.action === "BLOCK"
+        ? "blocked"
+        : evaluated.decision.action === "REQUIRE_APPROVAL"
+          ? "blocked"
+          : "passed",
+    summary:
+      evaluated.decision.action === "BLOCK"
+        ? evaluated.decision.reason
+        : evaluated.decision.action === "REQUIRE_APPROVAL"
+          ? "Tool authorization requires human approval."
+          : "Tool grant, capability and policy authorization passed.",
+    detail: { decision: evaluated.decision.action, tool: tool.remote_name },
+  });
   const invocation = await checked(
     db
       .from("tool_invocations")
@@ -205,8 +316,18 @@ export async function executeTool(
       approvalId,
     };
   };
-  if (evaluated.decision.action === "BLOCK")
+  if (evaluated.decision.action === "BLOCK") {
+    await writeExecutionEvent({
+      orgId,
+      executionId,
+      agentId,
+      actorType: "agent",
+      stage: "execution",
+      status: "blocked",
+      summary: "Tool execution stopped before remote dispatch.",
+    });
     return finish("blocked", "BLOCK", evaluated.decision.reason);
+  }
   if (
     evaluated.decision.action === "REQUIRE_APPROVAL" ||
     (!approved && (grant.requires_approval || ["high", "critical"].includes(tool.risk)))
@@ -234,6 +355,16 @@ export async function executeTool(
         .select("id")
         .single(),
     );
+    await writeExecutionEvent({
+      orgId,
+      executionId,
+      agentId,
+      actorType: "agent",
+      stage: "execution",
+      status: "blocked",
+      summary: "Tool execution paused for human approval.",
+      detail: { approvalId: approval.id },
+    });
     return finish(
       "pending_approval",
       "REQUIRE_APPROVAL",
@@ -242,6 +373,15 @@ export async function executeTool(
       approval.id,
     );
   }
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    agentId,
+    actorType: "agent",
+    stage: "execution",
+    status: "running",
+    summary: "Remote MCP tool dispatch authorized.",
+  });
   // Persist dispatch intent before touching the remote service. Failures are not retried.
   await checked(
     db.from("audit_events").insert({
@@ -279,11 +419,40 @@ export async function executeTool(
         arguments: evaluated.decision.action === "REDACT" ? evaluated.sanitized : input.arguments,
       });
     });
-    if (result?.isError)
+    if (result?.isError) {
+      await writeExecutionEvent({
+        orgId,
+        executionId,
+        agentId,
+        actorType: "agent",
+        stage: "execution",
+        status: "failed",
+        summary: "Remote tool returned an error; details withheld.",
+      });
       return finish("tool_error", "BLOCK", "Remote tool returned an error; details withheld.");
+    }
     const response = toolDecision(policies, result, tool.tool_name, "response");
     if (["BLOCK", "REQUIRE_APPROVAL"].includes(response.decision.action))
       return finish("response_blocked", "BLOCK", response.decision.reason);
+    await writeExecutionEvent({
+      orgId,
+      executionId,
+      agentId,
+      actorType: "agent",
+      stage: "execution",
+      status: "completed",
+      summary: "Remote tool execution completed and response controls passed.",
+    });
+    await writeExecutionEvent({
+      orgId,
+      executionId,
+      agentId,
+      actorType: "agent",
+      stage: "audit",
+      status: "completed",
+      summary: "Tool invocation and audit evidence persisted.",
+      detail: { invocationId: invocation.id },
+    });
     return finish(
       "completed",
       evaluated.decision.action,
@@ -291,6 +460,15 @@ export async function executeTool(
       response.sanitized,
     );
   } catch {
+    await writeExecutionEvent({
+      orgId,
+      executionId,
+      agentId,
+      actorType: "agent",
+      stage: "execution",
+      status: "failed",
+      summary: "Tool call could not be verified or completed.",
+    });
     return finish(
       "tool_error",
       "BLOCK",

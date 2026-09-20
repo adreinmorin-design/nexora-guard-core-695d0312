@@ -1328,3 +1328,260 @@ export const getPaddleCheckout = createServerFn({ method: "POST" })
     const config = createCheckoutConfig(ws.orgId, context.userId, data.plan, data.interval);
     return config ?? { enabled: false as const, reason: "PADDLE_NOT_CONFIGURED" as const };
   });
+
+/* ------------------------------------------------------------------ */
+/* Live execution control                                              */
+/* ------------------------------------------------------------------ */
+
+export const getLiveExecutionControl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    z
+      .object({
+        executionId: z.string().uuid().optional(),
+        limit: z.number().int().min(1).max(50).default(12),
+      })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const ws = await resolveWorkspace(context);
+    const db: any = context.supabase;
+    let eventsQuery = db
+      .from("execution_events")
+      .select(
+        "id,execution_id,request_id,agent_id,actor_type,stage,status,summary,detail,created_at",
+      )
+      .eq("org_id", ws.orgId)
+      .order("created_at", { ascending: false })
+      .limit(data.executionId ? 200 : Math.min(500, data.limit * 20));
+    if (data.executionId) eventsQuery = eventsQuery.eq("execution_id", data.executionId);
+
+    const [events, agents, controls] = await Promise.all([
+      eventsQuery,
+      db.from("agents").select("id,name,slug,status").eq("org_id", ws.orgId),
+      db
+        .from("org_ai_controls")
+        .select("execution_enabled,console_enabled,agents_enabled,max_request_cost_usd,updated_at")
+        .eq("org_id", ws.orgId)
+        .maybeSingle(),
+    ]);
+    if (events.error || agents.error || controls.error)
+      throw new Error("Live execution control could not be loaded.");
+
+    const agentMap = new Map((agents.data ?? []).map((a: any) => [a.id, a]));
+    const grouped = new Map<string, any>();
+    for (const event of events.data ?? []) {
+      const key = String(event.execution_id);
+      const current = grouped.get(key) ?? {
+        executionId: key,
+        requestId: event.request_id ?? null,
+        actorType: event.actor_type,
+        agent: event.agent_id ? (agentMap.get(event.agent_id) ?? null) : null,
+        latestAt: event.created_at,
+        stages: [],
+      };
+      current.requestId = current.requestId ?? event.request_id ?? null;
+      current.latestAt =
+        new Date(event.created_at).getTime() > new Date(current.latestAt).getTime()
+          ? event.created_at
+          : current.latestAt;
+      current.stages.push(event);
+      grouped.set(key, current);
+    }
+
+    const executions = [...grouped.values()]
+      .map((execution) => ({
+        ...execution,
+        stages: execution.stages.sort(
+          (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        ),
+      }))
+      .sort((a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime())
+      .slice(0, data.limit);
+
+    return {
+      workspace: ws,
+      controls: controls.data ?? {
+        execution_enabled: true,
+        console_enabled: true,
+        agents_enabled: true,
+        max_request_cost_usd: null,
+        updated_at: null,
+      },
+      executions,
+    };
+  });
+
+const aiAdminMutation = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("global-controls"),
+    executionEnabled: z.boolean(),
+    consoleEnabled: z.boolean(),
+    agentsEnabled: z.boolean(),
+    maxRequestCostUsd: z.number().min(0).max(100000).nullable(),
+  }),
+  z.object({
+    action: z.literal("provider-status"),
+    id: z.string().uuid(),
+    status: z.enum(["active", "suspended"]),
+  }),
+  z.object({
+    action: z.literal("model-status"),
+    id: z.string().uuid(),
+    status: z.enum(["active", "suspended"]),
+  }),
+  z.object({
+    action: z.literal("agent-status"),
+    id: z.string().uuid(),
+    status: z.enum(["active", "suspended"]),
+  }),
+  z.object({
+    action: z.literal("budget-limit"),
+    id: z.string().uuid(),
+    limitUsd: z.number().min(0).max(100000000),
+  }),
+]);
+
+export type AiAdminMutation = z.infer<typeof aiAdminMutation>;
+
+export const getAdminAiControl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }: { context: any }) => {
+    const ws = await resolveWorkspace(context);
+    const db: any = context.supabase;
+    const canControl = ws.roles.some((role) => ["platform_admin", "org_admin"].includes(role));
+    if (!canControl) throw new Error("Organization administrator role required.");
+
+    const [controls, providers, models, agents, budgets] = await Promise.all([
+      db.from("org_ai_controls").select("*").eq("org_id", ws.orgId).maybeSingle(),
+      db
+        .from("providers")
+        .select("id,name,vendor,status,credential_state")
+        .eq("org_id", ws.orgId)
+        .order("name"),
+      db
+        .from("models")
+        .select("id,model_key,display_name,classification,status,provider_id")
+        .eq("org_id", ws.orgId)
+        .order("display_name"),
+      db
+        .from("agents")
+        .select("id,name,slug,status,last_used_at")
+        .eq("org_id", ws.orgId)
+        .order("name"),
+      db
+        .from("budgets")
+        .select("id,name,limit_usd,action_on_exceed,status")
+        .eq("org_id", ws.orgId)
+        .order("name"),
+    ]);
+    if ([controls, providers, models, agents, budgets].some((result) => result.error))
+      throw new Error("AI administration controls could not be loaded.");
+
+    return {
+      workspace: ws,
+      controls: controls.data ?? {
+        execution_enabled: true,
+        console_enabled: true,
+        agents_enabled: true,
+        max_request_cost_usd: null,
+      },
+      providers: providers.data ?? [],
+      models: models.data ?? [],
+      agents: agents.data ?? [],
+      budgets: budgets.data ?? [],
+    };
+  });
+
+export const updateAdminAiControl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => aiAdminMutation.parse(input))
+  .handler(async ({ data, context }: { data: AiAdminMutation; context: any }) => {
+    const ws = await resolveWorkspace(context);
+    if (!ws.roles.some((role) => ["platform_admin", "org_admin"].includes(role)))
+      throw new Error("Organization administrator role required.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db: any = supabaseAdmin;
+    let result: any;
+
+    switch (data.action) {
+      case "global-controls":
+        result = await db
+          .from("org_ai_controls")
+          .upsert(
+            {
+              org_id: ws.orgId,
+              execution_enabled: data.executionEnabled,
+              console_enabled: data.consoleEnabled,
+              agents_enabled: data.agentsEnabled,
+              max_request_cost_usd: data.maxRequestCostUsd,
+              updated_by: context.userId,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "org_id" },
+          )
+          .select("org_id")
+          .single();
+        break;
+      case "provider-status":
+        result = await db
+          .from("providers")
+          .update({ status: data.status })
+          .eq("org_id", ws.orgId)
+          .eq("id", data.id)
+          .select("id")
+          .single();
+        break;
+      case "model-status":
+        result = await db
+          .from("models")
+          .update({ status: data.status })
+          .eq("org_id", ws.orgId)
+          .eq("id", data.id)
+          .select("id")
+          .single();
+        break;
+      case "agent-status":
+        result = await db
+          .from("agents")
+          .update({ status: data.status })
+          .eq("org_id", ws.orgId)
+          .eq("id", data.id)
+          .neq("status", "archived")
+          .select("id")
+          .single();
+        break;
+      case "budget-limit":
+        result = await db
+          .from("budgets")
+          .update({ limit_usd: data.limitUsd })
+          .eq("org_id", ws.orgId)
+          .eq("id", data.id)
+          .select("id")
+          .single();
+        break;
+    }
+
+    if (result.error || !result.data) throw new Error("AI control change could not be saved.");
+
+    await writeAudit(context, ws.orgId, {
+      action: `admin.ai_control.${data.action}`,
+      resource: "ai_control",
+      resource_id: "id" in data ? data.id : ws.orgId,
+      risk: data.action === "global-controls" && !data.executionEnabled ? "high" : "medium",
+      metadata:
+        data.action === "global-controls"
+          ? {
+              executionEnabled: data.executionEnabled,
+              consoleEnabled: data.consoleEnabled,
+              agentsEnabled: data.agentsEnabled,
+              maxRequestCostUsd: data.maxRequestCostUsd,
+            }
+          : data.action === "budget-limit"
+            ? { limitUsd: data.limitUsd }
+            : { status: data.status },
+    });
+
+    return { saved: true };
+  });

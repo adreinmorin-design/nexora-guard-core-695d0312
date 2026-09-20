@@ -10,6 +10,7 @@ type NavGroup = { group: string; items: NavItem[] };
 
 const PRIMARY_NAV: NavItem[] = [
   { label: "Overview", to: "/overview" },
+  { label: "Live execution", to: "/execution-control" },
   { label: "Playground", to: "/gateway/playground" },
   { label: "Requests", to: "/gateway/requests" },
   { label: "Agents", to: "/connect-agent" },
@@ -64,6 +65,7 @@ const ADVANCED_NAV: NavGroup[] = [
   {
     group: "Administration",
     items: [
+      { label: "AI control", to: "/admin/ai-control" },
       { label: "Users & roles", to: "/admin/users" },
       { label: "Plans & billing", to: "/admin/billing" },
       { label: "Integrations", to: "/module/integrations" },

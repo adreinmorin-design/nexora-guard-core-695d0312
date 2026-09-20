@@ -3,6 +3,8 @@ import { executeProviderRequest, providerReadiness } from "../ai-gateway.server"
 import { runGovernedRequest, type GatewayStore } from "./pipeline";
 import type { PolicyRecord } from "./policy-engine";
 import { requireOrgEntitlement } from "./entitlements.server";
+import { requireAiExecutionAllowed } from "./ai-controls.server";
+import { writeExecutionEvent } from "./execution-trace.server";
 
 // Every query is checked. Supabase returns errors as values, not exceptions.
 export async function checked(query: PromiseLike<any>): Promise<any> {
@@ -101,6 +103,16 @@ export async function runConsoleRequest(
   input: { prompt: string; modelKey: string; idempotencyKey?: string },
   approvedPolicies?: PolicyRecord[],
 ) {
+  const executionId = input.idempotencyKey ?? crypto.randomUUID();
+  const controls = await requireAiExecutionAllowed(orgId, "user");
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    actorType: "user",
+    stage: "identity",
+    status: "passed",
+    summary: "Authenticated user identity resolved to organization membership.",
+  });
   const memberships = await checked(
     context.supabase
       .from("org_members")
@@ -120,13 +132,42 @@ export async function runConsoleRequest(
       ].includes(m.role),
     )
   ) {
+    await writeExecutionEvent({
+      orgId,
+      executionId,
+      actorType: "user",
+      stage: "permissions",
+      status: "blocked",
+      summary: "User role cannot execute governed AI requests.",
+    });
     throw new Error("This role cannot execute gateway requests.");
   }
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    actorType: "user",
+    stage: "permissions",
+    status: "passed",
+    summary: "User role is authorized for governed AI execution.",
+  });
   return runGovernedRequest({
     store: makeStore(context, orgId),
     principal: { kind: "user", id: context.userId, orgId, source: "console" },
     ...input,
+    idempotencyKey: executionId,
     ...(approvedPolicies ? { approvedPolicies } : {}),
+    maxRequestCostUsd: controls.max_request_cost_usd,
+    trace: (event) =>
+      writeExecutionEvent({
+        orgId,
+        executionId,
+        actorType: "user",
+        stage: event.stage,
+        status: event.status,
+        summary: event.summary,
+        ...(event.detail ? { detail: event.detail } : {}),
+        requestId: event.requestId ?? null,
+      }),
     execute: executeProviderRequest,
   });
 }

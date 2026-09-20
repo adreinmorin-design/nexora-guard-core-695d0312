@@ -17,9 +17,11 @@ import { Route as AuthenticatedAiEfficiencyRouteImport } from './routes/_authent
 import { Route as AuthenticatedApprovalsRouteImport } from './routes/_authenticated/approvals'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedConnectAgentRouteImport } from './routes/_authenticated/connect-agent'
+import { Route as AuthenticatedExecutionControlRouteImport } from './routes/_authenticated/execution-control'
 import { Route as AuthenticatedOverviewRouteImport } from './routes/_authenticated/overview'
 import { Route as ApiAgentRouteImport } from './routes/api.agent'
 import { Route as ApiMcpRouteImport } from './routes/api.mcp'
+import { Route as AuthenticatedAdminAiControlRouteImport } from './routes/_authenticated/admin.ai-control'
 import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin.billing'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedGatewayModelsRouteImport } from './routes/_authenticated/gateway.models'
@@ -78,6 +80,12 @@ const AuthenticatedConnectAgentRoute =
     path: '/connect-agent',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedExecutionControlRoute =
+  AuthenticatedExecutionControlRouteImport.update({
+    id: '/execution-control',
+    path: '/execution-control',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOverviewRoute = AuthenticatedOverviewRouteImport.update({
   id: '/overview',
   path: '/overview',
@@ -93,6 +101,12 @@ const ApiMcpRoute = ApiMcpRouteImport.update({
   path: '/api/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminAiControlRoute =
+  AuthenticatedAdminAiControlRouteImport.update({
+    id: '/admin/ai-control',
+    path: '/admin/ai-control',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingRoute =
   AuthenticatedAdminBillingRouteImport.update({
     id: '/admin/billing',
@@ -192,9 +206,11 @@ export interface FileRoutesByFullPath {
   '/approvals': typeof AuthenticatedApprovalsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/connect-agent': typeof AuthenticatedConnectAgentRoute
+  '/execution-control': typeof AuthenticatedExecutionControlRoute
   '/overview': typeof AuthenticatedOverviewRoute
   '/api/agent': typeof ApiAgentRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
+  '/admin/ai-control': typeof AuthenticatedAdminAiControlRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/gateway/models': typeof AuthenticatedGatewayModelsRoute
@@ -220,9 +236,11 @@ export interface FileRoutesByTo {
   '/approvals': typeof AuthenticatedApprovalsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/connect-agent': typeof AuthenticatedConnectAgentRoute
+  '/execution-control': typeof AuthenticatedExecutionControlRoute
   '/overview': typeof AuthenticatedOverviewRoute
   '/api/agent': typeof ApiAgentRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
+  '/admin/ai-control': typeof AuthenticatedAdminAiControlRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/gateway/models': typeof AuthenticatedGatewayModelsRoute
@@ -250,9 +268,11 @@ export interface FileRoutesById {
   '/_authenticated/approvals': typeof AuthenticatedApprovalsRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/connect-agent': typeof AuthenticatedConnectAgentRoute
+  '/_authenticated/execution-control': typeof AuthenticatedExecutionControlRoute
   '/_authenticated/overview': typeof AuthenticatedOverviewRoute
   '/api/agent': typeof ApiAgentRouteWithChildren
   '/api/mcp': typeof ApiMcpRoute
+  '/_authenticated/admin/ai-control': typeof AuthenticatedAdminAiControlRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/gateway/models': typeof AuthenticatedGatewayModelsRoute
@@ -280,9 +300,11 @@ export interface FileRouteTypes {
     | '/approvals'
     | '/audit'
     | '/connect-agent'
+    | '/execution-control'
     | '/overview'
     | '/api/agent'
     | '/api/mcp'
+    | '/admin/ai-control'
     | '/admin/billing'
     | '/admin/users'
     | '/gateway/models'
@@ -308,9 +330,11 @@ export interface FileRouteTypes {
     | '/approvals'
     | '/audit'
     | '/connect-agent'
+    | '/execution-control'
     | '/overview'
     | '/api/agent'
     | '/api/mcp'
+    | '/admin/ai-control'
     | '/admin/billing'
     | '/admin/users'
     | '/gateway/models'
@@ -337,9 +361,11 @@ export interface FileRouteTypes {
     | '/_authenticated/approvals'
     | '/_authenticated/audit'
     | '/_authenticated/connect-agent'
+    | '/_authenticated/execution-control'
     | '/_authenticated/overview'
     | '/api/agent'
     | '/api/mcp'
+    | '/_authenticated/admin/ai-control'
     | '/_authenticated/admin/billing'
     | '/_authenticated/admin/users'
     | '/_authenticated/gateway/models'
@@ -426,6 +452,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConnectAgentRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/execution-control': {
+      id: '/_authenticated/execution-control'
+      path: '/execution-control'
+      fullPath: '/execution-control'
+      preLoaderRoute: typeof AuthenticatedExecutionControlRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/overview': {
       id: '/_authenticated/overview'
       path: '/overview'
@@ -446,6 +479,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/mcp'
       preLoaderRoute: typeof ApiMcpRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin/ai-control': {
+      id: '/_authenticated/admin/ai-control'
+      path: '/admin/ai-control'
+      fullPath: '/admin/ai-control'
+      preLoaderRoute: typeof AuthenticatedAdminAiControlRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/billing': {
       id: '/_authenticated/admin/billing'
@@ -567,7 +607,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedApprovalsRoute: typeof AuthenticatedApprovalsRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedConnectAgentRoute: typeof AuthenticatedConnectAgentRoute
+  AuthenticatedExecutionControlRoute: typeof AuthenticatedExecutionControlRoute
   AuthenticatedOverviewRoute: typeof AuthenticatedOverviewRoute
+  AuthenticatedAdminAiControlRoute: typeof AuthenticatedAdminAiControlRoute
   AuthenticatedAdminBillingRoute: typeof AuthenticatedAdminBillingRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedGatewayModelsRoute: typeof AuthenticatedGatewayModelsRoute
@@ -587,7 +629,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedApprovalsRoute: AuthenticatedApprovalsRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedConnectAgentRoute: AuthenticatedConnectAgentRoute,
+  AuthenticatedExecutionControlRoute: AuthenticatedExecutionControlRoute,
   AuthenticatedOverviewRoute: AuthenticatedOverviewRoute,
+  AuthenticatedAdminAiControlRoute: AuthenticatedAdminAiControlRoute,
   AuthenticatedAdminBillingRoute: AuthenticatedAdminBillingRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedGatewayModelsRoute: AuthenticatedGatewayModelsRoute,
