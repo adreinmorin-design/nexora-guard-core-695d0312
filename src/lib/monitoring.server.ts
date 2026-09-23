@@ -145,8 +145,10 @@ export function buildSlackAlertPayload(alert: SlackAlert) {
 
 export async function notifySlackAlert(alert: SlackAlert): Promise<SlackAlertResult> {
   if (process.env["NEXORA_ALERT_MAILBOX_ID"] && !isEmailDuplicate(alert)) {
-    const { notifyEmailAlert } = await import("./email-alerts.server");
-    await notifyEmailAlert(alert);
+    // Email is best effort: SMTP must not hold up the request or the Slack alert.
+    void import("./email-alerts.server")
+      .then(({ notifyEmailAlert }) => notifyEmailAlert(alert))
+      .catch(() => {});
   }
   const configured = configuredSlackWebhook();
   if (!configured.url) {
