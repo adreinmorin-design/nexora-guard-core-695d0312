@@ -32,27 +32,27 @@ in the evidence bundle.
 
 ## Two-minute recording
 
-| Time | Action | Observable evidence |
-| --- | --- | --- |
-| 0:00–0:20 | Show deployed commit, configured model, active policy, and live execution timeline. | Commit SHA, environment, policy version. |
-| 0:20–0:50 | Send one agent request containing `NEXORA-PROOF-<UTC>`: “Reply with exactly: governed execution confirmed.” | HTTP result, request ID, nonempty provider output, token usage, nonzero measured latency. |
-| 0:50–1:10 | Submit an otherwise identical request with a budget ceiling below its estimated cost, using a fresh idempotency key. | BLOCK, no provider output, zero provider tokens, request ID and budget trace. |
-| 1:10–1:30 | Have the same agent invoke the approved harmless MCP tool; then attempt an ungranted tool with another fresh key. | Tool authorization ALLOW and BLOCK, with separate execution IDs and no denied tool side effect. |
-| 1:30–2:00 | Show request history, execution events, and audit events for those exact IDs. | Matching org/request/actor IDs and timestamps; immutable audit trigger present. |
+| Time      | Action                                                                                                               | Observable evidence                                                                             |
+| --------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 0:00–0:20 | Show deployed commit, configured model, active policy, and live execution timeline.                                  | Commit SHA, environment, policy version.                                                        |
+| 0:20–0:50 | Send one agent request containing `NEXORA-PROOF-<UTC>`: “Reply with exactly: governed execution confirmed.”          | HTTP result, request ID, nonempty provider output, token usage, nonzero measured latency.       |
+| 0:50–1:10 | Submit an otherwise identical request with a budget ceiling below its estimated cost, using a fresh idempotency key. | BLOCK, no provider output, zero provider tokens, request ID and budget trace.                   |
+| 1:10–1:30 | Have the same agent invoke the approved harmless MCP tool; then attempt an ungranted tool with another fresh key.    | Tool authorization ALLOW and BLOCK, with separate execution IDs and no denied tool side effect. |
+| 1:30–2:00 | Show request history, execution events, and audit events for those exact IDs.                                        | Matching org/request/actor IDs and timestamps; immutable audit trigger present.                 |
 
 If a tool cannot be safely invoked in the production tenant, label that step
 **not tested**; a simulated MCP decision is insufficient.
 
 ## Acceptance gates
 
-| Gate | Pass condition |
-| --- | --- |
-| Real model | `requests.status = 'completed'` (or documented successful equivalent), output from the upstream provider, positive input/output tokens, recorded cost and latency. A `CONFIGURED` badge alone fails. |
-| Budget enforcement | A denied request persisted as BLOCK, no provider output or provider usage, budget-stage trace blocked, audit result blocked. Verify the provider was not called using provider usage/trace evidence; zero tokens alone is not conclusive. |
-| Tool grant | One permitted MCP invocation completes and one ungranted invocation is denied before execution. Confirm side-effect state for both. |
-| Trace linkage | The successful execution has ordered identity, permissions, PII, injection, budget, provider-selection, tool-authorization, execution and audit records. A denied execution has all stages reached before its terminal gate, plus a linked audit-stage record; later stages must not be fabricated. Missing expected records fail the full-traceability claim. |
-| Audit | Matching `audit_events.request_id` and decision/result for each request; the database trigger prevents UPDATE/DELETE and ordinary roles lack those grants. A trigger check proves configuration, not indefinite retention or external tamper resistance. |
-| Replay | Reusing an idempotency key produces no second upstream call or tool side effect. Do this only after the first request has a known terminal state. |
+| Gate               | Pass condition                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Real model         | `requests.status = 'completed'` (or documented successful equivalent), output from the upstream provider, positive input/output tokens, recorded cost and latency. A `CONFIGURED` badge alone fails.                                                                                                                                                           |
+| Budget enforcement | A denied request persisted as BLOCK, no provider output or provider usage, budget-stage trace blocked, audit result blocked. Verify the provider was not called using provider usage/trace evidence; zero tokens alone is not conclusive.                                                                                                                      |
+| Tool grant         | One permitted MCP invocation completes and one ungranted invocation is denied before execution. Confirm side-effect state for both.                                                                                                                                                                                                                            |
+| Trace linkage      | The successful execution has ordered identity, permissions, PII, injection, budget, provider-selection, tool-authorization, execution and audit records. A denied execution has all stages reached before its terminal gate, plus a linked audit-stage record; later stages must not be fabricated. Missing expected records fail the full-traceability claim. |
+| Audit              | Matching `audit_events.request_id` and decision/result for each request; the database trigger prevents UPDATE/DELETE and ordinary roles lack those grants. A trigger check proves configuration, not indefinite retention or external tamper resistance.                                                                                                       |
+| Replay             | Reusing an idempotency key produces no second upstream call or tool side effect. Do this only after the first request has a known terminal state.                                                                                                                                                                                                              |
 
 ## Read-only evidence queries
 
