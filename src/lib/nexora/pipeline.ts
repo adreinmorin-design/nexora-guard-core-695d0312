@@ -214,6 +214,12 @@ export async function runGovernedRequest(params: {
       risk,
       result: "blocked",
     });
+    await trace({
+      stage: "audit",
+      status: "completed",
+      summary: "Blocked request and security audit persisted.",
+      requestId: req?.id ?? null,
+    });
     return {
       decision: "BLOCK" as GovAction,
       reason,
