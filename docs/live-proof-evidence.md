@@ -50,7 +50,7 @@ If a tool cannot be safely invoked in the production tenant, label that step
 | Real model | `requests.status = 'completed'` (or documented successful equivalent), output from the upstream provider, positive input/output tokens, recorded cost and latency. A `CONFIGURED` badge alone fails. |
 | Budget enforcement | A denied request persisted as BLOCK, no provider output or provider usage, budget-stage trace blocked, audit result blocked. Verify the provider was not called using provider usage/trace evidence; zero tokens alone is not conclusive. |
 | Tool grant | One permitted MCP invocation completes and one ungranted invocation is denied before execution. Confirm side-effect state for both. |
-| Trace linkage | Each relevant execution has ordered identity, permissions, PII, injection, budget, provider-selection, tool-authorization, execution and audit stage records, with `not_applicable` where appropriate. Missing trace records fail the full-traceability claim. |
+| Trace linkage | The successful execution has ordered identity, permissions, PII, injection, budget, provider-selection, tool-authorization, execution and audit records. A denied execution has all stages reached before its terminal gate, plus a linked audit-stage record; later stages must not be fabricated. Missing expected records fail the full-traceability claim. |
 | Audit | Matching `audit_events.request_id` and decision/result for each request; the database trigger prevents UPDATE/DELETE and ordinary roles lack those grants. A trigger check proves configuration, not indefinite retention or external tamper resistance. |
 | Replay | Reusing an idempotency key produces no second upstream call or tool side effect. Do this only after the first request has a known terminal state. |
 
