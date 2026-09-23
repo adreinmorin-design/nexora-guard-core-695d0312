@@ -77,10 +77,16 @@ ORDER BY created_at, id;
 ```
 
 ```sql
-SELECT execution_id, request_id, stage, status, summary, created_at, id
-FROM public.execution_events
-WHERE request_id = '<REQUEST_UUID>'::uuid
-ORDER BY id;
+WITH matched_execution AS (
+  SELECT DISTINCT execution_id
+  FROM public.execution_events
+  WHERE request_id = '<REQUEST_UUID>'::uuid
+)
+SELECT e.execution_id, e.request_id, e.stage, e.status,
+       e.summary, e.created_at, e.id
+FROM public.execution_events e
+JOIN matched_execution m USING (execution_id)
+ORDER BY e.id;
 ```
 
 ```sql
@@ -97,6 +103,10 @@ WHERE tgrelid = 'public.audit_events'::regclass
   AND tgname = 'audit_events_immutable'
   AND NOT tgisinternal;
 ```
+
+Early execution events have a null `request_id`; the final audit-stage event
+links the execution ID to the request. An execution with no linked final event
+fails this query and needs investigation.
 
 Do not test immutability by mutating a production audit row. Use a disposable
 isolated database transaction or the existing database test suite to exercise
