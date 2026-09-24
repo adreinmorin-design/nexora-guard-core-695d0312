@@ -543,8 +543,7 @@ export async function runGovernedRequest(params: {
           })
         : {};
     const category = diagnostic.diagnosticCategory ?? "UNKNOWN";
-    const upstreamStatus =
-      typeof diagnostic.status === "number" ? diagnostic.status : null;
+    const upstreamStatus = typeof diagnostic.status === "number" ? diagnostic.status : null;
     const retryable = diagnostic.retryable === true;
     finalReason = `${finalReason} · provider request failed (${category})`;
     await trace({
