@@ -534,11 +534,27 @@ export async function runGovernedRequest(params: {
     }
   } catch (error) {
     status = "provider_error";
-    finalReason = `${finalReason} · provider request failed; details withheld`;
+    const diagnostic =
+      error && typeof error === "object"
+        ? (error as {
+            diagnosticCategory?: string;
+            status?: number;
+            retryable?: boolean;
+          })
+        : {};
+    const category = diagnostic.diagnosticCategory ?? "UNKNOWN";
+    const upstreamStatus = typeof diagnostic.status === "number" ? diagnostic.status : null;
+    const retryable = diagnostic.retryable === true;
+    finalReason = `${finalReason} · provider request failed (${category})`;
     await trace({
       stage: "execution",
       status: "failed",
-      summary: "Provider execution failed; upstream details withheld.",
+      summary: `Provider execution failed: ${category}.`,
+      detail: {
+        providerDiagnostic: category,
+        upstreamStatus,
+        retryable,
+      },
     });
   }
 

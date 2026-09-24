@@ -6,6 +6,7 @@ import { agentBearer, hashCredential } from "./agent-credentials";
 import type { PolicyRecord } from "./policy-engine";
 import { requireOrgEntitlement } from "./entitlements.server";
 import { requireAiExecutionAllowed } from "./ai-controls.server";
+import { makeExecutionTrace } from "./execution-context.server";
 import { writeExecutionEvent } from "./execution-trace.server";
 
 const db: any = supabaseAdmin;
@@ -124,18 +125,7 @@ export async function executeAgentModel(
     ...input,
     ...(approvedPolicies ? { approvedPolicies } : {}),
     maxRequestCostUsd: controls.max_request_cost_usd,
-    trace: (event) =>
-      writeExecutionEvent({
-        orgId,
-        executionId,
-        agentId,
-        actorType: "agent",
-        stage: event.stage,
-        status: event.status,
-        summary: event.summary,
-        ...(event.detail ? { detail: event.detail } : {}),
-        requestId: event.requestId ?? null,
-      }),
+    trace: makeExecutionTrace({ orgId, executionId, actorType: "agent", agentId }),
     execute: executeProviderRequest,
   });
 }
