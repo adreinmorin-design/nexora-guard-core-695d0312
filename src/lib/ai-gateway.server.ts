@@ -259,7 +259,12 @@ function mapUpstreamStatus(status: number): ProviderError {
       true,
     );
   if (status >= 500)
-    return new ProviderError(502, "Provider is temporarily unavailable.", "UPSTREAM_5XX", true);
+    return new ProviderError(
+      502,
+      "Provider is temporarily unavailable.",
+      "UPSTREAM_5XX",
+      true,
+    );
   return new ProviderError(502, "Provider rejected the request.", "UNKNOWN");
 }
 
