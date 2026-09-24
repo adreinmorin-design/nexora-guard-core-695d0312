@@ -4,7 +4,7 @@ import { runGovernedRequest, type GatewayStore } from "./pipeline";
 import type { PolicyRecord } from "./policy-engine";
 import { requireOrgEntitlement } from "./entitlements.server";
 import { requireAiExecutionAllowed } from "./ai-controls.server";
-import { writeExecutionEvent } from "./execution-trace.server";
+import { makeExecutionTrace } from "./execution-trace.server";
 
 // Every query is checked. Supabase returns errors as values, not exceptions.
 export async function checked(query: PromiseLike<any>): Promise<any> {
@@ -160,17 +160,7 @@ export async function runConsoleRequest(
     idempotencyKey: executionId,
     ...(approvedPolicies ? { approvedPolicies } : {}),
     maxRequestCostUsd: controls.max_request_cost_usd,
-    trace: (event) =>
-      writeExecutionEvent({
-        orgId,
-        executionId,
-        actorType: "user",
-        stage: event.stage,
-        status: event.status,
-        summary: event.summary,
-        ...(event.detail ? { detail: event.detail } : {}),
-        requestId: event.requestId ?? null,
-      }),
+    trace: makeExecutionTrace({ orgId, executionId, actorType: "user" }),
     execute: executeProviderRequest,
   });
 }
