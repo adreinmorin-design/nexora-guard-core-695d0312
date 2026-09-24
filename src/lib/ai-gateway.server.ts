@@ -16,11 +16,31 @@ export type ProviderResult = {
   latencyMs: number;
 };
 
+export type ProviderDiagnosticCategory =
+  | "NOT_CONFIGURED"
+  | "AUTH_FAILED"
+  | "RATE_LIMITED"
+  | "BILLING_OR_QUOTA"
+  | "TIMEOUT"
+  | "INVALID_MODEL"
+  | "UPSTREAM_5XX"
+  | "NETWORK_ERROR"
+  | "UNKNOWN";
+
 export class ProviderError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  diagnosticCategory: ProviderDiagnosticCategory;
+  retryable: boolean;
+  constructor(
+    status: number,
+    message: string,
+    diagnosticCategory: ProviderDiagnosticCategory = "UNKNOWN",
+    retryable = false,
+  ) {
     super(message);
     this.status = status;
+    this.diagnosticCategory = diagnosticCategory;
+    this.retryable = retryable;
     this.name = "ProviderError";
   }
 }
@@ -222,11 +242,16 @@ export function parseResponseText(json: any): string {
 
 function mapUpstreamStatus(status: number): ProviderError {
   if (status === 401 || status === 403)
-    return new ProviderError(502, "Provider rejected the server credential.");
-  if (status === 404) return new ProviderError(400, "Requested model is unavailable upstream.");
-  if (status === 429) return new ProviderError(429, "Provider rate limit reached. Retry shortly.");
-  if (status >= 500) return new ProviderError(502, "Provider is temporarily unavailable.");
-  return new ProviderError(502, "Provider rejected the request.");
+    return new ProviderError(502, "Provider rejected the server credential.", "AUTH_FAILED");
+  if (status === 402)
+    return new ProviderError(502, "Provider billing or quota is unavailable.", "BILLING_OR_QUOTA");
+  if (status === 404)
+    return new ProviderError(400, "Requested model is unavailable upstream.", "INVALID_MODEL");
+  if (status === 429)
+    return new ProviderError(429, "Provider rate limit reached. Retry shortly.", "RATE_LIMITED", true);
+  if (status >= 500)
+    return new ProviderError(502, "Provider is temporarily unavailable.", "UPSTREAM_5XX", true);
+  return new ProviderError(502, "Provider rejected the request.", "UNKNOWN");
 }
 
 async function requestJson(
@@ -246,8 +271,8 @@ async function requestJson(
   } catch (error) {
     if (error instanceof ProviderError) throw error;
     if (controller.signal.aborted)
-      throw new ProviderError(504, "Provider request timed out after 30s.");
-    throw new ProviderError(502, "Provider request could not be completed.");
+      throw new ProviderError(504, "Provider request timed out after 30s.", "TIMEOUT", true);
+    throw new ProviderError(502, "Provider request could not be completed.", "NETWORK_ERROR", true);
   } finally {
     clearTimeout(timer);
   }
@@ -260,7 +285,7 @@ function validatePrompt(prompt: string) {
 
 async function runOpenAI(model: string, prompt: string): Promise<ProviderResult> {
   const key = providerKey("openai");
-  if (!key) throw new ProviderError(503, "OpenAI provider is NOT_CONFIGURED.");
+  if (!key) throw new ProviderError(503, "OpenAI provider is NOT_CONFIGURED.", "NOT_CONFIGURED");
   validatePrompt(prompt);
   const started = Date.now();
   const base = providerBaseUrl("openai")!;
@@ -290,7 +315,7 @@ async function runOpenAI(model: string, prompt: string): Promise<ProviderResult>
 
 async function runAnthropic(model: string, prompt: string): Promise<ProviderResult> {
   const key = providerKey("anthropic");
-  if (!key) throw new ProviderError(503, "Anthropic provider is NOT_CONFIGURED.");
+  if (!key) throw new ProviderError(503, "Anthropic provider is NOT_CONFIGURED.", "NOT_CONFIGURED");
   validatePrompt(prompt);
   const started = Date.now();
   const { json, latencyMs } = await requestJson(
@@ -317,7 +342,7 @@ async function runAnthropic(model: string, prompt: string): Promise<ProviderResu
 
 async function runGoogle(model: string, prompt: string): Promise<ProviderResult> {
   const key = providerKey("google");
-  if (!key) throw new ProviderError(503, "Google provider is NOT_CONFIGURED.");
+  if (!key) throw new ProviderError(503, "Google provider is NOT_CONFIGURED.", "NOT_CONFIGURED");
   validatePrompt(prompt);
   const started = Date.now();
   const modelName = encodeURIComponent(toUpstreamModel(model));
@@ -346,7 +371,7 @@ async function runOpenAiCompatible(
 ): Promise<ProviderResult> {
   const key = providerKey(vendor);
   const base = providerBaseUrl(vendor);
-  if (!key || !base) throw new ProviderError(503, `${vendor} provider is NOT_CONFIGURED.`);
+  if (!key || !base) throw new ProviderError(503, `${vendor} provider is NOT_CONFIGURED.`, "NOT_CONFIGURED");
   validatePrompt(prompt);
   const started = Date.now();
   const url = endpoint(base, "/chat/completions");
