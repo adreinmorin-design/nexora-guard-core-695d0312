@@ -6,7 +6,8 @@ import { agentBearer, hashCredential } from "./agent-credentials";
 import type { PolicyRecord } from "./policy-engine";
 import { requireOrgEntitlement } from "./entitlements.server";
 import { requireAiExecutionAllowed } from "./ai-controls.server";
-import { makeExecutionTrace } from "./execution-trace.server";
+import { makeExecutionTrace } from "./execution-context.server";
+import { writeExecutionEvent } from "./execution-trace.server";
 
 const db: any = supabaseAdmin;
 
