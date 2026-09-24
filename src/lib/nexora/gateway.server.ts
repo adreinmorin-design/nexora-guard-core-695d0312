@@ -4,7 +4,8 @@ import { runGovernedRequest, type GatewayStore } from "./pipeline";
 import type { PolicyRecord } from "./policy-engine";
 import { requireOrgEntitlement } from "./entitlements.server";
 import { requireAiExecutionAllowed } from "./ai-controls.server";
-import { makeExecutionTrace } from "./execution-trace.server";
+import { makeExecutionTrace } from "./execution-context.server";
+import { writeExecutionEvent } from "./execution-trace.server";
 
 // Every query is checked. Supabase returns errors as values, not exceptions.
 export async function checked(query: PromiseLike<any>): Promise<any> {
