@@ -152,6 +152,44 @@ export async function executeTool(
     summary: `Agent capability ${tool.required_capability} is authorized.`,
     detail: { capability: tool.required_capability },
   });
+  // Record the attempt before capability/grant checks so denied calls are auditable.
+  const invocation = await checked(
+    db
+      .from("tool_invocations")
+      .insert({
+        org_id: orgId,
+        agent_id: agentId,
+        tool_id: tool.id,
+        idempotency_key: input.idempotencyKey,
+        status: "pending",
+        decision: "PENDING",
+        reason: "Tool authorization in progress.",
+      })
+      .select("id")
+      .single(),
+  );
+  const markDenied = async (reason: string) => {
+    await checked(
+      db
+        .from("tool_invocations")
+        .update({ status: "blocked", decision: "BLOCK", reason })
+        .eq("org_id", orgId)
+        .eq("id", invocation.id),
+    );
+    await checked(
+      db.from("audit_events").insert({
+        org_id: orgId,
+        actor_type: "agent",
+        action: "mcp.call",
+        resource: "mcp_tool",
+        resource_id: tool.id,
+        decision: "BLOCK",
+        result: "blocked",
+        source: "mcp",
+        metadata: { agentId, invocationId: invocation.id },
+      }),
+    );
+  };
   const grant = await checked(
     db
       .from("mcp_tool_grants")
@@ -170,7 +208,9 @@ export async function executeTool(
       stage: "tool_authorization",
       status: "blocked",
       summary: "Agent has no explicit grant for this tool.",
+      detail: { invocationId: invocation.id },
     });
+    await markDenied("Agent has no grant for this tool.");
     throw new Error("Agent has no grant for this tool.");
   }
   if (approved && approved.definitionHash !== tool.definition_hash)
@@ -268,18 +308,6 @@ export async function executeTool(
           : "Tool grant, capability and policy authorization passed.",
     detail: { decision: evaluated.decision.action, tool: tool.remote_name },
   });
-  const invocation = await checked(
-    db
-      .from("tool_invocations")
-      .insert({
-        org_id: orgId,
-        agent_id: agentId,
-        tool_id: tool.id,
-        idempotency_key: input.idempotencyKey,
-      })
-      .select("id")
-      .single(),
-  );
   const finish = async (
     status: string,
     decision: string,
