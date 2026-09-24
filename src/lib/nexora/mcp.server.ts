@@ -141,13 +141,8 @@ export async function executeTool(
   );
   if (tool.status !== "active" || !tool.definition_hash || !tool.remote_name)
     throw new Error("Tool has not been approved for execution.");
-  try {
-    await requireCapability(orgId, agentId, tool.required_capability);
-  } catch (error) {
-    await markDenied("Agent lacks the required capability.");
-    throw error;
-  }
-  // Record the attempt before capability/grant checks so denied calls are auditable.
+
+  // Record the attempt before capability/grant checks so every denial is auditable.
   const invocation = await checked(
     db
       .from("tool_invocations")
@@ -185,6 +180,34 @@ export async function executeTool(
       }),
     );
   };
+
+  try {
+    await requireCapability(orgId, agentId, tool.required_capability);
+  } catch (error) {
+    await markDenied("Agent lacks the required capability.");
+    await writeExecutionEvent({
+      orgId,
+      executionId,
+      agentId,
+      actorType: "agent",
+      stage: "tool_authorization",
+      status: "blocked",
+      summary: "Agent lacks the required capability for this tool.",
+      detail: { invocationId: invocation.id },
+    });
+    throw error;
+  }
+  await writeExecutionEvent({
+    orgId,
+    executionId,
+    agentId,
+    actorType: "agent",
+    stage: "permissions",
+    status: "passed",
+    summary: `Agent capability ${tool.required_capability} is authorized.`,
+    detail: { capability: tool.required_capability },
+  });
+
   const grant = await checked(
     db
       .from("mcp_tool_grants")
@@ -196,16 +219,6 @@ export async function executeTool(
   );
   if (!grant) {
     await writeExecutionEvent({
-    orgId,
-    executionId,
-    agentId,
-    actorType: "agent",
-    stage: "permissions",
-    status: "passed",
-    summary: `Agent capability ${tool.required_capability} is authorized.`,
-    detail: { capability: tool.required_capability },
-  });
-  await writeExecutionEvent({
       orgId,
       executionId,
       agentId,
