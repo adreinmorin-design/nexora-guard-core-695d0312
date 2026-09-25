@@ -179,6 +179,27 @@ export async function resolveIntent(input: {
   };
 }
 
+export async function loadIntentForExecution(
+  orgId: string,
+  intentId: string,
+): Promise<ResolvedIntent> {
+  const row = await checked<any>(
+    admin
+      .from("intents")
+      .select("id,status")
+      .eq("org_id", orgId)
+      .eq("id", intentId)
+      .maybeSingle(),
+  );
+  if (!row) throw new Error("Approved intent is unavailable in this organization.");
+  return {
+    id: row.id,
+    status: row.status,
+    inheritedQuarantine: false,
+    lineageConfidence: null,
+  };
+}
+
 export async function createGovernedExecution(input: {
   orgId: string;
   intentId: string;
