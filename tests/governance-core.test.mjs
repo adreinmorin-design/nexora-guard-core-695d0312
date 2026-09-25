@@ -13,6 +13,7 @@ import {
   legacyActionToPolicyOutcome,
   policyOutcomeAllowsDownstream,
 } from "../src/lib/nexora/governance-types.ts";
+import { evaluateHistoricalContext } from "../src/lib/nexora/retrospective-policy.ts";
 
 test("legacy policy mapping preserves deny and transformation semantics", () => {
   assert.equal(legacyActionToPolicyOutcome("ALLOW"), "ALLOW");
@@ -111,6 +112,47 @@ test("governance hash chain detects modification, deletion and reordering", asyn
   assert.equal((await verifyGovernanceChain(modified)).reason, "event_hash_mismatch");
   assert.equal((await verifyGovernanceChain([second])).reason, "chain_position_gap_or_reorder");
   assert.equal((await verifyGovernanceChain([second, first])).valid, false);
+});
+
+
+test("retrospective evaluation reports WOULD_BLOCK without rewriting original decision", () => {
+  const currentPolicies = [
+    {
+      id: "00000000-0000-4000-8000-000000000201",
+      name: "Policy v13",
+      description: null,
+      priority: 10,
+      action: "BLOCK",
+      version: 13,
+      status: "active",
+      scope: "organization",
+      conditions: [{ field: "provider", op: "equals", value: "openai" }],
+    },
+  ];
+  const result = evaluateHistoricalContext(
+    currentPolicies,
+    {
+      detectionCategories: [],
+      modelKey: "openai/gpt-4.1-mini",
+      modelClassification: "standard",
+      provider: "openai",
+      estimatedCostUsd: 0.01,
+      monthlySpendUsd: 1,
+      actorType: "user",
+      stage: "request",
+    },
+    {
+      policyId: "00000000-0000-4000-8000-000000000200",
+      policyVersion: 12,
+      decision: "ALLOW",
+    },
+  );
+
+  assert.equal(result.originalPolicyVersion, 12);
+  assert.equal(result.originalDecision, "ALLOW");
+  assert.equal(result.currentPolicyVersion, 13);
+  assert.equal(result.currentDecision, "BLOCK");
+  assert.equal(result.disposition, "WOULD_BLOCK");
 });
 
 test("governance evidence and lineage are immutable at the database boundary", async () => {
