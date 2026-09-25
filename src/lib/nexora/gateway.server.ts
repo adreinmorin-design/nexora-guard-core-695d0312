@@ -13,6 +13,7 @@ import {
   appendGovernanceDecision,
   createGovernedExecution,
   finalizeGovernedExecution,
+  loadIntentForExecution,
   recordExecutionRisk,
   resolveIntent,
 } from "./governance-runtime.server";
@@ -121,6 +122,7 @@ export async function runConsoleRequest(
   orgId: string,
   input: { prompt: string; modelKey: string; idempotencyKey?: string },
   approvedPolicies?: PolicyRecord[],
+  options?: { intentId?: string },
 ) {
   const identity: GovernanceIdentity = {
     actorId: context.userId,
@@ -130,12 +132,14 @@ export async function runConsoleRequest(
     organizationId: orgId,
   };
 
-  const intent = await resolveIntent({
-    orgId,
-    actorId: context.userId,
-    applicationId: "console",
-    objective: input.prompt,
-  });
+  const intent = options?.intentId
+    ? await loadIntentForExecution(orgId, options.intentId)
+    : await resolveIntent({
+        orgId,
+        actorId: context.userId,
+        applicationId: "console",
+        objective: input.prompt,
+      });
   const governed = await createGovernedExecution({ orgId, intentId: intent.id, identity });
 
   const recordDecision = async (event: GovernanceDecisionEvent) => {
