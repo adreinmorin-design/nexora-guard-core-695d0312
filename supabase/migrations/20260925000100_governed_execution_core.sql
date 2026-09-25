@@ -16,7 +16,8 @@ create table public.intents (
   risk_state jsonb not null default '{}'::jsonb,
   quarantine_reason text,
   quarantined_at timestamptz,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (org_id, id)
 );
 
 alter table public.intents enable row level security;
@@ -32,7 +33,7 @@ create index intents_fingerprint_idx on public.intents(org_id, objective_fingerp
 create table public.governed_executions (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations(id) on delete cascade,
-  intent_id uuid not null references public.intents(id),
+  intent_id uuid not null,
   trace_id text not null check (trace_id ~ '^[a-f0-9]{32}$'),
   actor_id uuid,
   actor_type text not null check (actor_type in ('user','agent','service','application')),
@@ -59,7 +60,8 @@ create table public.governed_executions (
   started_at timestamptz not null default now(),
   finalized_at timestamptz,
   unique (org_id, id),
-  unique (org_id, trace_id)
+  unique (org_id, trace_id),
+  foreign key (org_id, intent_id) references public.intents(org_id, id)
 );
 
 alter table public.governed_executions enable row level security;
@@ -76,8 +78,8 @@ create index governed_executions_intent_idx
 create table public.intent_lineage_events (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations(id) on delete cascade,
-  parent_intent_id uuid not null references public.intents(id),
-  child_intent_id uuid not null references public.intents(id),
+  parent_intent_id uuid not null,
+  child_intent_id uuid not null,
   event_type text not null check (event_type in (
     'LINKED',
     'INHERITED_QUARANTINE',
@@ -90,7 +92,9 @@ create table public.intent_lineage_events (
   supersedes_event_id uuid references public.intent_lineage_events(id),
   actor_id uuid,
   created_at timestamptz not null default now(),
-  check (parent_intent_id <> child_intent_id)
+  check (parent_intent_id <> child_intent_id),
+  foreign key (org_id, parent_intent_id) references public.intents(org_id, id),
+  foreign key (org_id, child_intent_id) references public.intents(org_id, id)
 );
 
 alter table public.intent_lineage_events enable row level security;
@@ -157,7 +161,7 @@ create table public.governance_audit_events (
   unique (org_id, chain_position),
   unique (org_id, event_hash),
   foreign key (org_id, execution_id) references public.governed_executions(org_id, id),
-  foreign key (intent_id) references public.intents(id)
+  foreign key (org_id, intent_id) references public.intents(org_id, id)
 );
 
 alter table public.governance_audit_events enable row level security;
