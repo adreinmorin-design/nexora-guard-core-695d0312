@@ -152,6 +152,7 @@ export async function runGovernedRequest(params: {
   maxRequestCostUsd?: number | null;
   trace?: (event: PipelineTraceEvent) => Promise<void>;
   governanceDecision?: (event: GovernanceDecisionEvent) => Promise<void>;
+  governedContext?: { intentId: string; executionId: string };
 }): Promise<GatewayOutcome> {
   const { store, principal, prompt, modelKey, execute } = params;
   const trace = async (event: PipelineTraceEvent) => {
@@ -644,6 +645,19 @@ export async function runGovernedRequest(params: {
       policy_version: decision.policyVersion,
       policy_revalidated_at: new Date().toISOString(),
       idempotency_key: idempotencyKey,
+      ...(params.governedContext
+        ? {
+            intent_id: params.governedContext.intentId,
+            original_execution_id: params.governedContext.executionId,
+            approval_scope: {
+              operation: "model.invoke",
+              provider: model.provider_vendor,
+              model: modelKey,
+              data_classification: model.classification,
+            },
+            single_use: true,
+          }
+        : {}),
       // Sanitized payload only — never the raw prompt.
       payload: {
         promptPreview: maskPreview(prompt, detections, 200),
