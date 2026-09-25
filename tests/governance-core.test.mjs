@@ -255,6 +255,37 @@ test("governance evidence and lineage are immutable at the database boundary", a
       db.query("UPDATE intent_lineage_events SET confidence=0.1 WHERE id=$1", [lineage]),
     );
 
+    await db.query(
+      "INSERT INTO governance_risk_thresholds(org_id,severity,max_violations) VALUES($1,'high',2)",
+      [org],
+    );
+    const firstRisk = await db.query(
+      "SELECT nexora_record_execution_risk($1,$2,$3,NULL,NULL,'high',35,'policy_denial') AS result",
+      [org, execution, intent],
+    );
+    assert.equal(firstRisk.rows[0].result.terminated, false);
+    const secondRisk = await db.query(
+      "SELECT nexora_record_execution_risk($1,$2,$3,NULL,NULL,'high',35,'retry_after_denial') AS result",
+      [org, execution, intent],
+    );
+    assert.equal(secondRisk.rows[0].result.terminated, true);
+    assert.equal(secondRisk.rows[0].result.intentQuarantined, true);
+
+    const executionState = await db.query(
+      "SELECT workflow_outcome,governance_outcome,violation_count FROM governed_executions WHERE id=$1",
+      [execution],
+    );
+    assert.deepEqual(executionState.rows[0], {
+      workflow_outcome: "TERMINATED",
+      governance_outcome: "QUARANTINE",
+      violation_count: 2,
+    });
+    const intentState = await db.query(
+      "SELECT status,violation_count FROM intents WHERE id=$1",
+      [intent],
+    );
+    assert.deepEqual(intentState.rows[0], { status: "quarantined", violation_count: 2 });
+
     const privileges = await db.query(`SELECT
       has_table_privilege('authenticated','governance_audit_events','INSERT') AS browser_event_write,
       has_table_privilege('authenticated','intents','INSERT') AS browser_intent_write,
