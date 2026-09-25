@@ -464,27 +464,51 @@ export async function decideAndExecute(
     throw new Error("Legacy approval has no executable payload. Submit a new request.");
   }
   try {
-    // Policies are reloaded; only unchanged approval policies may be satisfied.
-    // Budget admission and response policies are never waived by approval.
+    if (!approval.intent_id || !approval.original_execution_id) {
+      throw new Error("Legacy approval must be resubmitted under governed execution semantics.");
+    }
+    const scope = approval.approval_scope ?? {};
+    if (
+      scope.operation !== "model.invoke" ||
+      scope.model !== payload.modelKey ||
+      typeof scope.provider !== "string"
+    ) {
+      throw new Error("Approval scope does not authorize this model invocation.");
+    }
+    const model = await makeStore({ supabase: admin }, orgId).getModel(orgId, payload.modelKey);
+    if (
+      !model ||
+      model.provider_vendor !== scope.provider ||
+      (scope.data_classification && model.classification !== scope.data_classification)
+    ) {
+      throw new Error("Approved model/provider/data scope changed after review.");
+    }
+
+    // Approval never resumes the original execution. A fresh governed execution
+    // is created against the same durable intent and all current policies,
+    // budgets and response controls are reevaluated.
     const input = {
       prompt: payload.prompt,
       modelKey: payload.modelKey,
       idempotencyKey: id,
     };
-    const outcome = payload.agentId
-      ? await (
-          await import("./agents.server")
-        ).executeAgentModel(orgId, payload.agentId, input, payload.policies)
-      : await runConsoleRequest(
-          { supabase: admin, userId: approval.requester_id },
-          orgId,
-          input,
-          payload.policies,
-        );
+    if (payload.agentId) {
+      throw new Error("Agent approval requires fresh agent execution support; resubmit the agent task.");
+    }
+    const outcome = await runConsoleRequest(
+      { supabase: admin, userId: approval.requester_id },
+      orgId,
+      input,
+      payload.policies,
+      { intentId: approval.intent_id },
+    );
     await checked(
       admin
         .from("approvals")
-        .update({ execution_result: outcome.status })
+        .update({
+          execution_result: outcome.status,
+          consumed_execution_id: outcome.executionId,
+        })
         .eq("org_id", orgId)
         .eq("id", id),
     );
