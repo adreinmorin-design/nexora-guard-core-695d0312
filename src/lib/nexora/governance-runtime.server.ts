@@ -312,3 +312,45 @@ export async function appendGovernanceDecision(input: {
   }
   throw new Error("Governance evidence persistence unavailable; execution stopped.");
 }
+
+
+export async function recordExecutionRisk(input: {
+  orgId: string;
+  executionId: string;
+  intentId: string;
+  policyId: string | null;
+  policyVersion: number | null;
+  severity: "info" | "low" | "medium" | "high" | "critical";
+  score: number;
+  evasionIndicator?: string | null;
+}): Promise<{
+  terminated: boolean;
+  intentQuarantined: boolean;
+  executionRiskScore: number;
+  intentRiskScore: number;
+  executionViolationCount: number;
+  intentViolationCount: number;
+  thresholdId: string | null;
+}> {
+  const result = await checked<any>(
+    admin.rpc("nexora_record_execution_risk", {
+      p_org: input.orgId,
+      p_execution: input.executionId,
+      p_intent: input.intentId,
+      p_policy: input.policyId,
+      p_policy_version: input.policyVersion,
+      p_severity: input.severity,
+      p_score: input.score,
+      p_evasion_indicator: input.evasionIndicator ?? null,
+    }),
+  );
+  return {
+    terminated: Boolean(result.terminated),
+    intentQuarantined: Boolean(result.intentQuarantined),
+    executionRiskScore: Number(result.executionRiskScore),
+    intentRiskScore: Number(result.intentRiskScore),
+    executionViolationCount: Number(result.executionViolationCount),
+    intentViolationCount: Number(result.intentViolationCount),
+    thresholdId: result.thresholdId ?? null,
+  };
+}
