@@ -218,7 +218,8 @@ export async function finalizeGovernedExecution(input: {
         finalized_at: new Date().toISOString(),
       })
       .eq("org_id", input.orgId)
-      .eq("id", input.executionId),
+      .eq("id", input.executionId)
+      .is("finalized_at", null),
   );
 }
 
