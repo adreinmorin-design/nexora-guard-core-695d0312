@@ -200,7 +200,9 @@ test("governance evidence and lineage are immutable at the database boundary", a
     await assert.rejects(
       db.query("UPDATE governance_audit_events SET reason='rewritten' WHERE event_id=$1", [event]),
     );
-    await assert.rejects(db.query("DELETE FROM governance_audit_events WHERE event_id=$1", [event]));
+    await assert.rejects(
+      db.query("DELETE FROM governance_audit_events WHERE event_id=$1", [event]),
+    );
 
     const lineage = "00000000-0000-4000-8000-000000000107";
     await db.query(
