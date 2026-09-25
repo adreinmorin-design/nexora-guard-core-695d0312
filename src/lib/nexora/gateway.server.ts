@@ -1,6 +1,10 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeProviderRequest, providerReadiness } from "../ai-gateway.server";
-import { runGovernedRequest, type GatewayStore } from "./pipeline";
+import {
+  runGovernedRequest,
+  type GatewayStore,
+  type GovernanceDecisionEvent,
+} from "./pipeline";
 import type { PolicyRecord } from "./policy-engine";
 import { requireOrgEntitlement } from "./entitlements.server";
 import { requireAiExecutionAllowed } from "./ai-controls.server";
@@ -133,7 +137,7 @@ export async function runConsoleRequest(
   });
   const governed = await createGovernedExecution({ orgId, intentId: intent.id, identity });
 
-  const recordDecision = (event: Parameters<typeof appendGovernanceDecision>[0] extends never ? never : any) =>
+  const recordDecision = (event: GovernanceDecisionEvent) =>
     appendGovernanceDecision({
       orgId,
       executionId: governed.executionId,
