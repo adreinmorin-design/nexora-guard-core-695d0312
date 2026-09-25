@@ -30,6 +30,7 @@ jobs:
       - run: bun run lint
       - run: bun run format:check
       - run: bun run test:gateway
+      - run: bun run test:governance
       - run: bun run test:security
       - run: bun run test:agents
       - run: bun run test:providers
