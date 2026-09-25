@@ -19,7 +19,11 @@ import { inspect, redact, maskPreview, type Detection } from "./dlp";
 import { evaluate, type Decision, type GovAction, type PolicyRecord } from "./policy-engine";
 import { executeUnderDecision } from "./enforcement";
 import { MAX_OUTPUT_TOKENS, INPUT_OVERHEAD_TOKENS } from "./limits";
-import { legacyActionToPolicyOutcome, type EnforcementPoint, type PolicyOutcome } from "./governance-types";
+import {
+  legacyActionToPolicyOutcome,
+  type EnforcementPoint,
+  type PolicyOutcome,
+} from "./governance-types";
 
 export type ProviderResult = {
   text: string;
