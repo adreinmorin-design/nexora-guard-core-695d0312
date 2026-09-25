@@ -192,6 +192,167 @@ for each row execute function private.nexora_reject_audit_mutation();
 revoke update, delete, truncate on public.governance_audit_events from service_role;
 revoke update, delete, truncate on public.intent_lineage_events from service_role;
 
+-- Risk termination is tenant-configurable and can be tied to an exact policy
+-- version. There is intentionally no universal retry/violation threshold.
+create table public.governance_risk_thresholds (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.organizations(id) on delete cascade,
+  policy_id uuid,
+  policy_version integer,
+  severity public.severity not null,
+  terminate_at_score numeric(10,4) check (terminate_at_score is null or terminate_at_score > 0),
+  max_violations integer check (max_violations is null or max_violations > 0),
+  status text not null default 'active' check (status in ('active','disabled')),
+  created_at timestamptz not null default now(),
+  check ((policy_id is null and policy_version is null) or (policy_id is not null and policy_version is not null)),
+  check (terminate_at_score is not null or max_violations is not null)
+);
+
+alter table public.governance_risk_thresholds enable row level security;
+revoke all on public.governance_risk_thresholds from public, anon, authenticated;
+grant select on public.governance_risk_thresholds to authenticated;
+grant all on public.governance_risk_thresholds to service_role;
+create policy "members read governance risk thresholds"
+  on public.governance_risk_thresholds for select to authenticated
+  using (private.is_org_member(org_id));
+create index governance_risk_threshold_lookup_idx
+  on public.governance_risk_thresholds(org_id, policy_id, policy_version, severity)
+  where status = 'active';
+
+create or replace function public.nexora_record_execution_risk(
+  p_org uuid,
+  p_execution uuid,
+  p_intent uuid,
+  p_policy uuid,
+  p_policy_version integer,
+  p_severity public.severity,
+  p_score numeric,
+  p_evasion_indicator text
+)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+as $
+declare
+  e public.governed_executions;
+  i public.intents;
+  threshold public.governance_risk_thresholds;
+  next_execution_score numeric;
+  next_intent_score numeric;
+  next_execution_violations integer;
+  next_intent_violations integer;
+  should_terminate boolean := false;
+begin
+  if p_score is null or p_score <= 0 or p_score::text in ('NaN','Infinity','-Infinity') then
+    raise exception 'Invalid risk score';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(p_execution::text, 9117));
+
+  select * into e
+    from public.governed_executions
+    where org_id = p_org and id = p_execution and intent_id = p_intent
+    for update;
+  if not found or e.finalized_at is not null then
+    raise exception 'Governed execution unavailable for risk update';
+  end if;
+
+  select * into i
+    from public.intents
+    where org_id = p_org and id = p_intent
+    for update;
+  if not found then raise exception 'Intent unavailable for risk update'; end if;
+
+  next_execution_score := e.accumulated_risk_score + p_score;
+  next_intent_score := i.accumulated_risk_score + p_score;
+  next_execution_violations := e.violation_count + 1;
+  next_intent_violations := i.violation_count + 1;
+
+  select * into threshold
+    from public.governance_risk_thresholds t
+    where t.org_id = p_org
+      and t.status = 'active'
+      and t.severity = p_severity
+      and (
+        (t.policy_id = p_policy and t.policy_version = p_policy_version)
+        or (t.policy_id is null and t.policy_version is null)
+      )
+    order by
+      case when t.policy_id = p_policy and t.policy_version = p_policy_version then 0 else 1 end,
+      t.created_at desc
+    limit 1;
+
+  if found then
+    should_terminate :=
+      (threshold.terminate_at_score is not null and next_intent_score >= threshold.terminate_at_score)
+      or (threshold.max_violations is not null and next_intent_violations >= threshold.max_violations);
+  end if;
+
+  update public.governed_executions
+    set violation_count = next_execution_violations,
+        severity = p_severity,
+        accumulated_risk_score = next_execution_score,
+        policy_evasion_indicators =
+          case
+            when p_evasion_indicator is null or length(trim(p_evasion_indicator)) = 0
+              then policy_evasion_indicators
+            when policy_evasion_indicators @> to_jsonb(array[p_evasion_indicator]::text[])
+              then policy_evasion_indicators
+            else policy_evasion_indicators || to_jsonb(p_evasion_indicator)
+          end,
+        workflow_outcome = case when should_terminate then 'TERMINATED' else workflow_outcome end,
+        governance_outcome = case when should_terminate then 'QUARANTINE' else governance_outcome end,
+        finalized_at = case when should_terminate then now() else finalized_at end
+    where org_id = p_org and id = p_execution;
+
+  update public.intents
+    set violation_count = next_intent_violations,
+        severity = p_severity,
+        accumulated_risk_score = next_intent_score,
+        status = case when should_terminate then 'quarantined' else
+          case when status = 'active' then 'flagged' else status end end,
+        quarantine_reason = case when should_terminate
+          then 'Policy-defined accumulated risk threshold reached.' else quarantine_reason end,
+        quarantined_at = case when should_terminate then now() else quarantined_at end
+    where org_id = p_org and id = p_intent;
+
+  insert into public.audit_events(
+    org_id, actor_type, action, resource, resource_id, policy_id, policy_version,
+    risk, result, metadata
+  ) values (
+    p_org, 'service', 'governance.risk_updated', 'governed_execution', p_execution::text,
+    p_policy, p_policy_version, p_severity,
+    case when should_terminate then 'terminated' else 'recorded' end,
+    jsonb_build_object(
+      'executionRiskScore', next_execution_score,
+      'intentRiskScore', next_intent_score,
+      'executionViolationCount', next_execution_violations,
+      'intentViolationCount', next_intent_violations,
+      'evasionIndicator', p_evasion_indicator,
+      'thresholdId', threshold.id
+    )
+  );
+
+  return jsonb_build_object(
+    'terminated', should_terminate,
+    'intentQuarantined', should_terminate,
+    'executionRiskScore', next_execution_score,
+    'intentRiskScore', next_intent_score,
+    'executionViolationCount', next_execution_violations,
+    'intentViolationCount', next_intent_violations,
+    'thresholdId', threshold.id
+  );
+end;
+$;
+
+revoke all on function public.nexora_record_execution_risk(
+  uuid,uuid,uuid,uuid,integer,public.severity,numeric,text
+) from public, anon, authenticated;
+grant execute on function public.nexora_record_execution_risk(
+  uuid,uuid,uuid,uuid,integer,public.severity,numeric,text
+) to service_role;
+
 -- Scoped approvals bind to the original intent/execution and are consumed by a
 -- fresh governed execution. Existing approvals remain readable during migration.
 alter table public.approvals
