@@ -19,6 +19,7 @@ import { inspect, redact, maskPreview, type Detection } from "./dlp";
 import { evaluate, type Decision, type GovAction, type PolicyRecord } from "./policy-engine";
 import { executeUnderDecision } from "./enforcement";
 import { MAX_OUTPUT_TOKENS, INPUT_OVERHEAD_TOKENS } from "./limits";
+import { legacyActionToPolicyOutcome, type EnforcementPoint, type PolicyOutcome } from "./governance-types";
 
 export type ProviderResult = {
   text: string;
@@ -88,6 +89,17 @@ export type PipelineTraceEvent = {
   requestId?: string | null;
 };
 
+export type GovernanceDecisionEvent = {
+  enforcementPoint: EnforcementPoint;
+  decision: PolicyOutcome;
+  reason: string;
+  policyId: string | null;
+  policyVersion: number | null;
+  ruleId: string | null;
+  evaluatedContext: Record<string, unknown>;
+  attributes?: Record<string, unknown>;
+};
+
 export type GatewayOutcome = {
   decision: GovAction;
   reason: string;
@@ -139,6 +151,7 @@ export async function runGovernedRequest(params: {
   approvedPolicies?: PolicyRecord[];
   maxRequestCostUsd?: number | null;
   trace?: (event: PipelineTraceEvent) => Promise<void>;
+  governanceDecision?: (event: GovernanceDecisionEvent) => Promise<void>;
 }): Promise<GatewayOutcome> {
   const { store, principal, prompt, modelKey, execute } = params;
   const trace = async (event: PipelineTraceEvent) => {
@@ -389,6 +402,32 @@ export async function runGovernedRequest(params: {
     summary: `${model.provider_vendor} selected for ${model.display_name}.`,
     detail: { provider: model.provider_vendor, modelKey, classification: model.classification },
   });
+
+  // Security evidence is authoritative. Unlike operational trace callbacks,
+  // failure to persist the PRE_MODEL_INVOCATION decision stops execution.
+  await params.governanceDecision?.({
+    enforcementPoint: "PRE_MODEL_INVOCATION",
+    decision: legacyActionToPolicyOutcome(finalAction),
+    reason: finalReason,
+    policyId: decision.policyId,
+    policyVersion: decision.policyVersion,
+    ruleId: decision.matchedRules[0]?.policyId ?? null,
+    evaluatedContext: {
+      modelKey,
+      provider: model.provider_vendor,
+      modelClassification: model.classification,
+      detectionCategories: detections.map((d) => d.category),
+      estimatedCostUsd: Number(estimatedCost.toFixed(6)),
+      monthlySpendUsd: Number(monthlySpend.toFixed(6)),
+      actorType: principal.kind,
+      budgetAction: budgetGate?.action ?? "ALLOW",
+    },
+    attributes: {
+      modelKey,
+      provider: model.provider_vendor,
+      transformed: finalAction === "REDACT",
+    },
+  });
   await trace({
     stage: "tool_authorization",
     status: "not_applicable",
@@ -482,6 +521,27 @@ export async function runGovernedRequest(params: {
         monthlySpendUsd: monthlySpend + costUsd,
         actorType: principal.kind,
         stage: "response",
+      });
+
+      await params.governanceDecision?.({
+        enforcementPoint: "PRE_RESPONSE",
+        decision: legacyActionToPolicyOutcome(responseDecision.action),
+        reason: responseDecision.reason,
+        policyId: responseDecision.policyId,
+        policyVersion: responseDecision.policyVersion,
+        ruleId: responseDecision.matchedRules[0]?.policyId ?? null,
+        evaluatedContext: {
+          modelKey,
+          provider: model.provider_vendor,
+          responseDetectionCategories: responseDetections.map((d) => d.category),
+          costUsd: Number(costUsd.toFixed(6)),
+          actorType: principal.kind,
+        },
+        attributes: {
+          outputWithheld:
+            responseDecision.action === "BLOCK" || responseDecision.action === "REQUIRE_APPROVAL",
+          transformed: responseDecision.action === "REDACT",
+        },
       });
 
       if (responseDecision.action === "BLOCK" || responseDecision.action === "REQUIRE_APPROVAL") {
