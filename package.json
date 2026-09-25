@@ -21,7 +21,8 @@
     "test:hardening": "node --import ./tests/resolve-ts.mjs --test tests/hardening.test.mjs tests/auth-runtime.test.mjs",
     "test:monitoring": "node --import ./tests/resolve-ts.mjs --test tests/monitoring.test.mjs",
     "desktop:discover": "node scripts/nexora-desktop-discovery.mjs",
-    "test:email": "node --import ./tests/resolve-ts.mjs --test tests/email.test.mjs"
+    "test:email": "node --import ./tests/resolve-ts.mjs --test tests/email.test.mjs",
+    "test:governance": "node --import ./tests/resolve-ts.mjs --test tests/governance-core.test.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
