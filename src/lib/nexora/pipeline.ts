@@ -431,6 +431,19 @@ export async function runGovernedRequest(params: {
       modelKey,
       provider: model.provider_vendor,
       transformed: finalAction === "REDACT",
+      policyContext: {
+        detectionCategories: detections.map((d) => ({
+          category: d.category,
+          severity: d.severity,
+        })),
+        modelKey,
+        modelClassification: model.classification,
+        provider: model.provider_vendor,
+        estimatedCostUsd: Number(estimatedCost.toFixed(6)),
+        monthlySpendUsd: Number(monthlySpend.toFixed(6)),
+        actorType: principal.kind,
+        stage: "request",
+      },
     },
   });
   await trace({
@@ -546,6 +559,19 @@ export async function runGovernedRequest(params: {
           outputWithheld:
             responseDecision.action === "BLOCK" || responseDecision.action === "REQUIRE_APPROVAL",
           transformed: responseDecision.action === "REDACT",
+          policyContext: {
+            detectionCategories: responseDetections.map((d) => ({
+              category: d.category,
+              severity: d.severity,
+            })),
+            modelKey,
+            modelClassification: model.classification,
+            provider: model.provider_vendor,
+            estimatedCostUsd: Number(costUsd.toFixed(6)),
+            monthlySpendUsd: Number((monthlySpend + costUsd).toFixed(6)),
+            actorType: principal.kind,
+            stage: "response",
+          },
         },
       });
 
