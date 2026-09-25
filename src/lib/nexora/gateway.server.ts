@@ -13,6 +13,7 @@ import {
   appendGovernanceDecision,
   createGovernedExecution,
   finalizeGovernedExecution,
+  recordExecutionRisk,
   resolveIntent,
 } from "./governance-runtime.server";
 import {
@@ -137,8 +138,8 @@ export async function runConsoleRequest(
   });
   const governed = await createGovernedExecution({ orgId, intentId: intent.id, identity });
 
-  const recordDecision = (event: GovernanceDecisionEvent) =>
-    appendGovernanceDecision({
+  const recordDecision = async (event: GovernanceDecisionEvent) => {
+    const evidence = await appendGovernanceDecision({
       orgId,
       executionId: governed.executionId,
       intentId: intent.id,
@@ -146,6 +147,66 @@ export async function runConsoleRequest(
       identity,
       ...event,
     });
+
+    if (!["DENY_ACTION", "DENY_EXECUTION", "QUARANTINE"].includes(event.decision)) {
+      return evidence;
+    }
+
+    const severities = (
+      (event.attributes?.policyContext as any)?.detectionCategories ?? []
+    ).map((entry: any) => String(entry.severity));
+    const severityOrder = ["info", "low", "medium", "high", "critical"];
+    const severity =
+      severities.sort(
+        (a: string, b: string) => severityOrder.indexOf(b) - severityOrder.indexOf(a),
+      )[0] ?? (event.decision === "QUARANTINE" ? "critical" : "high");
+    const scoreBySeverity: Record<string, number> = {
+      info: 1,
+      low: 5,
+      medium: 15,
+      high: 35,
+      critical: 75,
+    };
+    const risk = await recordExecutionRisk({
+      orgId,
+      executionId: governed.executionId,
+      intentId: intent.id,
+      policyId: event.policyId,
+      policyVersion: event.policyVersion,
+      severity: severity as "info" | "low" | "medium" | "high" | "critical",
+      score: scoreBySeverity[severity] ?? 35,
+      evasionIndicator:
+        intent.lineageConfidence != null && intent.lineageConfidence >= 0.72
+          ? "repeated_or_lineage_related_denied_intent"
+          : "policy_denial",
+    });
+
+    if (risk.terminated && event.decision !== "QUARANTINE") {
+      await appendGovernanceDecision({
+        orgId,
+        executionId: governed.executionId,
+        intentId: intent.id,
+        traceId: governed.traceId,
+        parentEventId: evidence.eventId,
+        parentSpanId: evidence.spanId,
+        identity,
+        enforcementPoint: event.enforcementPoint,
+        decision: "QUARANTINE",
+        reason: "Policy-defined accumulated risk threshold reached; execution terminated.",
+        policyId: event.policyId,
+        policyVersion: event.policyVersion,
+        ruleId: event.ruleId,
+        evaluatedContext: {
+          thresholdId: risk.thresholdId,
+          executionRiskScore: risk.executionRiskScore,
+          intentRiskScore: risk.intentRiskScore,
+          intentViolationCount: risk.intentViolationCount,
+        },
+        attributes: { thresholdId: risk.thresholdId },
+      });
+    }
+    return evidence;
+  };
 
   if (intent.status === "quarantined") {
     await recordDecision({
