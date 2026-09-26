@@ -2,13 +2,15 @@ version: 1
 last_updated: "2026-09-26"
 repository: "adreinmorin-design/nexora-guard-core-695d0312"
 branch: "main"
-implementation_baseline_commit: "dc0150ec5f716b5816a1dcf938ba8e6f3bce1bbf"
+implementation_baseline_commit: "a3fc42213d2d240e016cf05bc2cbe383a6253b88"
 
 capabilities:
   authentication:
     status: NOT_VERIFIED
-    evidence: []
-    blocker: "Requires successful interactive authentication through the deployed application"
+    evidence:
+      - type: production_smoke_negative_path
+        value: "run_id=36279456208; job_id=108508386247; GET /auth=200; anonymous POST /api/agent=401 with expected fail-closed error"
+    blocker: "Requires successful valid interactive login and authenticated protected-operation proof"
 
   tenant_isolation:
     status: NOT_VERIFIED
@@ -102,21 +104,32 @@ runtime_controls:
     context: "repository/CI"
     evidence:
       - type: merged_pull_request
-        value: "PR #24 merged governance core onto current main"
+        value: "PR #24 merged governed execution core from superseded PR #21 onto main"
       - type: github_actions_run
-        value: "run_id=36252888633; commit=dc0150ec5f716b5816a1dcf938ba8e6f3bce1bbf; conclusion=success"
+        value: "run_id=36279267631; head_sha=a3fc42213d2d240e016cf05bc2cbe383a6253b88; conclusion=success; 16 groups passed; 0 failed"
+      - type: github_actions_tree_equivalence
+        value: "pull_request checkout commit e1471455498fbf3f842a84fd156d165edf1210fa compares to head a3fc42213d2d240e016cf05bc2cbe383a6253b88 with zero changed files"
       - type: github_actions_artifact
-        value: "artifact_id=10909992025; sha256=a8a3de5b261082753937081b57193ba944b08ed83196e7f0bb8a408058e8f2c8"
+        value: "artifact_id=10917808932; sha256=73bf8b9953a3e97d7af1b25faa130dbaaab560e19b605fa875fc5611388a480e"
     blocker: null
 
   production_lovable_deployment:
-    status: DEPLOYED
+    status: RUNTIME_VERIFIED
     evidence:
       - type: lovable_project_readback
-        value: "published=true; project_status=ready; latest_commit_sha=dc0150ec5f716b5816a1dcf938ba8e6f3bce1bbf"
+        value: "published=true; project_status=ready; latest_commit_sha=a3fc42213d2d240e016cf05bc2cbe383a6253b88"
       - type: lovable_deploy_request
-        value: "deployment_id=972d133b-8f48-48a1-8685-5f44272f1b80; url=https://nexora-guard-core.lovable.app"
-    blocker: "Public HTTP response could not be independently probed from the available HTTP environment"
+        value: "deployment_id=a4eae11e-2849-4593-bcc3-bf0eea9fa84c; url=https://nexora-guard-core.lovable.app"
+      - type: production_smoke
+        value: "run_id=36279456208; job_id=108508386247; GET /=200; GET /auth=200; anonymous POST /api/agent=401"
+    blocker: null
+
+  production_agent_auth_boundary:
+    status: RUNTIME_VERIFIED
+    evidence:
+      - type: production_smoke_negative_path
+        value: "run_id=36279456208; job_id=108508386247; anonymous POST /api/agent returned 401 and body {\"error\":\"Valid agent bearer credential required.\"}"
+    blocker: null
 
   production_governance_schema:
     status: RUNTIME_VERIFIED
@@ -172,9 +185,11 @@ repository_controls:
     context: "repository/CI"
     evidence:
       - type: github_actions_run
-        value: "run_id=36252888633; commit=dc0150ec5f716b5816a1dcf938ba8e6f3bce1bbf; conclusion=success; 16 groups passed; 0 failed"
+        value: "run_id=36279267631; head_sha=a3fc42213d2d240e016cf05bc2cbe383a6253b88; conclusion=success; 16 groups passed; 0 failed"
+      - type: github_actions_tree_equivalence
+        value: "PR merge commit e1471455498fbf3f842a84fd156d165edf1210fa has zero file differences from a3fc42213d2d240e016cf05bc2cbe383a6253b88"
       - type: github_actions_artifact
-        value: "artifact_id=10909992025; sha256=a8a3de5b261082753937081b57193ba944b08ed83196e7f0bb8a408058e8f2c8"
+        value: "artifact_id=10917808932; sha256=73bf8b9953a3e97d7af1b25faa130dbaaab560e19b605fa875fc5611388a480e"
     blocker: null
 
   main_branch_protection:
