@@ -224,3 +224,32 @@ test("administrator per-request cost ceiling blocks before provider dispatch", a
     true,
   );
 });
+
+test("governance evidence failure at PRE_MODEL_INVOCATION prevents provider dispatch", async () => {
+  const f = fixture();
+  await assert.rejects(
+    f.run({
+      governanceDecision: async (event) => {
+        if (event.enforcementPoint === "PRE_MODEL_INVOCATION") {
+          throw new Error("evidence unavailable");
+        }
+      },
+    }),
+  );
+  assert.equal(f.calls.length, 0);
+});
+
+test("model and response enforcement boundaries are emitted in order", async () => {
+  const f = fixture();
+  const points = [];
+  const result = await f.run({
+    governanceDecision: async (event) => points.push(event),
+  });
+  assert.equal(result.status, "completed");
+  assert.deepEqual(
+    points.map((event) => event.enforcementPoint),
+    ["PRE_MODEL_INVOCATION", "PRE_RESPONSE"],
+  );
+  assert.equal(points[0].decision, "ALLOW");
+  assert.equal(points[1].decision, "ALLOW");
+});

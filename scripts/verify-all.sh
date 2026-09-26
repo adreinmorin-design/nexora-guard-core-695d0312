@@ -49,6 +49,7 @@ run_check "providers" "Provider tests" bun run test:providers
 run_check "paddle" "Paddle tests" bun run test:paddle
 run_check "billing" "Billing tests" bun run test:billing
 run_check "gateway" "Gateway tests" bun run test:gateway
+run_check "governance" "Governance core tests" bun run test:governance
 run_check "database" "Database migration tests" bun run test:database
 run_check "hardening" "Hardening/auth runtime tests" bun run test:hardening
 run_check "monitoring" "Monitoring tests" bun run test:monitoring
