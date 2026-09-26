@@ -427,18 +427,19 @@ export async function decideAndExecute(
       modelKey: payload.modelKey,
       idempotencyKey: id,
     };
-    if (payload.agentId) {
-      throw new Error(
-        "Agent approval requires fresh agent execution support; resubmit the agent task.",
-      );
-    }
-    const outcome = await runConsoleRequest(
-      { supabase: admin, userId: approval.requester_id },
-      orgId,
-      input,
-      payload.policies,
-      { intentId: approval.intent_id },
-    );
+    const outcome = payload.agentId
+      ? await (
+          await import("./agents.server")
+        ).executeAgentModel(orgId, payload.agentId, input, payload.policies, {
+          intentId: approval.intent_id,
+        })
+      : await runConsoleRequest(
+          { supabase: admin, userId: approval.requester_id },
+          orgId,
+          input,
+          payload.policies,
+          { intentId: approval.intent_id },
+        );
     await checked(
       admin
         .from("approvals")
