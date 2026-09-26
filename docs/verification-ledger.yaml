@@ -2,7 +2,8 @@ version: 1
 last_updated: "2026-09-26T12:05:53Z"
 repository: "adreinmorin-design/nexora-guard-core-695d0312"
 branch: "main"
-commit: "fd4bc4efd9f99c17e16d2010ce3ee872a4dfac5d"
+baseline_main_commit_before_codex_bootstrap: "1a9cc0e388839b60ee45eb3607fcca2ed29b6008"
+note: "Subsequent documentation-only commits added AGENTS.md rules and state files; use GitHub HEAD for the latest branch commit."
 
 capabilities:
   authentication:
@@ -75,15 +76,15 @@ repository_controls:
     status: FAILED
     evidence:
       - type: github_branch_readback
-        value: "main protected=false at commit fd4bc4efd9f99c17e16d2010ce3ee872a4dfac5d"
+        value: "main protected=false observed during Codex bootstrap on 2026-09-26"
     blocker: "main is currently unprotected"
 
-  ci_for_current_commit:
+  ci_for_codex_bootstrap:
     status: NOT_VERIFIED
     evidence:
       - type: github_actions_readback
-        value: "No workflow run observed yet for fd4bc4efd9f99c17e16d2010ce3ee872a4dfac5d"
-    blocker: "Current commit has no observed workflow run"
+        value: "No workflow run was observed for the initial AGENTS.md bootstrap commit at the time checked"
+    blocker: "Re-check CI on the latest HEAD before promotion"
 
 allowed_status_values:
   - NOT_IMPLEMENTED
