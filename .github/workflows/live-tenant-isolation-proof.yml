@@ -22,8 +22,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          EMAIL_A="adreinmorin+nxproof-a-\${GITHUB_RUN_ID}@gmail.com"
-          EMAIL_B="adreinmorin+nxproof-b-\${GITHUB_RUN_ID}@gmail.com"
+          EMAIL_A="adreinmorin+nxproof-a-${GITHUB_RUN_ID}@gmail.com"
+          EMAIL_B="adreinmorin+nxproof-b-${GITHUB_RUN_ID}@gmail.com"
           PASS_A="$(openssl rand -hex 24)Aa1!"
           PASS_B="$(openssl rand -hex 24)Bb2!"
 
@@ -63,8 +63,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          EMAIL_A='\${{ steps.users.outputs.email_a }}'
-          EMAIL_B='\${{ steps.users.outputs.email_b }}'
+          EMAIL_A='${{ steps.users.outputs.email_a }}'
+          EMAIL_B='${{ steps.users.outputs.email_b }}'
           PASS_A="$(cat /tmp/pass-a)"
           PASS_B="$(cat /tmp/pass-b)"
 
@@ -118,10 +118,10 @@ jobs:
           }
 
           post "$TOKEN_A" organizations \
-            "$(jq -nc --arg uid "$USER_A" --arg slug "nxproof-a-\${GITHUB_RUN_ID}" --arg run "$GITHUB_RUN_ID" '{name:("Nexora Verification A "+$run),slug:$slug,created_by:$uid}')" \
+            "$(jq -nc --arg uid "$USER_A" --arg slug "nxproof-a-${GITHUB_RUN_ID}" --arg run "$GITHUB_RUN_ID" '{name:("Nexora Verification A "+$run),slug:$slug,created_by:$uid}')" \
             /tmp/org-a.json
           post "$TOKEN_B" organizations \
-            "$(jq -nc --arg uid "$USER_B" --arg slug "nxproof-b-\${GITHUB_RUN_ID}" --arg run "$GITHUB_RUN_ID" '{name:("Nexora Verification B "+$run),slug:$slug,created_by:$uid}')" \
+            "$(jq -nc --arg uid "$USER_B" --arg slug "nxproof-b-${GITHUB_RUN_ID}" --arg run "$GITHUB_RUN_ID" '{name:("Nexora Verification B "+$run),slug:$slug,created_by:$uid}')" \
             /tmp/org-b.json
 
           ORG_A="$(jq -r '.[0].id' /tmp/org-a.json)"
