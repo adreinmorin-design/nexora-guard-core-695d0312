@@ -6,13 +6,13 @@
 
 - Repository: `adreinmorin-design/nexora-guard-core-695d0312`
 - Branch: `main`
-- Implementation baseline verified in CI: `dc0150ec5f716b5816a1dcf938ba8e6f3bce1bbf`
+- Production implementation baseline: `a3fc42213d2d240e016cf05bc2cbe383a6253b88`
 - Snapshot date: 2026-09-26
-- CI run: `36252888633`
-- CI artifact: `10909992025`
-- Artifact digest: `sha256:a8a3de5b261082753937081b57193ba944b08ed83196e7f0bb8a408058e8f2c8`
+- CI run: `36279267631`
+- CI artifact: `10917808932`
+- Artifact digest: `sha256:73bf8b9953a3e97d7af1b25faa130dbaaab560e19b605fa875fc5611388a480e`
 
-Documentation-only commits may be newer than the implementation baseline above.
+Post-proof documentation-only commits may be newer than the production implementation baseline above.
 
 ## Governance Core Integration — IMPLEMENTED + CI VERIFIED
 
@@ -38,7 +38,7 @@ PR #21 is closed as superseded.
 
 ## Repository Verification — RUNTIME_VERIFIED FOR REPOSITORY/CI CONTEXT
 
-GitHub Actions run `36252888633` completed successfully on the merged main implementation baseline.
+GitHub Actions run `36279267631` completed successfully for head SHA `a3fc42213d2d240e016cf05bc2cbe383a6253b88`. Because this was a verification-only pull request, Actions checked the synthetic merge commit `e1471455498fbf3f842a84fd156d165edf1210fa`; direct commit comparison showed zero changed files between that merge commit and `a3fc42213d2d240e016cf05bc2cbe383a6253b88`, so the tested tree was identical to the integrated HEAD.
 
 The complete verification runner reported:
 
@@ -59,19 +59,28 @@ The runner also passed dependency audit, Prettier, ESLint, TypeScript, and produ
 
 Repository tests prove implementation behavior in the CI/test environment. They do not by themselves prove live production execution.
 
-## Production Lovable Deployment — DEPLOYED
+## Production Lovable Deployment — RUNTIME_VERIFIED
 
-Direct Lovable readback after the merge reports:
+Exact deployment sequence evidence:
 
-- project id: `f46c7dc2-f8c6-4710-96bb-07ffc11e5270`
-- project name: Nexora
-- published: true
+- production implementation SHA: `a3fc42213d2d240e016cf05bc2cbe383a6253b88`
+- Lovable project id: `f46c7dc2-f8c6-4710-96bb-07ffc11e5270`
+- Lovable readback before and after deploy: `latest_commit_sha=a3fc42213d2d240e016cf05bc2cbe383a6253b88`
+- project published: true
 - project status: ready
-- latest synced commit: `dc0150ec5f716b5816a1dcf938ba8e6f3bce1bbf`
+- explicit deployment id: `a4eae11e-2849-4593-bcc3-bf0eea9fa84c`
 - production URL: `https://nexora-guard-core.lovable.app`
-- explicit republish deployment id: `972d133b-8f48-48a1-8685-5f44272f1b80`
 
-The available external HTTP inspection tool could not access the Lovable hostname, so a successful public HTTP response is not claimed from this environment.
+Post-deploy live production smoke evidence:
+
+- GitHub Actions run: `36279456208`
+- smoke job: `108508386247`
+- `GET /` returned HTTP 200
+- `GET /auth` returned HTTP 200
+- unauthenticated `POST /api/agent` returned HTTP 401
+- response body: `{"error":"Valid agent bearer credential required."}`
+
+This verifies that the published production host is live and that the protected agent endpoint fails closed for an anonymous request. It does not prove successful interactive login, authenticated agent execution, provider invocation, policy allow/deny behavior, tenant isolation, or other unexercised runtime capabilities.
 
 ## Production Governance Database Migration — RUNTIME_VERIFIED
 
@@ -123,7 +132,7 @@ A configured provider record is not proof of a successful live provider invocati
 
 Do not promote these to `RUNTIME_VERIFIED` until direct live evidence is captured:
 
-- interactive authentication through the deployed application
+- successful interactive authentication through the deployed application (the auth route is reachable and anonymous /api/agent access is denied, but valid login is not yet proven)
 - full identity → tenant → intent runtime flow
 - true tenant-A versus tenant-B isolation using two authorized identities
 - policy allow path with a real downstream provider response
