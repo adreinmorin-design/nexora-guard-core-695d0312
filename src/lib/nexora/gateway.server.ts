@@ -362,11 +362,28 @@ export async function decideAndExecute(
   if (approval.action === "mcp.execute") {
     const { executeApprovedTool } = await import("./mcp.server");
     try {
-      const outcome = await executeApprovedTool(orgId, id, payload);
+      if (!approval.intent_id || !approval.original_execution_id) {
+        throw new Error("Legacy tool approval must be resubmitted under governed execution semantics.");
+      }
+      const scope = approval.approval_scope ?? {};
+      if (
+        scope.operation !== "tool.invoke" ||
+        scope.toolId !== payload?.toolId ||
+        scope.definitionHash !== payload?.definitionHash
+      ) {
+        throw new Error("Approval scope does not authorize this tool invocation.");
+      }
+      const outcome = await executeApprovedTool(orgId, id, payload, {
+        intentId: approval.intent_id,
+        scope,
+      });
       await checked(
         admin
           .from("approvals")
-          .update({ execution_result: outcome.status })
+          .update({
+            execution_result: outcome.status,
+            consumed_execution_id: outcome.executionId,
+          })
           .eq("org_id", orgId)
           .eq("id", id),
       );
