@@ -19,6 +19,11 @@ import { inspect, redact, maskPreview, type Detection } from "./dlp";
 import { evaluate, type Decision, type GovAction, type PolicyRecord } from "./policy-engine";
 import { executeUnderDecision } from "./enforcement";
 import { MAX_OUTPUT_TOKENS, INPUT_OVERHEAD_TOKENS } from "./limits";
+import {
+  legacyActionToPolicyOutcome,
+  type EnforcementPoint,
+  type PolicyOutcome,
+} from "./governance-types";
 
 export type ProviderResult = {
   text: string;
@@ -88,6 +93,17 @@ export type PipelineTraceEvent = {
   requestId?: string | null;
 };
 
+export type GovernanceDecisionEvent = {
+  enforcementPoint: EnforcementPoint;
+  decision: PolicyOutcome;
+  reason: string;
+  policyId: string | null;
+  policyVersion: number | null;
+  ruleId: string | null;
+  evaluatedContext: Record<string, unknown>;
+  attributes?: Record<string, unknown>;
+};
+
 export type GatewayOutcome = {
   decision: GovAction;
   reason: string;
@@ -139,6 +155,8 @@ export async function runGovernedRequest(params: {
   approvedPolicies?: PolicyRecord[];
   maxRequestCostUsd?: number | null;
   trace?: (event: PipelineTraceEvent) => Promise<void>;
+  governanceDecision?: (event: GovernanceDecisionEvent) => Promise<void>;
+  governedContext?: { intentId: string; executionId: string };
 }): Promise<GatewayOutcome> {
   const { store, principal, prompt, modelKey, execute } = params;
   const trace = async (event: PipelineTraceEvent) => {
@@ -389,6 +407,45 @@ export async function runGovernedRequest(params: {
     summary: `${model.provider_vendor} selected for ${model.display_name}.`,
     detail: { provider: model.provider_vendor, modelKey, classification: model.classification },
   });
+
+  // Security evidence is authoritative. Unlike operational trace callbacks,
+  // failure to persist the PRE_MODEL_INVOCATION decision stops execution.
+  await params.governanceDecision?.({
+    enforcementPoint: "PRE_MODEL_INVOCATION",
+    decision: legacyActionToPolicyOutcome(finalAction),
+    reason: finalReason,
+    policyId: decision.policyId,
+    policyVersion: decision.policyVersion,
+    ruleId: decision.matchedRules[0]?.policyId ?? null,
+    evaluatedContext: {
+      modelKey,
+      provider: model.provider_vendor,
+      modelClassification: model.classification,
+      detectionCategories: detections.map((d) => d.category),
+      estimatedCostUsd: Number(estimatedCost.toFixed(6)),
+      monthlySpendUsd: Number(monthlySpend.toFixed(6)),
+      actorType: principal.kind,
+      budgetAction: budgetGate?.action ?? "ALLOW",
+    },
+    attributes: {
+      modelKey,
+      provider: model.provider_vendor,
+      transformed: finalAction === "REDACT",
+      policyContext: {
+        detectionCategories: detections.map((d) => ({
+          category: d.category,
+          severity: d.severity,
+        })),
+        modelKey,
+        modelClassification: model.classification,
+        provider: model.provider_vendor,
+        estimatedCostUsd: Number(estimatedCost.toFixed(6)),
+        monthlySpendUsd: Number(monthlySpend.toFixed(6)),
+        actorType: principal.kind,
+        stage: "request",
+      },
+    },
+  });
   await trace({
     stage: "tool_authorization",
     status: "not_applicable",
@@ -482,6 +539,40 @@ export async function runGovernedRequest(params: {
         monthlySpendUsd: monthlySpend + costUsd,
         actorType: principal.kind,
         stage: "response",
+      });
+
+      await params.governanceDecision?.({
+        enforcementPoint: "PRE_RESPONSE",
+        decision: legacyActionToPolicyOutcome(responseDecision.action),
+        reason: responseDecision.reason,
+        policyId: responseDecision.policyId,
+        policyVersion: responseDecision.policyVersion,
+        ruleId: responseDecision.matchedRules[0]?.policyId ?? null,
+        evaluatedContext: {
+          modelKey,
+          provider: model.provider_vendor,
+          responseDetectionCategories: responseDetections.map((d) => d.category),
+          costUsd: Number(costUsd.toFixed(6)),
+          actorType: principal.kind,
+        },
+        attributes: {
+          outputWithheld:
+            responseDecision.action === "BLOCK" || responseDecision.action === "REQUIRE_APPROVAL",
+          transformed: responseDecision.action === "REDACT",
+          policyContext: {
+            detectionCategories: responseDetections.map((d) => ({
+              category: d.category,
+              severity: d.severity,
+            })),
+            modelKey,
+            modelClassification: model.classification,
+            provider: model.provider_vendor,
+            estimatedCostUsd: Number(costUsd.toFixed(6)),
+            monthlySpendUsd: Number((monthlySpend + costUsd).toFixed(6)),
+            actorType: principal.kind,
+            stage: "response",
+          },
+        },
       });
 
       if (responseDecision.action === "BLOCK" || responseDecision.action === "REQUIRE_APPROVAL") {
@@ -584,6 +675,19 @@ export async function runGovernedRequest(params: {
       policy_version: decision.policyVersion,
       policy_revalidated_at: new Date().toISOString(),
       idempotency_key: idempotencyKey,
+      ...(params.governedContext
+        ? {
+            intent_id: params.governedContext.intentId,
+            original_execution_id: params.governedContext.executionId,
+            approval_scope: {
+              operation: "model.invoke",
+              provider: model.provider_vendor,
+              model: modelKey,
+              data_classification: model.classification,
+            },
+            single_use: true,
+          }
+        : {}),
       // Sanitized payload only — never the raw prompt.
       payload: {
         promptPreview: maskPreview(prompt, detections, 200),

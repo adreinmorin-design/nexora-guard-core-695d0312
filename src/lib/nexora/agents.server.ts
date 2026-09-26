@@ -7,6 +7,18 @@ import type { PolicyRecord } from "./policy-engine";
 import { requireOrgEntitlement } from "./entitlements.server";
 import { requireAiExecutionAllowed } from "./ai-controls.server";
 import { writeExecutionEvent } from "./execution-trace.server";
+import {
+  createGovernanceDecisionRecorder,
+  createGovernedExecution,
+  finalizeGovernedExecution,
+  loadIntentForExecution,
+  resolveIntent,
+} from "./governance-runtime.server";
+import {
+  executionOutcomeForLegacyResult,
+  legacyActionToPolicyOutcome,
+  type GovernanceIdentity,
+} from "./governance-types";
 
 const db: any = supabaseAdmin;
 
@@ -93,12 +105,46 @@ export async function executeAgentModel(
   agentId: string,
   input: { prompt: string; modelKey: string; idempotencyKey: string },
   approvedPolicies?: PolicyRecord[],
+  options?: {
+    intentId?: string;
+    objective?: string;
+    approvalId?: string;
+    approvalScope?: Record<string, unknown>;
+    allowQuarantinedIntent?: boolean;
+  },
 ) {
-  const executionId = input.idempotencyKey;
   const agent = await activeAgent(orgId, agentId);
+  const identity: GovernanceIdentity = {
+    actorId: agent.owner_id,
+    actorType: "agent",
+    agentId,
+    applicationId: "agent-api",
+    organizationId: orgId,
+  };
+  const intent = options?.intentId
+    ? await loadIntentForExecution(orgId, options.intentId)
+    : await resolveIntent({
+        orgId,
+        actorId: agent.owner_id,
+        applicationId: "agent-api",
+        objective: options?.objective ?? input.prompt,
+        context: {
+          requestedAction: "model.invoke",
+          resource: input.modelKey,
+        },
+      });
+  const governed = await createGovernedExecution({ orgId, intentId: intent.id, identity });
+  const recordDecision = createGovernanceDecisionRecorder({
+    orgId,
+    intent,
+    executionId: governed.executionId,
+    traceId: governed.traceId,
+    identity,
+  });
+
   await writeExecutionEvent({
     orgId,
-    executionId,
+    executionId: governed.executionId,
     agentId,
     actorType: "agent",
     stage: "identity",
@@ -106,38 +152,213 @@ export async function executeAgentModel(
     summary: "Agent credential, lifecycle and owner membership verified.",
   });
 
-  const controls = await requireAiExecutionAllowed(orgId, "agent");
-  await requireCapability(orgId, agentId, "model:invoke");
+  if (intent.status === "quarantined" && !options?.allowQuarantinedIntent) {
+    await recordDecision({
+      enforcementPoint: "PRE_EXECUTION",
+      decision: "QUARANTINE",
+      reason: intent.inheritedQuarantine
+        ? "Agent execution denied because this intent inherited quarantine from a high-confidence ancestor."
+        : "Agent execution denied because this intent is quarantined.",
+      policyId: null,
+      policyVersion: null,
+      ruleId: null,
+      evaluatedContext: {
+        agentId,
+        intentStatus: intent.status,
+        inheritedQuarantine: intent.inheritedQuarantine,
+        lineageConfidence: intent.lineageConfidence,
+      },
+      attributes: { lineageConfidence: intent.lineageConfidence },
+    });
+    await finalizeGovernedExecution({
+      orgId,
+      executionId: governed.executionId,
+      workflowOutcome: "TERMINATED",
+      governanceOutcome: "QUARANTINE",
+    });
+    return {
+      decision: "BLOCK" as const,
+      reason: "Intent is quarantined and cannot execute without explicit review.",
+      policy: null,
+      matchedRules: [],
+      findings: [],
+      output: null,
+      status: "terminated",
+      approvalId: null,
+      requestId: null,
+      usage: { inputTokens: 0, outputTokens: 0, costUsd: 0, latency: 0 },
+      intentId: intent.id,
+      executionId: governed.executionId,
+      traceId: governed.traceId,
+    };
+  }
+
+  let controls: Awaited<ReturnType<typeof requireAiExecutionAllowed>>;
+  try {
+    controls = await requireAiExecutionAllowed(orgId, "agent");
+  } catch {
+    await writeExecutionEvent({
+      orgId,
+      executionId: governed.executionId,
+      agentId,
+      actorType: "agent",
+      stage: "permissions",
+      status: "blocked",
+      summary: "Organization AI controls denied agent execution.",
+    });
+    await recordDecision({
+      enforcementPoint: "PRE_EXECUTION",
+      decision: "DENY_EXECUTION",
+      reason: "Organization AI controls denied this agent request.",
+      policyId: null,
+      policyVersion: null,
+      ruleId: "org_ai_controls",
+      evaluatedContext: { actorType: "agent", agentId, applicationId: "agent-api" },
+      attributes: {},
+    });
+    await finalizeGovernedExecution({
+      orgId,
+      executionId: governed.executionId,
+      workflowOutcome: "DENIED_BEFORE_EXECUTION",
+      governanceOutcome: "DENY_EXECUTION",
+    });
+    throw new Error("AI execution is disabled by organization controls.");
+  }
+
+  try {
+    await requireCapability(orgId, agentId, "model:invoke");
+  } catch {
+    await writeExecutionEvent({
+      orgId,
+      executionId: governed.executionId,
+      agentId,
+      actorType: "agent",
+      stage: "permissions",
+      status: "blocked",
+      summary: "Agent lacks model invocation authority.",
+    });
+    await recordDecision({
+      enforcementPoint: "PRE_EXECUTION",
+      decision: "DENY_EXECUTION",
+      reason: "Agent lacks model:invoke capability or its owner no longer has runtime authority.",
+      policyId: null,
+      policyVersion: null,
+      ruleId: "agent_model_capability",
+      evaluatedContext: { actorType: "agent", agentId, capability: "model:invoke" },
+      attributes: {},
+    });
+    await finalizeGovernedExecution({
+      orgId,
+      executionId: governed.executionId,
+      workflowOutcome: "DENIED_BEFORE_EXECUTION",
+      governanceOutcome: "DENY_EXECUTION",
+    });
+    throw new Error("Agent lacks model invocation authority.");
+  }
+
   await writeExecutionEvent({
     orgId,
-    executionId,
+    executionId: governed.executionId,
     agentId,
     actorType: "agent",
     stage: "permissions",
     status: "passed",
     summary: "Agent has model:invoke capability and owner authority.",
   });
-
-  return runGovernedRequest({
-    store: makeStore({ supabase: db }, orgId),
-    principal: { kind: "agent", id: agentId, orgId, ownerId: agent.owner_id, source: "api" },
-    ...input,
-    ...(approvedPolicies ? { approvedPolicies } : {}),
-    maxRequestCostUsd: controls.max_request_cost_usd,
-    trace: (event) =>
-      writeExecutionEvent({
-        orgId,
-        executionId,
-        agentId,
-        actorType: "agent",
-        stage: event.stage,
-        status: event.status,
-        summary: event.summary,
-        ...(event.detail ? { detail: event.detail } : {}),
-        requestId: event.requestId ?? null,
-      }),
-    execute: executeProviderRequest,
+  await recordDecision({
+    enforcementPoint: "PRE_EXECUTION",
+    decision: "ALLOW",
+    reason: "Agent identity, organization controls and model capability checks passed.",
+    policyId: null,
+    policyVersion: null,
+    ruleId: "agent_runtime_pre_execution",
+    evaluatedContext: {
+      actorType: "agent",
+      agentId,
+      ownerId: agent.owner_id,
+      applicationId: "agent-api",
+      intentStatus: intent.status,
+    },
+    attributes: {},
   });
+
+  if (options?.approvalId) {
+    await recordDecision({
+      enforcementPoint: "PRE_EXECUTION",
+      decision: "ALLOW",
+      reason:
+        "Scoped single-use human approval was consumed for a fresh agent execution without clearing prior intent risk.",
+      policyId: null,
+      policyVersion: null,
+      ruleId: "approval_consumed",
+      evaluatedContext: {
+        approvalId: options.approvalId,
+        approvalScope: options.approvalScope ?? {},
+        intentStatus: intent.status,
+        agentId,
+      },
+      attributes: {
+        approvalId: options.approvalId,
+        approvalScope: options.approvalScope ?? {},
+        intentRemainsFlagged: intent.status === "flagged" || intent.status === "quarantined",
+      },
+    });
+  }
+
+  try {
+    const outcome = await runGovernedRequest({
+      store: makeStore({ supabase: db }, orgId),
+      principal: { kind: "agent", id: agentId, orgId, ownerId: agent.owner_id, source: "api" },
+      ...input,
+      ...(approvedPolicies ? { approvedPolicies } : {}),
+      maxRequestCostUsd: controls.max_request_cost_usd,
+      governedContext: { intentId: intent.id, executionId: governed.executionId },
+      governanceDecision: async (event) => {
+        await recordDecision(event);
+      },
+      trace: (event) =>
+        writeExecutionEvent({
+          orgId,
+          executionId: governed.executionId,
+          agentId,
+          actorType: "agent",
+          stage: event.stage,
+          status: event.status,
+          summary: event.summary,
+          ...(event.detail ? { detail: event.detail } : {}),
+          requestId: event.requestId ?? null,
+        }),
+      execute: executeProviderRequest,
+    });
+
+    const governanceOutcome = legacyActionToPolicyOutcome(outcome.decision);
+    const workflowOutcome = executionOutcomeForLegacyResult({
+      action: outcome.decision,
+      status: outcome.status,
+      providerExecuted: !["blocked", "pending_approval", "duplicate"].includes(outcome.status),
+      redacted: outcome.decision === "REDACT",
+    });
+    await finalizeGovernedExecution({
+      orgId,
+      executionId: governed.executionId,
+      workflowOutcome,
+      governanceOutcome,
+    });
+    return {
+      ...outcome,
+      intentId: intent.id,
+      executionId: governed.executionId,
+      traceId: governed.traceId,
+    };
+  } catch (error) {
+    await finalizeGovernedExecution({
+      orgId,
+      executionId: governed.executionId,
+      workflowOutcome: "FAILED_EXECUTION",
+      governanceOutcome: null,
+    });
+    throw error;
+  }
 }
 
 export async function runAgentOperation(
@@ -147,10 +368,20 @@ export async function runAgentOperation(
 ) {
   await activeAgent(orgId, agentId);
   await requireAiExecutionAllowed(orgId, "agent");
-  if (input.kind === "model") return executeAgentModel(orgId, agentId, input);
+  if (input.kind === "model")
+    return executeAgentModel(orgId, agentId, input, undefined, {
+      ...(input.intentId ? { intentId: input.intentId } : {}),
+      ...(input.objective ? { objective: input.objective } : {}),
+    });
   if (input.kind === "tool") {
     await requireOrgEntitlement(orgId, "mcp_controls");
-    return (await import("./mcp.server")).executeTool(orgId, agentId, input);
+    return (await import("./mcp.server")).executeTool(orgId, agentId, {
+      toolId: input.toolId,
+      arguments: input.arguments,
+      idempotencyKey: input.idempotencyKey,
+      ...(input.intentId ? { intentId: input.intentId } : {}),
+      ...(input.objective ? { objective: input.objective } : {}),
+    });
   }
   if (input.kind === "finding") {
     await requireCapability(orgId, agentId, "findings:resolve");
