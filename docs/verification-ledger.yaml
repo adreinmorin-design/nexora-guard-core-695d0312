@@ -23,7 +23,7 @@ capabilities:
     status: NOT_VERIFIED
     evidence:
       - type: ci_gateway_tests
-        value: "Repository allow/enforcement behavior covered by successful main CI run 36252888633"
+        value: "Repository allow/enforcement behavior covered by successful main CI run 36279267631"
     blocker: "Requires live governed execution with a real downstream provider response"
 
   policy_deny:
@@ -44,7 +44,7 @@ capabilities:
     status: NOT_VERIFIED
     evidence:
       - type: ci_security_tests
-        value: "Security suite passed in main CI run 36252888633"
+        value: "Security suite passed in main CI run 36279267631"
     blocker: "Requires privileged-action negative-path live verification"
 
   budget_enforcement:
@@ -60,7 +60,7 @@ capabilities:
       - type: production_provider_readback
         value: "OpenAI provider active; credential_state=MANAGED; three active models"
       - type: ci_provider_tests
-        value: "Provider adapters and endpoint allowlisting passed in main CI run 36252888633"
+        value: "Provider adapters and endpoint allowlisting passed in main CI run 36279267631"
     blocker: "Requires successful live provider invocation and response/usage evidence"
 
   mcp_authorization:
