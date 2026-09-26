@@ -370,12 +370,18 @@ export async function runAgentOperation(
   await requireAiExecutionAllowed(orgId, "agent");
   if (input.kind === "model")
     return executeAgentModel(orgId, agentId, input, undefined, {
-      intentId: input.intentId,
-      objective: input.objective,
+      ...(input.intentId ? { intentId: input.intentId } : {}),
+      ...(input.objective ? { objective: input.objective } : {}),
     });
   if (input.kind === "tool") {
     await requireOrgEntitlement(orgId, "mcp_controls");
-    return (await import("./mcp.server")).executeTool(orgId, agentId, input);
+    return (await import("./mcp.server")).executeTool(orgId, agentId, {
+      toolId: input.toolId,
+      arguments: input.arguments,
+      idempotencyKey: input.idempotencyKey,
+      ...(input.intentId ? { intentId: input.intentId } : {}),
+      ...(input.objective ? { objective: input.objective } : {}),
+    });
   }
   if (input.kind === "finding") {
     await requireCapability(orgId, agentId, "findings:resolve");
