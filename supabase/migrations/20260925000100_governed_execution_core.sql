@@ -8,6 +8,7 @@ create table public.intents (
   application_id text,
   objective_fingerprint text not null check (length(objective_fingerprint) between 16 and 128),
   objective_summary text,
+  lineage_context jsonb not null default '{}'::jsonb,
   status text not null default 'active'
     check (status in ('active','flagged','quarantined','cleared')),
   violation_count integer not null default 0 check (violation_count >= 0),
