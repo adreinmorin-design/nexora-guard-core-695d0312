@@ -105,7 +105,7 @@ export async function executeAgentModel(
   agentId: string,
   input: { prompt: string; modelKey: string; idempotencyKey: string },
   approvedPolicies?: PolicyRecord[],
-  options?: { intentId?: string },
+  options?: { intentId?: string; objective?: string },
 ) {
   const agent = await activeAgent(orgId, agentId);
   const identity: GovernanceIdentity = {
@@ -121,7 +121,11 @@ export async function executeAgentModel(
         orgId,
         actorId: agent.owner_id,
         applicationId: "agent-api",
-        objective: input.prompt,
+        objective: options?.objective ?? input.prompt,
+        context: {
+          requestedAction: "model.invoke",
+          resource: input.modelKey,
+        },
       });
   const governed = await createGovernedExecution({ orgId, intentId: intent.id, identity });
   const recordDecision = createGovernanceDecisionRecorder({
@@ -335,7 +339,11 @@ export async function runAgentOperation(
 ) {
   await activeAgent(orgId, agentId);
   await requireAiExecutionAllowed(orgId, "agent");
-  if (input.kind === "model") return executeAgentModel(orgId, agentId, input);
+  if (input.kind === "model")
+    return executeAgentModel(orgId, agentId, input, undefined, {
+      intentId: input.intentId,
+      objective: input.objective,
+    });
   if (input.kind === "tool") {
     await requireOrgEntitlement(orgId, "mcp_controls");
     return (await import("./mcp.server")).executeTool(orgId, agentId, input);
