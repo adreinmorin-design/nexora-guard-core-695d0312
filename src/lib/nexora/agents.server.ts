@@ -105,7 +105,13 @@ export async function executeAgentModel(
   agentId: string,
   input: { prompt: string; modelKey: string; idempotencyKey: string },
   approvedPolicies?: PolicyRecord[],
-  options?: { intentId?: string; objective?: string },
+  options?: {
+    intentId?: string;
+    objective?: string;
+    approvalId?: string;
+    approvalScope?: Record<string, unknown>;
+    allowQuarantinedIntent?: boolean;
+  },
 ) {
   const agent = await activeAgent(orgId, agentId);
   const identity: GovernanceIdentity = {
@@ -146,7 +152,7 @@ export async function executeAgentModel(
     summary: "Agent credential, lifecycle and owner membership verified.",
   });
 
-  if (intent.status === "quarantined") {
+  if (intent.status === "quarantined" && !options?.allowQuarantinedIntent) {
     await recordDecision({
       enforcementPoint: "PRE_EXECUTION",
       decision: "QUARANTINE",
@@ -275,6 +281,29 @@ export async function executeAgentModel(
     },
     attributes: {},
   });
+
+  if (options?.approvalId) {
+    await recordDecision({
+      enforcementPoint: "PRE_EXECUTION",
+      decision: "ALLOW",
+      reason:
+        "Scoped single-use human approval was consumed for a fresh agent execution without clearing prior intent risk.",
+      policyId: null,
+      policyVersion: null,
+      ruleId: "approval_consumed",
+      evaluatedContext: {
+        approvalId: options.approvalId,
+        approvalScope: options.approvalScope ?? {},
+        intentStatus: intent.status,
+        agentId,
+      },
+      attributes: {
+        approvalId: options.approvalId,
+        approvalScope: options.approvalScope ?? {},
+        intentRemainsFlagged: intent.status === "flagged" || intent.status === "quarantined",
+      },
+    });
+  }
 
   try {
     const outcome = await runGovernedRequest({
