@@ -233,7 +233,7 @@ returns jsonb
 language plpgsql
 security invoker
 set search_path = ''
-as $
+as $$
 declare
   e public.governed_executions;
   i public.intents;
@@ -344,7 +344,7 @@ begin
     'thresholdId', threshold.id
   );
 end;
-$;
+$$;
 
 revoke all on function public.nexora_record_execution_risk(
   uuid,uuid,uuid,uuid,integer,public.severity,numeric,text
