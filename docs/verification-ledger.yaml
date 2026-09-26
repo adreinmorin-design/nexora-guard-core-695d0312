@@ -1,25 +1,26 @@
 version: 1
-last_updated: "2026-09-26T12:49:10Z"
+last_updated: "2026-09-26T13:10:00Z"
 repository: "adreinmorin-design/nexora-guard-core-695d0312"
 branch: "main"
-verified_engineering_commit: "6ffe3739a59358c75e9cc64f4e7fab48339d125c"
-note: "Repository-level CI is verified. Product/runtime capabilities still require direct live evidence before promotion."
+verified_main_commit: "1d76d80f656ced8f716d8d3937fe0c936f2e918b"
 
 capabilities:
   authentication:
     status: NOT_VERIFIED
     evidence: []
-    blocker: "Requires live runtime verification"
+    blocker: "Requires successful interactive authentication through the deployed application"
 
   tenant_isolation:
     status: NOT_VERIFIED
-    evidence: []
-    blocker: "Requires cross-tenant positive and negative runtime tests"
+    evidence:
+      - type: production_rls_negative_path
+        value: "Synthetic authenticated non-member observed 0 organizations, org_members, policies, audit_events, requests, providers, and models"
+    blocker: "Production currently has only one organization; a real two-tenant isolation test is still required"
 
   policy_allow:
     status: NOT_VERIFIED
     evidence: []
-    blocker: "Requires live governed execution"
+    blocker: "Requires live governed execution through an allowed policy and downstream provider response"
 
   policy_deny:
     status: NOT_VERIFIED
@@ -29,73 +30,124 @@ capabilities:
   pii_redaction:
     status: NOT_VERIFIED
     evidence: []
-    blocker: "Requires verification of payload state before external forwarding"
+    blocker: "Requires verification of payload state immediately before external provider forwarding"
 
   prompt_injection_controls:
     status: NOT_VERIFIED
     evidence: []
-    blocker: "Requires security fixture and privileged-action negative-path verification"
+    blocker: "Requires privileged-action negative-path runtime verification"
 
   budget_enforcement:
     status: NOT_VERIFIED
     evidence: []
-    blocker: "Requires proof hard limit blocks before provider invocation"
+    blocker: "Requires proof the hard limit blocks before provider invocation"
 
   provider_routing:
     status: NOT_VERIFIED
     evidence: []
-    blocker: "Requires live provider routing verification"
+    blocker: "Requires live provider routing and response evidence"
 
   mcp_authorization:
     status: NOT_VERIFIED
     evidence: []
-    blocker: "Requires proof unauthorized tool never executes"
+    blocker: "Requires proof an unauthorized MCP tool never executes"
 
   tool_authorization:
     status: NOT_VERIFIED
     evidence: []
-    blocker: "Requires positive and negative invocation tests"
+    blocker: "Requires positive and negative live invocation tests"
 
   intent_persistence:
     status: NOT_VERIFIED
     evidence: []
-    blocker: "Requires multi-step agent execution trace"
+    blocker: "Requires a multi-step agent execution trace retaining the same intent"
 
   audit_reconstruction:
     status: NOT_VERIFIED
     evidence: []
-    blocker: "Requires reconstruction from intent_id/execution_id"
+    blocker: "Requires reconstruction from intent_id/execution_id/request_id against live execution"
 
   billing_entitlements:
     status: NOT_VERIFIED
     evidence: []
-    blocker: "Requires server-side entitlement and billing lifecycle verification"
+    blocker: "Requires server-side entitlement and Paddle lifecycle verification"
+
+runtime_controls:
+  lovable_publish_state:
+    status: DEPLOYED
+    evidence:
+      - type: lovable_project_readback
+        value: "project=f46c7dc2-f8c6-4710-96bb-07ffc11e5270; is_published=true; project_status=ready"
+      - type: lovable_deploy_request
+        value: "deployment_id=04d13706-af38-47bb-b102-521ab2783f79; production_url=https://nexora-guard-core.lovable.app"
+    blocker: "Public HTTP response could not be independently probed from the available network environment"
+
+  production_database_connectivity:
+    status: RUNTIME_VERIFIED
+    evidence:
+      - type: lovable_database_readback
+        value: "cloud database enabled; stack=supabase"
+      - type: production_sql
+        value: "Direct read-only production SQL queries completed successfully"
+    blocker: null
+
+  production_public_table_rls:
+    status: RUNTIME_VERIFIED
+    evidence:
+      - type: production_sql
+        value: "Every application table observed in schema public reported rowsecurity=true"
+    blocker: null
+
+  anonymous_data_boundary:
+    status: RUNTIME_VERIFIED
+    evidence:
+      - type: production_sql
+        value: "anon table grants contained only SELECT on billing_plans"
+      - type: production_sql_negative_test
+        value: "anon SELECT against organizations failed with permission denied"
+    blocker: null
+
+  security_definer_exposure:
+    status: RUNTIME_VERIFIED
+    evidence:
+      - type: production_sql
+        value: "No inspected SECURITY DEFINER function was executable by anon or public"
+      - type: production_sql
+        value: "Authenticated execution was limited to intended private role/membership/entitlement helpers; public trigger helpers were not client executable"
+    blocker: null
+
+  authenticated_nonmember_isolation:
+    status: RUNTIME_VERIFIED
+    evidence:
+      - type: production_rls_negative_path
+        value: "Synthetic authenticated non-member saw zero rows in organizations, org_members, policies, audit_events, requests, providers, and models"
+    blocker: null
 
 repository_controls:
   main_branch_protection:
     status: FAILED
     evidence:
       - type: github_branch_readback
-        value: "main protected=false; required status-check enforcement=off after commit 6ffe3739a59358c75e9cc64f4e7fab48339d125c"
-    blocker: "main is currently unprotected"
+        value: "main protected=false; required status-check enforcement=off"
+      - type: github_actions_attempt
+        value: "run_id=36244033661; branch-protection PUT returned HTTP 403 Resource not accessible by integration"
+    blocker: "The connected GitHub integration and the built-in Actions token do not have repository administration permission. An admin-scoped token or direct GitHub Settings action is required."
 
   ci:
     status: RUNTIME_VERIFIED
     evidence:
       - type: github_actions_run
-        value: "run_id=36243085212; commit=6ffe3739a59358c75e9cc64f4e7fab48339d125c; conclusion=success; 15 passed, 0 failed"
+        value: "run_id=36244263497; commit=1d76d80f656ced8f716d8d3937fe0c936f2e918b; conclusion=success"
       - type: github_actions_artifact
-        value: "artifact_id=10906398211; name=nexora-verification-6ffe3739a59358c75e9cc64f4e7fab48339d125c; sha256=de51b20ca64999b1af5006b8e0799aec59ff74b683cf2343e115deb89f7bbefe"
+        value: "artifact_id=10906508254 from earlier full verification; sha256=af70ac90d24fae468c9c69511178e0d8b29df2326daa6fb0ea9604b0868e2b45"
     blocker: null
 
   codespace_bootstrap:
     status: IMPLEMENTED
     evidence:
-      - type: repository_commit
-        value: "commit=6ffe3739a59358c75e9cc64f4e7fab48339d125c; files=.devcontainer/devcontainer.json,.devcontainer/post-create.sh"
-      - type: ci_validation
-        value: "run_id=36243085212 verified repository formatting, linting, typecheck, build, tests and Bun 1.4.2 toolchain"
-    blocker: "Live Codespace rebuild/new-instance verification is still required before marking this control RUNTIME_VERIFIED"
+      - type: repository_configuration
+        value: ".devcontainer/devcontainer.json and .devcontainer/post-create.sh configure Node 24 and Bun 1.4.2 with frozen-lockfile installation"
+    blocker: "Existing Codespace instance has not been rebuilt and directly observed"
 
 allowed_status_values:
   - NOT_IMPLEMENTED
