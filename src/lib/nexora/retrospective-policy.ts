@@ -1,4 +1,5 @@
 import { evaluate, type PolicyRecord } from "./policy-engine";
+import type { Detection } from "./dlp";
 
 export type HistoricalPolicyContext = {
   detectionCategories: Array<{ category: string; severity: string }>;
@@ -32,11 +33,11 @@ export function evaluateHistoricalContext(
   },
 ): RetrospectiveEvaluation {
   const detections = historical.detectionCategories.map((entry) => ({
-    category: entry.category,
-    severity: entry.severity,
+    category: entry.category as Detection["category"],
+    severity: entry.severity as Detection["severity"],
     label: entry.category,
     confidence: 1,
-    source: "retrospective_context",
+    source: "heuristic" as const,
     match: entry.category,
     start: 0,
     end: 0,
