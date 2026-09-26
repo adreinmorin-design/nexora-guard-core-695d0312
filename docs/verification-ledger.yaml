@@ -1,0 +1,94 @@
+version: 1
+last_updated: "2026-09-26T12:05:53Z"
+repository: "adreinmorin-design/nexora-guard-core-695d0312"
+branch: "main"
+commit: "fd4bc4efd9f99c17e16d2010ce3ee872a4dfac5d"
+
+capabilities:
+  authentication:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Requires live runtime verification"
+
+  tenant_isolation:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Requires cross-tenant positive and negative runtime tests"
+
+  policy_allow:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Requires live governed execution"
+
+  policy_deny:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Must prove downstream dispatch does not occur after DENY"
+
+  pii_redaction:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Requires verification of payload state before external forwarding"
+
+  prompt_injection_controls:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Requires security fixture and privileged-action negative-path verification"
+
+  budget_enforcement:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Requires proof hard limit blocks before provider invocation"
+
+  provider_routing:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Requires live provider routing verification"
+
+  mcp_authorization:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Requires proof unauthorized tool never executes"
+
+  tool_authorization:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Requires positive and negative invocation tests"
+
+  intent_persistence:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Requires multi-step agent execution trace"
+
+  audit_reconstruction:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Requires reconstruction from intent_id/execution_id"
+
+  billing_entitlements:
+    status: NOT_VERIFIED
+    evidence: []
+    blocker: "Requires server-side entitlement and billing lifecycle verification"
+
+repository_controls:
+  main_branch_protection:
+    status: FAILED
+    evidence:
+      - type: github_branch_readback
+        value: "main protected=false at commit fd4bc4efd9f99c17e16d2010ce3ee872a4dfac5d"
+    blocker: "main is currently unprotected"
+
+  ci_for_current_commit:
+    status: NOT_VERIFIED
+    evidence:
+      - type: github_actions_readback
+        value: "No workflow run observed yet for fd4bc4efd9f99c17e16d2010ce3ee872a4dfac5d"
+    blocker: "Current commit has no observed workflow run"
+
+allowed_status_values:
+  - NOT_IMPLEMENTED
+  - IMPLEMENTED
+  - DEPLOYED
+  - RUNTIME_VERIFIED
+  - FAILED
+  - NOT_VERIFIED
