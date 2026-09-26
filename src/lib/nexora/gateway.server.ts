@@ -152,9 +152,9 @@ export async function runConsoleRequest(
       return evidence;
     }
 
-    const severities = ((event.attributes?.["policyContext"] as any)?.detectionCategories ?? []).map(
-      (entry: any) => String(entry.severity),
-    );
+    const severities = (
+      (event.attributes?.["policyContext"] as any)?.detectionCategories ?? []
+    ).map((entry: any) => String(entry.severity));
     const severityOrder = ["info", "low", "medium", "high", "critical"];
     const severity =
       severities.sort(
