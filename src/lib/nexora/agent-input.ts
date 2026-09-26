@@ -22,6 +22,8 @@ export const agentTaskInput = z.discriminatedUnion("kind", [
       kind: z.literal("model"),
       modelKey: z.string().min(1).max(200),
       prompt: z.string().min(1).max(20000),
+      objective: z.string().trim().min(1).max(4000).optional(),
+      intentId: z.string().uuid().optional(),
       idempotencyKey: z.string().uuid(),
     })
     .strict(),
@@ -32,6 +34,8 @@ export const agentTaskInput = z.discriminatedUnion("kind", [
       arguments: z
         .record(z.unknown())
         .refine((v) => JSON.stringify(v).length <= 20000, "Tool arguments exceed the limit."),
+      objective: z.string().trim().min(1).max(4000).optional(),
+      intentId: z.string().uuid().optional(),
       idempotencyKey: z.string().uuid(),
     })
     .strict(),
