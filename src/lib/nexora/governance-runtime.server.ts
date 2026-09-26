@@ -372,7 +372,6 @@ export async function recordExecutionRisk(input: {
   };
 }
 
-
 export function createGovernanceDecisionRecorder(input: {
   orgId: string;
   intent: ResolvedIntent;
