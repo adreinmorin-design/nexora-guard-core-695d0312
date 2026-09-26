@@ -1,9 +1,9 @@
 version: 1
-last_updated: "2026-09-26T12:05:53Z"
+last_updated: "2026-09-26T12:49:10Z"
 repository: "adreinmorin-design/nexora-guard-core-695d0312"
 branch: "main"
-baseline_main_commit_before_codex_bootstrap: "1a9cc0e388839b60ee45eb3607fcca2ed29b6008"
-note: "Subsequent documentation-only commits added AGENTS.md rules and state files; use GitHub HEAD for the latest branch commit."
+verified_engineering_commit: "6ffe3739a59358c75e9cc64f4e7fab48339d125c"
+note: "Repository-level CI is verified. Product/runtime capabilities still require direct live evidence before promotion."
 
 capabilities:
   authentication:
@@ -76,15 +76,26 @@ repository_controls:
     status: FAILED
     evidence:
       - type: github_branch_readback
-        value: "main protected=false observed during Codex bootstrap on 2026-09-26"
+        value: "main protected=false; required status-check enforcement=off after commit 6ffe3739a59358c75e9cc64f4e7fab48339d125c"
     blocker: "main is currently unprotected"
 
-  ci_for_codex_bootstrap:
-    status: NOT_VERIFIED
+  ci:
+    status: RUNTIME_VERIFIED
     evidence:
-      - type: github_actions_readback
-        value: "No workflow run was observed for the initial AGENTS.md bootstrap commit at the time checked"
-    blocker: "Re-check CI on the latest HEAD before promotion"
+      - type: github_actions_run
+        value: "run_id=36243085212; commit=6ffe3739a59358c75e9cc64f4e7fab48339d125c; conclusion=success; 15 passed, 0 failed"
+      - type: github_actions_artifact
+        value: "artifact_id=10906398211; name=nexora-verification-6ffe3739a59358c75e9cc64f4e7fab48339d125c; sha256=de51b20ca64999b1af5006b8e0799aec59ff74b683cf2343e115deb89f7bbefe"
+    blocker: null
+
+  codespace_bootstrap:
+    status: IMPLEMENTED
+    evidence:
+      - type: repository_commit
+        value: "commit=6ffe3739a59358c75e9cc64f4e7fab48339d125c; files=.devcontainer/devcontainer.json,.devcontainer/post-create.sh"
+      - type: ci_validation
+        value: "run_id=36243085212 verified repository formatting, linting, typecheck, build, tests and Bun 1.4.2 toolchain"
+    blocker: "Live Codespace rebuild/new-instance verification is still required before marking this control RUNTIME_VERIFIED"
 
 allowed_status_values:
   - NOT_IMPLEMENTED
