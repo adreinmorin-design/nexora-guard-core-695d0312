@@ -37,6 +37,7 @@ export function evaluateHistoricalContext(
     label: entry.category,
     confidence: 1,
     source: "retrospective_context",
+    match: entry.category,
     start: 0,
     end: 0,
   }));
