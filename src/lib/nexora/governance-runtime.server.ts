@@ -5,6 +5,7 @@ import {
   hashGovernanceContext,
   type GovernanceHashInput,
 } from "./audit-integrity";
+import type { GovernanceDecisionEvent } from "./pipeline";
 import type {
   EnforcementPoint,
   ExecutionOutcome,
@@ -368,5 +369,94 @@ export async function recordExecutionRisk(input: {
     executionViolationCount: Number(result.executionViolationCount),
     intentViolationCount: Number(result.intentViolationCount),
     thresholdId: result.thresholdId ?? null,
+  };
+}
+
+
+export function createGovernanceDecisionRecorder(input: {
+  orgId: string;
+  intent: ResolvedIntent;
+  executionId: string;
+  traceId: string;
+  identity: GovernanceIdentity;
+}) {
+  return async (
+    event: GovernanceDecisionEvent,
+  ): Promise<{
+    eventId: string;
+    spanId: string;
+    eventHash: string;
+    chainPosition: number;
+    terminated: boolean;
+  }> => {
+    const evidence = await appendGovernanceDecision({
+      orgId: input.orgId,
+      executionId: input.executionId,
+      intentId: input.intent.id,
+      traceId: input.traceId,
+      identity: input.identity,
+      ...event,
+    });
+
+    if (!["DENY_ACTION", "DENY_EXECUTION", "QUARANTINE"].includes(event.decision)) {
+      return { ...evidence, terminated: false };
+    }
+
+    const severities = (
+      (event.attributes?.["policyContext"] as any)?.detectionCategories ?? []
+    ).map((entry: any) => String(entry.severity));
+    const severityOrder = ["info", "low", "medium", "high", "critical"];
+    const severity =
+      severities.sort(
+        (a: string, b: string) => severityOrder.indexOf(b) - severityOrder.indexOf(a),
+      )[0] ?? (event.decision === "QUARANTINE" ? "critical" : "high");
+    const scoreBySeverity: Record<string, number> = {
+      info: 1,
+      low: 5,
+      medium: 15,
+      high: 35,
+      critical: 75,
+    };
+
+    const risk = await recordExecutionRisk({
+      orgId: input.orgId,
+      executionId: input.executionId,
+      intentId: input.intent.id,
+      policyId: event.policyId,
+      policyVersion: event.policyVersion,
+      severity: severity as "info" | "low" | "medium" | "high" | "critical",
+      score: scoreBySeverity[severity] ?? 35,
+      evasionIndicator:
+        input.intent.lineageConfidence != null && input.intent.lineageConfidence >= 0.72
+          ? "repeated_or_lineage_related_denied_intent"
+          : "policy_denial",
+    });
+
+    if (risk.terminated && event.decision !== "QUARANTINE") {
+      await appendGovernanceDecision({
+        orgId: input.orgId,
+        executionId: input.executionId,
+        intentId: input.intent.id,
+        traceId: input.traceId,
+        parentEventId: evidence.eventId,
+        parentSpanId: evidence.spanId,
+        identity: input.identity,
+        enforcementPoint: event.enforcementPoint,
+        decision: "QUARANTINE",
+        reason: "Policy-defined accumulated risk threshold reached; execution terminated.",
+        policyId: event.policyId,
+        policyVersion: event.policyVersion,
+        ruleId: event.ruleId,
+        evaluatedContext: {
+          thresholdId: risk.thresholdId,
+          executionRiskScore: risk.executionRiskScore,
+          intentRiskScore: risk.intentRiskScore,
+          intentViolationCount: risk.intentViolationCount,
+        },
+        attributes: { thresholdId: risk.thresholdId },
+      });
+    }
+
+    return { ...evidence, terminated: risk.terminated };
   };
 }
