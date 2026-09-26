@@ -75,6 +75,13 @@ export async function resolveIntent(input: {
   actorId: string | null;
   applicationId: string | null;
   objective: string;
+  context?: {
+    sessionLineage?: string | null;
+    requestedAction?: string | null;
+    resource?: string | null;
+    destination?: string | null;
+    dataClassification?: string | null;
+  };
 }): Promise<ResolvedIntent> {
   const normalized = normalizeObjective(input.objective);
   const fingerprint = await hashGovernanceContext({ objective: normalized });
@@ -98,24 +105,74 @@ export async function resolveIntent(input: {
     };
   }
 
-  let recentQuery = admin
-    .from("intents")
-    .select("id,status,objective_summary")
-    .eq("org_id", input.orgId)
-    .order("created_at", { ascending: false })
-    .limit(25);
-  if (input.actorId) recentQuery = recentQuery.eq("created_by_actor_id", input.actorId);
-  if (input.applicationId) recentQuery = recentQuery.eq("application_id", input.applicationId);
-  const recent = await checked<any[]>(recentQuery);
+  const recent = await checked<any[]>(
+    admin
+      .from("intents")
+      .select(
+        "id,status,objective_summary,created_by_actor_id,application_id,lineage_context",
+      )
+      .eq("org_id", input.orgId)
+      .order("created_at", { ascending: false })
+      .limit(100),
+  );
 
   let best: any = null;
   let confidence = 0;
+  let bestEvidence: Record<string, unknown> = {};
   for (const candidate of recent ?? []) {
     if (typeof candidate.objective_summary !== "string") continue;
-    const score = lexicalSimilarity(normalized, candidate.objective_summary);
+    const lexical = lexicalSimilarity(normalized, candidate.objective_summary);
+    const candidateContext = (candidate.lineage_context ?? {}) as Record<string, unknown>;
+    const sameActor = Boolean(
+      input.actorId && candidate.created_by_actor_id === input.actorId,
+    );
+    const sameApplication = Boolean(
+      input.applicationId && candidate.application_id === input.applicationId,
+    );
+    const sameSession = Boolean(
+      input.context?.sessionLineage &&
+        candidateContext["sessionLineage"] === input.context.sessionLineage,
+    );
+    const actionMatch = Boolean(
+      input.context?.requestedAction &&
+        candidateContext["requestedAction"] === input.context.requestedAction,
+    );
+    const resourceMatch = Boolean(
+      input.context?.resource && candidateContext["resource"] === input.context.resource,
+    );
+    const destinationMatch = Boolean(
+      input.context?.destination &&
+        candidateContext["destination"] === input.context.destination,
+    );
+    const classificationMatch = Boolean(
+      input.context?.dataClassification &&
+        candidateContext["dataClassification"] === input.context.dataClassification,
+    );
+    const score = Math.min(
+      1,
+      lexical +
+        (sameActor ? 0.04 : 0) +
+        (sameApplication ? 0.03 : 0) +
+        (sameSession ? 0.08 : 0) +
+        (actionMatch ? 0.03 : 0) +
+        (resourceMatch ? 0.03 : 0) +
+        (destinationMatch ? 0.03 : 0) +
+        (classificationMatch ? 0.03 : 0),
+    );
     if (score > confidence) {
       confidence = score;
       best = candidate;
+      bestEvidence = {
+        method: "deterministic_lexical_context_v1",
+        lexicalSimilarity: lexical,
+        sameActor,
+        sameApplication,
+        sameSession,
+        actionMatch,
+        resourceMatch,
+        destinationMatch,
+        classificationMatch,
+      };
     }
   }
 
@@ -139,6 +196,13 @@ export async function resolveIntent(input: {
         application_id: input.applicationId,
         objective_fingerprint: fingerprint,
         objective_summary: normalized.slice(0, 500),
+        lineage_context: {
+          sessionLineage: input.context?.sessionLineage ?? null,
+          requestedAction: input.context?.requestedAction ?? null,
+          resource: input.context?.resource ?? null,
+          destination: input.context?.destination ?? null,
+          dataClassification: input.context?.dataClassification ?? null,
+        },
         status: inheritsQuarantine ? "quarantined" : "active",
         ...(inheritsQuarantine
           ? {
@@ -162,11 +226,7 @@ export async function resolveIntent(input: {
         reason: inheritsQuarantine
           ? "Objective similarity inherited quarantine from parent intent."
           : "Objective similarity created durable intent lineage.",
-        evidence: {
-          method: "deterministic_lexical_jaccard",
-          same_actor: Boolean(input.actorId),
-          same_application: Boolean(input.applicationId),
-        },
+        evidence: bestEvidence,
         actor_id: input.actorId,
       }),
     );
