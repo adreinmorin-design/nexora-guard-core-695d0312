@@ -390,7 +390,9 @@ export async function decideAndExecute(
     const { executeApprovedTool } = await import("./mcp.server");
     try {
       if (!approval.intent_id || !approval.original_execution_id) {
-        throw new Error("Legacy tool approval must be resubmitted under governed execution semantics.");
+        throw new Error(
+          "Legacy tool approval must be resubmitted under governed execution semantics.",
+        );
       }
       const scope = approval.approval_scope ?? {};
       if (

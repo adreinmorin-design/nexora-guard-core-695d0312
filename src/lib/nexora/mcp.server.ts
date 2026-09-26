@@ -196,8 +196,7 @@ export async function executeTool(
     await finalizeGovernedExecution({
       orgId,
       executionId: governed.executionId,
-      workflowOutcome:
-        decision === "QUARANTINE" ? "TERMINATED" : "COMPLETED_WITH_POLICY_BLOCK",
+      workflowOutcome: decision === "QUARANTINE" ? "TERMINATED" : "COMPLETED_WITH_POLICY_BLOCK",
       governanceOutcome: decision,
     });
     return {
@@ -310,12 +309,7 @@ export async function executeTool(
   }
 
   const tool = await checked(
-    db
-      .from("mcp_tools")
-      .select("*")
-      .eq("org_id", orgId)
-      .eq("id", input.toolId)
-      .maybeSingle(),
+    db.from("mcp_tools").select("*").eq("org_id", orgId).eq("id", input.toolId).maybeSingle(),
   );
   if (!tool || tool.status !== "active" || !tool.definition_hash || !tool.remote_name) {
     await recordDecision({
@@ -458,11 +452,7 @@ export async function executeTool(
       attributes: { approvalId: approved.approvalId ?? null },
     });
     await finishInvocation("blocked", "BLOCK", "Tool definition changed after approval.");
-    return finalizeBlocked(
-      "Tool definition changed after approval.",
-      "DENY_ACTION",
-      invocation.id,
-    );
+    return finalizeBlocked("Tool definition changed after approval.", "DENY_ACTION", invocation.id);
   }
 
   if (
@@ -762,9 +752,7 @@ export async function executeTool(
       return call("tools/call", {
         name: tool.remote_name,
         arguments:
-          preToolDecision === "ALLOW_WITH_TRANSFORMATION"
-            ? evaluated.sanitized
-            : input.arguments,
+          preToolDecision === "ALLOW_WITH_TRANSFORMATION" ? evaluated.sanitized : input.arguments,
       });
     });
 
@@ -964,7 +952,8 @@ export async function executeTool(
     return {
       status: "tool_error",
       decision: "BLOCK",
-      reason: "Tool call could not be verified or completed. Inspect the remote service before retrying.",
+      reason:
+        "Tool call could not be verified or completed. Inspect the remote service before retrying.",
       output: null,
       requestId: invocation.id,
       approvalId: null,

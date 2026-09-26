@@ -108,9 +108,7 @@ export async function resolveIntent(input: {
   const recent = await checked<any[]>(
     admin
       .from("intents")
-      .select(
-        "id,status,objective_summary,created_by_actor_id,application_id,lineage_context",
-      )
+      .select("id,status,objective_summary,created_by_actor_id,application_id,lineage_context")
       .eq("org_id", input.orgId)
       .order("created_at", { ascending: false })
       .limit(100),
@@ -123,30 +121,27 @@ export async function resolveIntent(input: {
     if (typeof candidate.objective_summary !== "string") continue;
     const lexical = lexicalSimilarity(normalized, candidate.objective_summary);
     const candidateContext = (candidate.lineage_context ?? {}) as Record<string, unknown>;
-    const sameActor = Boolean(
-      input.actorId && candidate.created_by_actor_id === input.actorId,
-    );
+    const sameActor = Boolean(input.actorId && candidate.created_by_actor_id === input.actorId);
     const sameApplication = Boolean(
       input.applicationId && candidate.application_id === input.applicationId,
     );
     const sameSession = Boolean(
       input.context?.sessionLineage &&
-        candidateContext["sessionLineage"] === input.context.sessionLineage,
+      candidateContext["sessionLineage"] === input.context.sessionLineage,
     );
     const actionMatch = Boolean(
       input.context?.requestedAction &&
-        candidateContext["requestedAction"] === input.context.requestedAction,
+      candidateContext["requestedAction"] === input.context.requestedAction,
     );
     const resourceMatch = Boolean(
       input.context?.resource && candidateContext["resource"] === input.context.resource,
     );
     const destinationMatch = Boolean(
-      input.context?.destination &&
-        candidateContext["destination"] === input.context.destination,
+      input.context?.destination && candidateContext["destination"] === input.context.destination,
     );
     const classificationMatch = Boolean(
       input.context?.dataClassification &&
-        candidateContext["dataClassification"] === input.context.dataClassification,
+      candidateContext["dataClassification"] === input.context.dataClassification,
     );
     const score = Math.min(
       1,
