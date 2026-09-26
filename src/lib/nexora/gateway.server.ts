@@ -117,7 +117,12 @@ export async function runConsoleRequest(
   orgId: string,
   input: { prompt: string; modelKey: string; idempotencyKey?: string },
   approvedPolicies?: PolicyRecord[],
-  options?: { intentId?: string },
+  options?: {
+    intentId?: string;
+    approvalId?: string;
+    approvalScope?: Record<string, unknown>;
+    allowQuarantinedIntent?: boolean;
+  },
 ) {
   const identity: GovernanceIdentity = {
     actorId: context.userId,
@@ -145,7 +150,7 @@ export async function runConsoleRequest(
     identity,
   });
 
-  if (intent.status === "quarantined") {
+  if (intent.status === "quarantined" && !options?.allowQuarantinedIntent) {
     await recordDecision({
       enforcementPoint: "PRE_EXECUTION",
       decision: "QUARANTINE",
@@ -284,6 +289,28 @@ export async function runConsoleRequest(
     },
     attributes: {},
   });
+
+  if (options?.approvalId) {
+    await recordDecision({
+      enforcementPoint: "PRE_EXECUTION",
+      decision: "ALLOW",
+      reason:
+        "Scoped single-use human approval was consumed for a fresh governed execution without clearing prior intent risk.",
+      policyId: null,
+      policyVersion: null,
+      ruleId: "approval_consumed",
+      evaluatedContext: {
+        approvalId: options.approvalId,
+        approvalScope: options.approvalScope ?? {},
+        intentStatus: intent.status,
+      },
+      attributes: {
+        approvalId: options.approvalId,
+        approvalScope: options.approvalScope ?? {},
+        intentRemainsFlagged: intent.status === "flagged" || intent.status === "quarantined",
+      },
+    });
+  }
 
   try {
     const outcome = await runGovernedRequest({
@@ -449,13 +476,21 @@ export async function decideAndExecute(
           await import("./agents.server")
         ).executeAgentModel(orgId, payload.agentId, input, payload.policies, {
           intentId: approval.intent_id,
+          approvalId: id,
+          approvalScope: scope,
+          allowQuarantinedIntent: true,
         })
       : await runConsoleRequest(
           { supabase: admin, userId: approval.requester_id },
           orgId,
           input,
           payload.policies,
-          { intentId: approval.intent_id },
+          {
+            intentId: approval.intent_id,
+            approvalId: id,
+            approvalScope: scope,
+            allowQuarantinedIntent: true,
+          },
         );
     await checked(
       admin
