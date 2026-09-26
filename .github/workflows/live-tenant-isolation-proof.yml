@@ -1,0 +1,190 @@
+name: Live Tenant Isolation Proof
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/live-tenant-isolation-proof.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_URL: https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_eWI2U31KL-zYV8Mn_AzGlw_40-gaGMC
+    steps:
+      - name: Create disposable verification users
+        id: users
+        shell: bash
+        run: |
+          set -euo pipefail
+          EMAIL_A="adreinmorin+nxproof-a-\${GITHUB_RUN_ID}@gmail.com"
+          EMAIL_B="adreinmorin+nxproof-b-\${GITHUB_RUN_ID}@gmail.com"
+          PASS_A="$(openssl rand -hex 24)Aa1!"
+          PASS_B="$(openssl rand -hex 24)Bb2!"
+
+          echo "email_a=$EMAIL_A" >> "$GITHUB_OUTPUT"
+          echo "email_b=$EMAIL_B" >> "$GITHUB_OUTPUT"
+          echo "Verification user A: $EMAIL_A"
+          echo "Verification user B: $EMAIL_B"
+
+          signup() {
+            local email="$1" pass="$2"
+            curl --silent --show-error --fail-with-body \
+              --request POST "$SUPABASE_URL/auth/v1/signup" \
+              --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+              --header "Content-Type: application/json" \
+              --data "$(jq -nc --arg e "$email" --arg p "$pass" '{email:$e,password:$p,data:{purpose:"nexora-live-verification"}}')" \
+              > /tmp/signup.json
+          }
+
+          signup "$EMAIL_A" "$PASS_A"
+          cp /tmp/signup.json /tmp/signup-a.json
+          signup "$EMAIL_B" "$PASS_B"
+          cp /tmp/signup.json /tmp/signup-b.json
+
+          printf '%s' "$PASS_A" > /tmp/pass-a
+          printf '%s' "$PASS_B" > /tmp/pass-b
+          chmod 600 /tmp/pass-a /tmp/pass-b
+
+          session_a="$(jq -r '.access_token // empty' /tmp/signup-a.json)"
+          session_b="$(jq -r '.access_token // empty' /tmp/signup-b.json)"
+          if [[ -n "$session_a" && -n "$session_b" ]]; then
+            echo "Both signups returned verified sessions immediately."
+          else
+            echo "Email confirmation required; waiting for both addresses to be confirmed."
+          fi
+
+      - name: Wait for email confirmations and authenticate
+        shell: bash
+        run: |
+          set -euo pipefail
+          EMAIL_A='\${{ steps.users.outputs.email_a }}'
+          EMAIL_B='\${{ steps.users.outputs.email_b }}'
+          PASS_A="$(cat /tmp/pass-a)"
+          PASS_B="$(cat /tmp/pass-b)"
+
+          login() {
+            local email="$1" pass="$2" outfile="$3"
+            curl --silent --show-error \
+              --request POST "$SUPABASE_URL/auth/v1/token?grant_type=password" \
+              --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+              --header "Content-Type: application/json" \
+              --data "$(jq -nc --arg e "$email" --arg p "$pass" '{email:$e,password:$p}')" \
+              > "$outfile"
+            jq -e '.access_token and .user.id' "$outfile" >/dev/null 2>&1
+          }
+
+          ok_a=0; ok_b=0
+          for attempt in $(seq 1 72); do
+            if [[ "$ok_a" = 0 ]] && login "$EMAIL_A" "$PASS_A" /tmp/login-a.json; then ok_a=1; echo "User A authenticated."; fi
+            if [[ "$ok_b" = 0 ]] && login "$EMAIL_B" "$PASS_B" /tmp/login-b.json; then ok_b=1; echo "User B authenticated."; fi
+            if [[ "$ok_a" = 1 && "$ok_b" = 1 ]]; then break; fi
+            if [[ "$attempt" = 72 ]]; then
+              echo "Timed out waiting for verification emails." >&2
+              exit 1
+            fi
+            sleep 10
+          done
+
+          jq -r '.access_token' /tmp/login-a.json > /tmp/token-a
+          jq -r '.access_token' /tmp/login-b.json > /tmp/token-b
+          jq -r '.user.id' /tmp/login-a.json > /tmp/user-a
+          jq -r '.user.id' /tmp/login-b.json > /tmp/user-b
+          chmod 600 /tmp/token-a /tmp/token-b
+
+      - name: Provision two isolated tenants through production RLS
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOKEN_A="$(cat /tmp/token-a)"
+          TOKEN_B="$(cat /tmp/token-b)"
+          USER_A="$(cat /tmp/user-a)"
+          USER_B="$(cat /tmp/user-b)"
+
+          post() {
+            local token="$1" table="$2" json="$3" outfile="$4"
+            curl --silent --show-error --fail-with-body \
+              --request POST "$SUPABASE_URL/rest/v1/$table" \
+              --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+              --header "Authorization: Bearer $token" \
+              --header "Content-Type: application/json" \
+              --header "Prefer: return=representation" \
+              --data "$json" > "$outfile"
+          }
+
+          post "$TOKEN_A" organizations \
+            "$(jq -nc --arg uid "$USER_A" --arg slug "nxproof-a-\${GITHUB_RUN_ID}" --arg run "$GITHUB_RUN_ID" '{name:("Nexora Verification A "+$run),slug:$slug,created_by:$uid}')" \
+            /tmp/org-a.json
+          post "$TOKEN_B" organizations \
+            "$(jq -nc --arg uid "$USER_B" --arg slug "nxproof-b-\${GITHUB_RUN_ID}" --arg run "$GITHUB_RUN_ID" '{name:("Nexora Verification B "+$run),slug:$slug,created_by:$uid}')" \
+            /tmp/org-b.json
+
+          ORG_A="$(jq -r '.[0].id' /tmp/org-a.json)"
+          ORG_B="$(jq -r '.[0].id' /tmp/org-b.json)"
+          test -n "$ORG_A"; test -n "$ORG_B"; test "$ORG_A" != "$ORG_B"
+
+          post "$TOKEN_A" org_members \
+            "$(jq -nc --arg o "$ORG_A" --arg u "$USER_A" '{org_id:$o,user_id:$u,role:"org_admin"}')" \
+            /tmp/member-a.json
+          post "$TOKEN_B" org_members \
+            "$(jq -nc --arg o "$ORG_B" --arg u "$USER_B" '{org_id:$o,user_id:$u,role:"org_admin"}')" \
+            /tmp/member-b.json
+
+          printf '%s' "$ORG_A" > /tmp/org-a
+          printf '%s' "$ORG_B" > /tmp/org-b
+          echo "Tenant A provisioned: $ORG_A"
+          echo "Tenant B provisioned: $ORG_B"
+
+      - name: Prove tenant A and tenant B cannot read each other
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOKEN_A="$(cat /tmp/token-a)"
+          TOKEN_B="$(cat /tmp/token-b)"
+          ORG_A="$(cat /tmp/org-a)"
+          ORG_B="$(cat /tmp/org-b)"
+
+          read_orgs() {
+            local token="$1" outfile="$2"
+            curl --silent --show-error --fail-with-body \
+              "$SUPABASE_URL/rest/v1/organizations?select=id,slug&order=slug" \
+              --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+              --header "Authorization: Bearer $token" > "$outfile"
+          }
+
+          read_orgs "$TOKEN_A" /tmp/visible-a.json
+          read_orgs "$TOKEN_B" /tmp/visible-b.json
+
+          echo "A visible organization count: $(jq 'length' /tmp/visible-a.json)"
+          echo "B visible organization count: $(jq 'length' /tmp/visible-b.json)"
+
+          jq -e --arg own "$ORG_A" --arg other "$ORG_B" \
+            'length == 1 and .[0].id == $own and all(.[]; .id != $other)' /tmp/visible-a.json >/dev/null
+          jq -e --arg own "$ORG_B" --arg other "$ORG_A" \
+            'length == 1 and .[0].id == $own and all(.[]; .id != $other)' /tmp/visible-b.json >/dev/null
+
+          curl --silent --show-error --fail-with-body \
+            "$SUPABASE_URL/rest/v1/organizations?id=eq.$ORG_B&select=id" \
+            --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            --header "Authorization: Bearer $TOKEN_A" > /tmp/a-probe-b.json
+          curl --silent --show-error --fail-with-body \
+            "$SUPABASE_URL/rest/v1/organizations?id=eq.$ORG_A&select=id" \
+            --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            --header "Authorization: Bearer $TOKEN_B" > /tmp/b-probe-a.json
+
+          test "$(jq 'length' /tmp/a-probe-b.json)" = "0"
+          test "$(jq 'length' /tmp/b-probe-a.json)" = "0"
+
+          echo "PASS: two authenticated production tenants are mutually isolated by RLS."
+          {
+            echo "## Live Tenant Isolation Proof"
+            echo "- Tenant A sees only its own organization."
+            echo "- Tenant B sees only its own organization."
+            echo "- Direct cross-tenant ID probes return zero rows."
+            echo "- Result: PASS"
+          } >> "$GITHUB_STEP_SUMMARY"
