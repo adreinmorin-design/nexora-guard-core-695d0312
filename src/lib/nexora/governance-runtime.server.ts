@@ -184,12 +184,7 @@ export async function loadIntentForExecution(
   intentId: string,
 ): Promise<ResolvedIntent> {
   const row = await checked<any>(
-    admin
-      .from("intents")
-      .select("id,status")
-      .eq("org_id", orgId)
-      .eq("id", intentId)
-      .maybeSingle(),
+    admin.from("intents").select("id,status").eq("org_id", orgId).eq("id", intentId).maybeSingle(),
   );
   if (!row) throw new Error("Approved intent is unavailable in this organization.");
   return {
@@ -334,7 +329,6 @@ export async function appendGovernanceDecision(input: {
   }
   throw new Error("Governance evidence persistence unavailable; execution stopped.");
 }
-
 
 export async function recordExecutionRisk(input: {
   orgId: string;

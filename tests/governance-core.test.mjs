@@ -114,7 +114,6 @@ test("governance hash chain detects modification, deletion and reordering", asyn
   assert.equal((await verifyGovernanceChain([second, first])).valid, false);
 });
 
-
 test("retrospective evaluation reports WOULD_BLOCK without rewriting original decision", () => {
   const currentPolicies = [
     {
@@ -181,10 +180,10 @@ test("governance evidence and lineage are immutable at the database boundary", a
     const spanId = "3".repeat(16);
     const contextHash = "4".repeat(64);
 
-    await db.query(
-      "INSERT INTO organizations(id,name,slug,created_by) VALUES($1,'gov','gov',$2)",
-      [org, user],
-    );
+    await db.query("INSERT INTO organizations(id,name,slug,created_by) VALUES($1,'gov','gov',$2)", [
+      org,
+      user,
+    ]);
     await db.query(
       "INSERT INTO intents(id,org_id,created_by_actor_id,objective_fingerprint) VALUES($1,$2,$3,$4),($5,$2,$3,$6)",
       [intent, org, user, "intent-fingerprint-0001", child, "intent-fingerprint-0002"],
@@ -280,10 +279,9 @@ test("governance evidence and lineage are immutable at the database boundary", a
       governance_outcome: "QUARANTINE",
       violation_count: 2,
     });
-    const intentState = await db.query(
-      "SELECT status,violation_count FROM intents WHERE id=$1",
-      [intent],
-    );
+    const intentState = await db.query("SELECT status,violation_count FROM intents WHERE id=$1", [
+      intent,
+    ]);
     assert.deepEqual(intentState.rows[0], { status: "quarantined", violation_count: 2 });
 
     const privileges = await db.query(`SELECT

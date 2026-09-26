@@ -225,7 +225,6 @@ test("administrator per-request cost ceiling blocks before provider dispatch", a
   );
 });
 
-
 test("governance evidence failure at PRE_MODEL_INVOCATION prevents provider dispatch", async () => {
   const f = fixture();
   await assert.rejects(

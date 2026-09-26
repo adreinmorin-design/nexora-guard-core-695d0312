@@ -1,10 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeProviderRequest, providerReadiness } from "../ai-gateway.server";
-import {
-  runGovernedRequest,
-  type GatewayStore,
-  type GovernanceDecisionEvent,
-} from "./pipeline";
+import { runGovernedRequest, type GatewayStore, type GovernanceDecisionEvent } from "./pipeline";
 import type { PolicyRecord } from "./policy-engine";
 import { requireOrgEntitlement } from "./entitlements.server";
 import { requireAiExecutionAllowed } from "./ai-controls.server";
@@ -156,9 +152,9 @@ export async function runConsoleRequest(
       return evidence;
     }
 
-    const severities = (
-      (event.attributes?.policyContext as any)?.detectionCategories ?? []
-    ).map((entry: any) => String(entry.severity));
+    const severities = ((event.attributes?.policyContext as any)?.detectionCategories ?? []).map(
+      (entry: any) => String(entry.severity),
+    );
     const severityOrder = ["info", "low", "medium", "high", "critical"];
     const severity =
       severities.sort(
@@ -493,7 +489,9 @@ export async function decideAndExecute(
       idempotencyKey: id,
     };
     if (payload.agentId) {
-      throw new Error("Agent approval requires fresh agent execution support; resubmit the agent task.");
+      throw new Error(
+        "Agent approval requires fresh agent execution support; resubmit the agent task.",
+      );
     }
     const outcome = await runConsoleRequest(
       { supabase: admin, userId: approval.requester_id },
