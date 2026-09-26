@@ -216,7 +216,7 @@ export async function executeTool(
     };
   };
 
-  if (intent.status === "quarantined") {
+  if (intent.status === "quarantined" && !approved?.approvalId) {
     await recordDecision({
       enforcementPoint: "PRE_EXECUTION",
       decision: "QUARANTINE",
