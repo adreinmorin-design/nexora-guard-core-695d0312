@@ -128,7 +128,7 @@ runtime_controls:
     status: RUNTIME_VERIFIED
     evidence:
       - type: production_smoke_negative_path
-        value: "run_id=36279456208; job_id=108508386247; anonymous POST /api/agent returned 401 and body {\"error\":\"Valid agent bearer credential required.\"}"
+        value: "run_id=36279456208; job_id=108508386247; anonymous POST /api/agent returned 401 with expected credential-required error"
     blocker: null
 
   production_governance_schema:
