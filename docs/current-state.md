@@ -6,8 +6,9 @@
 
 - Repository: `adreinmorin-design/nexora-guard-core-695d0312`
 - Branch: `main`
-- Current observed commit: `fd4bc4efd9f99c17e16d2010ce3ee872a4dfac5d`
+- Baseline main commit before Codex bootstrap documentation: `1a9cc0e388839b60ee45eb3607fcca2ed29b6008`
 - Snapshot time: 2026-09-26T12:05:53Z
+- Note: later documentation-only commits add Codex instructions and these state files. Read GitHub HEAD for the latest branch commit.
 
 ## Verified Repository Facts
 
@@ -16,27 +17,25 @@
 - The repository contains tests for gateway, security, hardening, agents, providers, Paddle, billing, database, monitoring, and email.
 - Supabase migrations are present under `supabase/`.
 - Nexora documentation exists under `docs/`, including gateway hardening, provider, billing, and live execution control documentation.
-- `AGENTS.md` now contains Nexora-specific Codex engineering rules and preserves the Lovable history-safety warning.
+- `AGENTS.md` contains Nexora-specific Codex engineering rules and preserves the Lovable history-safety warning.
 
 ## Release Blockers / Unverified Controls
 
 ### Main branch protection — FAILED
 
-Direct GitHub branch readback reports:
+Direct GitHub branch readback during this bootstrap reported:
 
 - branch: `main`
 - protected: `false`
 - required status-check enforcement: off
 
-This remains a release blocker.
+This remains a release blocker until verified fixed.
 
-### CI for current commit — NOT VERIFIED
+### CI — NOT VERIFIED FOR BOOTSTRAP HEAD
 
-No GitHub Actions workflow run was observed for commit:
+At the time checked, no GitHub Actions workflow run was observed for the initial Codex bootstrap documentation commit.
 
-`fd4bc4efd9f99c17e16d2010ce3ee872a4dfac5d`
-
-Do not infer CI success for this commit.
+Re-check CI on the latest HEAD before treating CI as passing.
 
 ## Runtime Verification
 
