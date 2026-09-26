@@ -152,7 +152,7 @@ export async function runConsoleRequest(
       return evidence;
     }
 
-    const severities = ((event.attributes?.policyContext as any)?.detectionCategories ?? []).map(
+    const severities = ((event.attributes?.["policyContext"] as any)?.detectionCategories ?? []).map(
       (entry: any) => String(entry.severity),
     );
     const severityOrder = ["info", "low", "medium", "high", "critical"];
@@ -356,7 +356,9 @@ export async function runConsoleRequest(
       ...(approvedPolicies ? { approvedPolicies } : {}),
       maxRequestCostUsd: controls.max_request_cost_usd,
       governedContext: { intentId: intent.id, executionId: governed.executionId },
-      governanceDecision: (event) => recordDecision(event),
+      governanceDecision: async (event) => {
+        await recordDecision(event);
+      },
       trace: (event) =>
         writeExecutionEvent({
           orgId,
