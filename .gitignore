@@ -9,6 +9,9 @@ lerna-debug.log*
 
 node_modules
 
+# Bun is the authoritative package manager for Nexora
+/package-lock.json
+
 # Environment files (commit only the documented template)
 .env
 .env.*
