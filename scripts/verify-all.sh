@@ -31,13 +31,14 @@ run_check() {
 
   if [[ "$rc" -eq 0 ]]; then
     PASS=$((PASS + 1))
-    ROWS+="| $label | PASS | `$slug.log` |"$'\n'
+    ROWS+="| $label | PASS | $slug.log |"$'\n'
   else
     FAIL=$((FAIL + 1))
-    ROWS+="| $label | FAIL ($rc) | `$slug.log` |"$'\n'
+    ROWS+="| $label | FAIL ($rc) | $slug.log |"$'\n'
   fi
 }
 
+run_check "audit" "Bun dependency audit (high)" bun audit --audit-level=high
 run_check "format" "Prettier" bun run format:check
 run_check "lint" "ESLint" bun run lint
 run_check "typecheck" "TypeScript" bunx tsc --noEmit
@@ -59,10 +60,10 @@ timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 cat > "$REPORT" <<EOF
 # Nexora Verification Summary
 
-- Commit: `$commit`
-- Generated: `$timestamp`
-- Bun: `$(bun --version)`
-- Node: `$(node --version)`
+- Commit: $commit
+- Generated: $timestamp
+- Bun: $(bun --version)
+- Node: $(node --version)
 - Passed: **$PASS**
 - Failed: **$FAIL**
 
