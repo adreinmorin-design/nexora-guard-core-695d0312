@@ -1,0 +1,38 @@
+name: Remaining Chain Verification
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  tenant-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Trigger existing live tenant isolation proof
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          before="$(gh run list --repo "$REPO" --workflow "Live Tenant Isolation Proof" --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+          gh workflow run "Live Tenant Isolation Proof" --repo "$REPO" --ref main
+          child=""
+          for attempt in $(seq 1 30); do
+            candidate="$(gh run list --repo "$REPO" --workflow "Live Tenant Isolation Proof" --event workflow_dispatch --limit 5 --json databaseId --jq '.[0].databaseId // 0')"
+            if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
+              child="$candidate"
+              break
+            fi
+            sleep 2
+          done
+          test -n "$child"
+          echo "child_run_id=$child"
+          gh run watch "$child" --repo "$REPO" --exit-status
+          echo "----- child workflow log -----"
+          gh run view "$child" --repo "$REPO" --log
