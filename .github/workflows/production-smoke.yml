@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 10
     env:
       BASE_URL: https://nexora-guard-core.lovable.app
+      SUPABASE_URL: https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_eWI2U31KL-zYV8Mn_AzGlw_40-gaGMC
     steps:
       - name: Verify production host
         shell: bash
@@ -42,3 +44,16 @@ jobs:
           echo "agent_unauthenticated_http_status=$code"
           test "$code" = "401"
           grep -q 'Valid agent bearer credential required' /tmp/agent.json
+
+      - name: Verify invalid user session is rejected
+        shell: bash
+        run: |
+          set -euo pipefail
+          invalid_jwt='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDAiLCJleHAiOjQxMDI0NDQ4MDB9.invalid'
+          code="$(curl --retry 3 --retry-all-errors --retry-delay 2 --max-time 30 \
+            --silent --show-error --output /tmp/invalid-session.json --write-out '%{http_code}' \
+            --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            --header "Authorization: Bearer $invalid_jwt" \
+            "$SUPABASE_URL/rest/v1/organizations?select=id&limit=1")"
+          echo "invalid_user_session_http_status=$code"
+          test "$code" = "401"
