@@ -23,6 +23,7 @@ Repository/deployment evidence captured after the original governance baseline:
 
 - verification-harness PR #29 merged as `87d6397ec3e1d737e0e61e5b150bf534d9cbd12e`; PR CI run `36362509373` passed
 - live tenant-isolation harness reruns now use unique users and tenant slugs per GitHub run attempt, preventing stale-account collisions without disabling email confirmation
+- live proof run `36363244693`, attempt 2, created two fresh production Auth users but failed at the email-confirmation gate at 2026-09-28T01:10:06Z; neither user authenticated, tenant provisioning was skipped, and no isolation claim was promoted
 - production smoke run `36364520249`, job `108748168833`, passed against the live deployment:
   - `GET /` = 200
   - `GET /auth` = 200
