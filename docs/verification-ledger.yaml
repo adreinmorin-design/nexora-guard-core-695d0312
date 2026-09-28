@@ -1,5 +1,5 @@
 version: 1
-last_updated: "2026-09-26"
+last_updated: "2026-09-27"
 repository: "adreinmorin-design/nexora-guard-core-695d0312"
 branch: "main"
 implementation_baseline_commit: "a3fc42213d2d240e016cf05bc2cbe383a6253b88"
@@ -10,14 +10,16 @@ capabilities:
     evidence:
       - type: production_smoke_negative_path
         value: "run_id=36279456208; job_id=108508386247; GET /auth=200; anonymous POST /api/agent=401 with expected fail-closed error"
-    blocker: "Requires successful valid interactive login and authenticated protected-operation proof"
+      - type: production_invalid_session_negative_path
+        value: "run_id=36364520249; job_id=108748168833; deliberately invalid user bearer session against production Supabase/PostgREST returned HTTP 401"
+    blocker: "Requires successful valid login with a confirmed real test user and authenticated protected-operation proof"
 
   tenant_isolation:
     status: NOT_VERIFIED
     evidence:
       - type: production_rls_negative_path
         value: "Synthetic authenticated non-member previously observed zero protected rows"
-    blocker: "Requires a true tenant-A-versus-tenant-B test with two authorized identities"
+    blocker: "Requires a true tenant-A-versus-tenant-B test with two confirmed authorized identities; production email confirmation is enabled and the live harness must receive both confirmation clicks during its active run"
 
   policy_allow:
     status: NOT_VERIFIED
@@ -122,6 +124,10 @@ runtime_controls:
         value: "deployment_id=a4eae11e-2849-4593-bcc3-bf0eea9fa84c; url=https://nexora-guard-core.lovable.app"
       - type: production_smoke
         value: "run_id=36279456208; job_id=108508386247; GET /=200; GET /auth=200; anonymous POST /api/agent=401"
+      - type: lovable_project_readback
+        value: "2026-09-27: published=true; project_status=ready; latest_commit_sha=4953fd096b4038061f660fd4046ff01fa526e178"
+      - type: production_smoke
+        value: "run_id=36364520249; job_id=108748168833; GET /=200; GET /auth=200; anonymous POST /api/agent=401; invalid user bearer session=401"
     blocker: null
 
   production_agent_auth_boundary:
@@ -129,6 +135,15 @@ runtime_controls:
     evidence:
       - type: production_smoke_negative_path
         value: "run_id=36279456208; job_id=108508386247; anonymous POST /api/agent returned 401 with expected credential-required error"
+      - type: production_smoke_negative_path
+        value: "run_id=36364520249; job_id=108748168833; anonymous POST /api/agent returned 401"
+    blocker: null
+
+  production_user_invalid_session_boundary:
+    status: RUNTIME_VERIFIED
+    evidence:
+      - type: production_invalid_session_negative_path
+        value: "run_id=36364520249; job_id=108748168833; deliberately invalid bearer JWT against production Supabase/PostgREST organizations endpoint returned HTTP 401"
     blocker: null
 
   production_governance_schema:
@@ -190,6 +205,8 @@ repository_controls:
         value: "PR merge commit e1471455498fbf3f842a84fd156d165edf1210fa has zero file differences from a3fc42213d2d240e016cf05bc2cbe383a6253b88"
       - type: github_actions_artifact
         value: "artifact_id=10917808932; sha256=73bf8b9953a3e97d7af1b25faa130dbaaab560e19b605fa875fc5611388a480e"
+      - type: github_actions_run
+        value: "run_id=36364668266; head_sha=4953fd096b4038061f660fd4046ff01fa526e178; conclusion=success"
     blocker: null
 
   main_branch_protection:
@@ -198,8 +215,8 @@ repository_controls:
       - type: github_branch_readback
         value: "main protected=false; required status-check enforcement=off"
       - type: github_actions_attempt
-        value: "branch-protection update returned HTTP 403 Resource not accessible by integration"
-    blocker: "Requires repository administrator credentials or a direct GitHub Settings action"
+        value: "run_id=36364668290; BRANCH_PROTECTION_TOKEN was present; protection PUT returned HTTP 403 Resource not accessible by personal access token"
+    blocker: "Replace BRANCH_PROTECTION_TOKEN with a credential authorized to administer this repository's branch protection, or apply the equivalent protection directly in GitHub Settings; then verify protected=true and required checks enabled"
 
 allowed_status_values:
   - NOT_IMPLEMENTED
