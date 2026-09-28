@@ -2,12 +2,16 @@ name: Configure Main Branch Protection
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/configure-main-protection.yml"
 
 permissions:
   contents: read
 
 jobs:
   protect:
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Require admin-scoped token
