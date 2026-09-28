@@ -12,14 +12,18 @@ capabilities:
         value: "run_id=36279456208; job_id=108508386247; GET /auth=200; anonymous POST /api/agent=401 with expected fail-closed error"
       - type: production_invalid_session_negative_path
         value: "run_id=36364520249; job_id=108748168833; deliberately invalid user bearer session against production Supabase/PostgREST returned HTTP 401"
-    blocker: "Requires successful valid login with a confirmed real test user and authenticated protected-operation proof"
+      - type: production_valid_login_attempt
+        value: "run_id=36363244693; attempt=2; job_id=108746938565; two fresh test users created; email confirmation required; timed out before either user authenticated"
+    blocker: "Requires a fresh live-proof rerun plus confirmation of both disposable-user verification emails during the active run; then valid login and authenticated protected-operation proof can proceed"
 
   tenant_isolation:
     status: NOT_VERIFIED
     evidence:
       - type: production_rls_negative_path
         value: "Synthetic authenticated non-member previously observed zero protected rows"
-    blocker: "Requires a true tenant-A-versus-tenant-B test with two confirmed authorized identities; production email confirmation is enabled and the live harness must receive both confirmation clicks during its active run"
+      - type: live_two_tenant_attempt
+        value: "run_id=36363244693; attempt=2; job_id=108746938565; failed at email-confirmation gate; tenant provisioning and cross-tenant probes were skipped"
+    blocker: "Requires a true tenant-A-versus-tenant-B test with two confirmed authorized identities; rerun the live proof and confirm both fresh verification emails before the workflow timeout"
 
   policy_allow:
     status: NOT_VERIFIED
