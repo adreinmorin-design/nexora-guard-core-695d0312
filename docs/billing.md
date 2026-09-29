@@ -65,6 +65,21 @@ If any Paddle value is absent, checkout remains disabled and the billing page
 explains that state. The pricing and entitlement layer can deploy independently
 without pretending that payment collection is active.
 
+## Live default payment link
+
+Use the public pricing page as Paddle's default payment link once its domain is
+approved in the live Paddle account:
+
+- Lovable production host: `https://nexora-guard-core.lovable.app/pricing`
+- Custom domain, once it resolves to this deployment and is approved by Paddle:
+  `https://nexoraguard.shop/pricing`
+
+The pricing page initializes Paddle.js only when
+`PADDLE_ENVIRONMENT=production` and `PADDLE_CLIENT_TOKEN` begins with
+`live_`. It fails closed for transaction payment links if either condition is
+not met. Paddle can append its `_ptxn` transaction query parameter to this
+page to open the matching checkout.
+
 ## Public legal policies
 
 Paddle-facing website policy pages are public and linked from the public site and
