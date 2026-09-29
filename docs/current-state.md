@@ -2,6 +2,24 @@
 
 > Evidence-backed snapshot. Do not promote product capabilities based on code existence or repository tests alone.
 
+## 2026-09-29 repair and deployment baseline
+
+- Verified main implementation SHA: `99633c961a4e6ea5e631f59f1aabca7601c01d00`.
+- PR #35 repair: exact head `4702e11a2befecead753c30be4f624e69222785f`, CI `36523207207` success; merged as `a0cecd122c16a85a955e5c4753c47f8f35bcb218`, main CI `36523291895` success.
+- PR #34 corrected scope: exact head `7f3bc51f8ace085c6fff377e4844277ccd689aa8`, CI `36523373112` success; merged as the baseline above, main CI `36523472864` success.
+- Lovable readback: `latest_commit_sha=99633c961a4e6ea5e631f59f1aabca7601c01d00`, published=true, status=ready. Explicit deployment request `8cf3143d-cc00-4baa-9670-fb4a105ebd81` returned pending; subsequent project readback was ready. No independent response build-SHA attestation is exposed.
+- Provider-ID migration applied through the production database connector; subsequent catalog readback shows both `requests.provider_request_id` and `requests.provider_response_id` as text. All 36 inspected public tables have RLS enabled. Both governance RPCs remain SECURITY INVOKER, service-role executable, and not executable by anon/authenticated.
+- Migration history readback timed out (connector HTTP 504); earlier history lacked the manually applied governance migration. Full schema/history synchronization remains NOT_VERIFIED. Do not blindly replay non-idempotent governance DDL.
+- Browser rendered the deployed login form. Secure sign-in was canceled, so no deployed-application positive authentication proof exists.
+- Direct HTTP probes from this execution environment returned 403 with `error code: 1010` on API routes. These are client/edge rejections, not valid evidence of application authorization or provider DENY. See `docs/evidence/2026-09-29-baseline-http.json`.
+- GitHub main protected=false. The Settings browser was signed out; authenticated repository administration is still required.
+
+All six known PR33/PR34 review findings were addressed and their threads resolved. Provider evidence remains IMPLEMENTED / NOT_VERIFIED: no real provider response was obtained. Authentication, bidirectional tenant isolation, provider ALLOW/DENY, PII forwarding state, injection, hard budgets, routing/attribution, MCP/tool ALLOW/DENY, multi-step intent, live forensic reconstruction and Paddle lifecycle remain NOT_VERIFIED. No production capability was promoted by repository tests.
+
+The next human-dependent step is secure browser login with a disposable Nexora account (or manual signup). GitHub Settings also needs an authenticated owner/admin session to enable protection. Controlled design-partner pilot readiness and broader release readiness are NOT ESTABLISHED.
+
+This is an evidence snapshot for the implementation SHA above; a later documentation-only commit does not retroactively verify a different deployed build.
+
 ## Historical snapshot (2026-09-28)
 
 - Repository: `adreinmorin-design/nexora-guard-core-695d0312`

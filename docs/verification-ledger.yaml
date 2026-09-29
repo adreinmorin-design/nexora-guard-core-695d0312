@@ -1,8 +1,29 @@
 version: 1
-last_updated: "2026-09-28"
+last_updated: "2026-09-29"
 repository: "adreinmorin-design/nexora-guard-core-695d0312"
 branch: "main"
 implementation_baseline_commit: "a3fc42213d2d240e016cf05bc2cbe383a6253b88"
+
+verification_baseline:
+  implementation_sha: "99633c961a4e6ea5e631f59f1aabca7601c01d00"
+  main_ci_run: 36523472864
+  main_ci_conclusion: success
+  lovable_latest_commit_sha: "99633c961a4e6ea5e631f59f1aabca7601c01d00"
+  lovable_published: true
+  lovable_status: ready
+  deployment_request_id: "8cf3143d-cc00-4baa-9670-fb4a105ebd81"
+  deployment_request_initial_status: pending
+  independent_http_build_attestation: NOT_VERIFIED
+  http_probe_artifact: "docs/evidence/2026-09-29-baseline-http.json"
+  http_probe_limitation: "Client/edge returned 403 error code 1010; not application-level authorization evidence"
+  browser_authentication: "Login form rendered; secure sign-in canceled; no positive application-login evidence"
+  migration_history: "NOT_VERIFIED: history readback timed out (connector HTTP 504); earlier history omitted manually applied governance migration"
+  provider_column_readback: "Both provider_request_id and provider_response_id exist as text after additive migration"
+  public_rls_readback: "36 public tables inspected; all rowsecurity=true"
+  governance_privileges: "nexora_append_governance_event/nexora_record_execution_risk: SECURITY INVOKER; anon/authenticated EXECUTE=false; service_role EXECUTE=true"
+  branch_protection: "FAILED: protected=false; GitHub Settings browser signed out"
+  pilot_readiness: NOT_VERIFIED
+  broader_release_readiness: NOT_VERIFIED
 
 capabilities:
   provider_request_evidence:
@@ -13,7 +34,7 @@ capabilities:
         value: "PR #33 merged at a2a13c4c9af601ea8665d2caa3225bbd9e576542; additive provider request/response columns and adapter/pipeline evidence"
       - type: regression_tests
         value: "tests/providers.test.mjs and tests/gateway.test.mjs cover HTTP error correlation, body failures, Gemini responseId, bounded validation and request/audit/trace persistence"
-    blocker: "Repair needs exact-head CI and deployment; live successful and failed provider correlation evidence and production column readback remain unverified"
+    blocker: "Repair merged after exact-head CI success (36523207207), production columns read back; live successful and failed provider correlation evidence remains unverified"
 
   authentication:
     status: NOT_VERIFIED
@@ -152,7 +173,9 @@ runtime_controls:
         value: "2026-09-28: published=true; project_status=ready; latest_commit_sha=f6e6499d02fb853ea1da2b55316eb766dfed17a6; historical PR34 evidence"
       - type: lovable_deploy_request
         value: "deployment_id=2bba2ebb-1516-4024-be04-3ec915b0e6fe; head=f6e6499d02fb853ea1da2b55316eb766dfed17a6; historical PR34 evidence"
-    blocker: null
+      - type: lovable_project_readback
+        value: "2026-09-29: latest_commit_sha=99633c961a4e6ea5e631f59f1aabca7601c01d00; published=true; status=ready; deployment request 8cf3143d-cc00-4baa-9670-fb4a105ebd81 initially pending"
+    blocker: "Independent HTTP build attestation not available; client HTTP probes returned edge 403/1010"
 
   production_agent_auth_boundary:
     status: RUNTIME_VERIFIED
@@ -248,6 +271,8 @@ repository_controls:
         value: "run_id=36506103783; head_sha=a2a13c4c9af601ea8665d2caa3225bbd9e576542; conclusion=success"
       - type: github_actions_run
         value: "run_id=36523207207; head_sha=4702e11a2befecead753c30be4f624e69222785f; conclusion=success; provider evidence repair PR35"
+      - type: github_actions_run
+        value: "run_id=36523472864; head_sha=99633c961a4e6ea5e631f59f1aabca7601c01d00; conclusion=success"
     blocker: null
 
   main_branch_protection:
