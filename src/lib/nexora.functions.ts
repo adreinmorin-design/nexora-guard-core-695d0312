@@ -1313,6 +1313,11 @@ export const getBillingState = createServerFn({ method: "POST" })
     };
   });
 
+export const getPaddlePublicConfig = createServerFn({ method: "GET" }).handler(async () => {
+  const { livePaymentLinkConfig } = await import("./paddle.server");
+  return livePaymentLinkConfig();
+});
+
 export const getPaddleCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>

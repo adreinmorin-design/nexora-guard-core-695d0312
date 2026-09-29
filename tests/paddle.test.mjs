@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import {
   createCheckoutConfig,
+  livePaymentLinkConfig,
   planFromPriceId,
   signCheckoutData,
   resolvePaddleWebhookIdentity,
@@ -38,6 +39,27 @@ test("checkout remains disabled until all Paddle values exist", () => {
   assert.equal(planFromPriceId("pri_team_monthly"), "team");
   delete process.env.PADDLE_CHECKOUT_SIGNING_SECRET;
   assert.equal(createCheckoutConfig("org-1", "user-1", "team", "monthly"), null);
+});
+
+test("public payment-link config only exposes a live client token in production", () => {
+  process.env.PADDLE_ENVIRONMENT = "sandbox";
+  process.env.PADDLE_CLIENT_TOKEN = "test_client_token";
+  assert.deepEqual(livePaymentLinkConfig(), {
+    enabled: false,
+    reason: "LIVE_PADDLE_NOT_CONFIGURED",
+  });
+
+  process.env.PADDLE_ENVIRONMENT = "production";
+  assert.deepEqual(livePaymentLinkConfig(), {
+    enabled: false,
+    reason: "LIVE_PADDLE_NOT_CONFIGURED",
+  });
+
+  process.env.PADDLE_CLIENT_TOKEN = "live_client_token";
+  assert.deepEqual(livePaymentLinkConfig(), {
+    enabled: true,
+    clientToken: "live_client_token",
+  });
 });
 
 test("webhook signatures require a fresh timestamp and exact body", () => {
