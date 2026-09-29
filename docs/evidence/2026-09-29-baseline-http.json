@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-09-29T05:28:32.233794+00:00",
+  "baseline": "99633c961a4e6ea5e631f59f1aabca7601c01d00",
+  "results": [
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 403,
+      "url": "https://nexora-guard-core.lovable.app/",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/auth",
+      "status": 403,
+      "url": "https://nexora-guard-core.lovable.app/auth",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "status": 403,
+      "url": "https://nexora-guard-core.lovable.app/api/health",
+      "body": "error code: 1010\n"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent",
+      "status": 403,
+      "url": "https://nexora-guard-core.lovable.app/api/agent",
+      "body": "error code: 1010\n"
+    }
+  ]
+}
