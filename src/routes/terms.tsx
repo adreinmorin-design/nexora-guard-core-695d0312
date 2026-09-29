@@ -25,10 +25,10 @@ function Terms() {
         <h2>1. Agreement and eligibility</h2>
         <p>
           By creating an account, starting a trial, activating a paid plan or otherwise using
-          NEXORA, you agree to these Terms and the{" "}
-          <Link to="/privacy">Privacy Notice</Link>. You must be at least 18 years old and able to
-          enter into a binding agreement. If you use NEXORA for an organization, you represent that
-          you are authorized to act for that organization.
+          NEXORA, you agree to these Terms and the <Link to="/privacy">Privacy Notice</Link>. You
+          must be at least 18 years old and able to enter into a binding agreement. If you use
+          NEXORA for an organization, you represent that you are authorized to act for that
+          organization.
         </p>
       </section>
 
@@ -36,9 +36,9 @@ function Terms() {
         <h2>2. The service</h2>
         <p>
           NEXORA provides software for governing AI model, agent and tool execution, including
-          policy enforcement, sensitive-data controls, budgets, approvals, routing, usage
-          visibility and audit evidence. Features, limits and availability vary by plan and may
-          change as the service evolves.
+          policy enforcement, sensitive-data controls, budgets, approvals, routing, usage visibility
+          and audit evidence. Features, limits and availability vary by plan and may change as the
+          service evolves.
         </p>
         <p>
           NEXORA may integrate with third-party services selected or configured by you, including AI
@@ -52,8 +52,8 @@ function Terms() {
         <p>
           You are responsible for the accuracy of account information, maintaining the
           confidentiality of credentials, controlling authorized users and agents, and promptly
-          notifying us of suspected unauthorized access. You may not share credentials in a way
-          that bypasses plan or security controls.
+          notifying us of suspected unauthorized access. You may not share credentials in a way that
+          bypasses plan or security controls.
         </p>
       </section>
 
@@ -139,10 +139,10 @@ function Terms() {
       <section>
         <h2>10. Disclaimers</h2>
         <p>
-          To the extent permitted by law, NEXORA is provided on an “as is” and “as available”
-          basis. Security, DLP and policy controls reduce risk but cannot guarantee detection or
-          prevention of every threat, sensitive value or unsafe action. You remain responsible for
-          your systems, provider configurations and organizational decisions.
+          To the extent permitted by law, NEXORA is provided on an “as is” and “as available” basis.
+          Security, DLP and policy controls reduce risk but cannot guarantee detection or prevention
+          of every threat, sensitive value or unsafe action. You remain responsible for your
+          systems, provider configurations and organizational decisions.
         </p>
       </section>
 
