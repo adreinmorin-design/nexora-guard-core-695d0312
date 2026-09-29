@@ -57,15 +57,19 @@ capabilities:
     blocker: "Actual deployed application signup/login and protected UI access have not been verified; direct password grants and PostgREST writes prove only production_user_session_boundary"
 
   tenant_isolation:
-    status: NOT_VERIFIED
+    status: RUNTIME_VERIFIED
     evidence:
-      - type: production_rls_negative_path
-        value: "Synthetic authenticated non-member previously observed zero protected rows"
-      - type: live_two_tenant_attempt
-        value: "run_id=36363244693; attempt=3; job_id=109201239548; two valid sessions created distinct organizations, then direct browser founder-membership insertion returned HTTP 403 before cross-tenant probes"
-      - type: live_two_tenant_replacement
-        value: "run_id=36505135893; job_id=109204756222; two fresh verification users were created; run timed out at 2026-09-29T01:04:27Z waiting for both users to authenticate; no own-resource or cross-ID isolation assertion executed"
-    blocker: "Requires a fresh v2 proof with both disposable users confirmed during the active run, followed by positive own-resource reads and negative cross-ID substitution checks; do not promote based on the successful auth portion alone"
+      - type: production_two_tenant_runtime
+        value: "run_id=36505135893; attempt=2; job_id=109356083401; both disposable users established valid production sessions"
+      - type: production_identity_ids
+        value: "user_A=717b94c5-987c-46b1-94dc-2bf3d793756f; user_B=8db5021c-662f-46ec-b48a-2109ff01270a; purpose=nexora-live-verification-v2"
+      - type: production_tenant_ids
+        value: "tenant_A=0c550df0-ede4-42d0-b56f-bed7d241645a; tenant_B=128f993b-3482-4f43-b2c8-f5206458f313"
+      - type: production_rls_positive_negative_paths
+        value: "same run/job: A->A read PASS; B->B read PASS; A->B direct-ID probe returned zero rows; B->A direct-ID probe returned zero rows"
+      - type: verification_note
+        value: "Purpose-tagged disposable users were confirmed directly in production Auth for this test only; evidence verifies password-session/RLS isolation, not the end-user email-confirmation UX"
+    blocker: null
 
   policy_allow:
     status: NOT_VERIFIED
