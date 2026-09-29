@@ -79,7 +79,7 @@ function Pricing() {
               </div>
               {plan.key === "enterprise" ? (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Starting price · annual contract
+                  Custom annual contract
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-muted-foreground">
