@@ -28,8 +28,8 @@ capabilities:
       - type: live_two_tenant_attempt
         value: "run_id=36363244693; attempt=3; job_id=109201239548; two valid sessions created distinct organizations, then direct browser founder-membership insertion returned HTTP 403 before cross-tenant probes"
       - type: live_two_tenant_replacement
-        value: "run_id=36505135893; branch=verification/live-tenant-isolation-v2; real-session creator-RLS proof started and is awaiting disposable-account confirmation"
-    blocker: "Requires the running v2 proof to complete both positive own-resource reads and negative cross-ID substitution checks; do not promote based on the successful auth portion alone"
+        value: "run_id=36505135893; job_id=109204756222; two fresh verification users were created; run timed out at 2026-09-29T01:04:27Z waiting for both users to authenticate; no own-resource or cross-ID isolation assertion executed"
+    blocker: "Requires a fresh v2 proof with both disposable users confirmed during the active run, followed by positive own-resource reads and negative cross-ID substitution checks; do not promote based on the successful auth portion alone"
 
   policy_allow:
     status: NOT_VERIFIED
