@@ -7,14 +7,29 @@
 - Repository: `adreinmorin-design/nexora-guard-core-695d0312`
 - Branch: `main`
 - Production implementation baseline: `a3fc42213d2d240e016cf05bc2cbe383a6253b88`
-- Current `main` head: `4953fd096b4038061f660fd4046ff01fa526e178`
-- Latest verified main CI: run `36364668266` (success)
-- Snapshot date: 2026-09-27
+- Current `main` head: `f6e6499d02fb853ea1da2b55316eb766dfed17a6`
+- Latest verified main CI: run `36503707985` (success)
+- Snapshot date: 2026-09-28
 - CI run: `36279267631`
 - CI artifact: `10917808932`
 - Artifact digest: `sha256:73bf8b9953a3e97d7af1b25faa130dbaaab560e19b605fa875fc5611388a480e`
 
 Post-proof verification-harness, workflow, and documentation commits may be newer than the production implementation baseline above. No governed-execution core rewrite was performed.
+
+
+## 2026-09-28 Production Completion Progress
+
+- PR #32 was corrected for the formatting-only Prettier failure, verified on exact head `2243bb6be22ac2e82b4d24f00ef7dc40a190f5d9` by CI run `36503609508`, and merged without history rewriting.
+- resulting main HEAD `f6e6499d02fb853ea1da2b55316eb766dfed17a6` passed push CI run `36503707985`.
+- Lovable readback reported that exact SHA as `latest_commit_sha`, published=true, project status=ready; explicit production deployment `2bba2ebb-1516-4024-be04-3ec915b0e6fe` was issued.
+- live auth proof run `36363244693`, attempt 3, job `109201239548`, established valid production password sessions for two disposable users. The two purpose-tagged verification accounts were confirmed directly in the production Auth database for this test only; this is session-path evidence, not proof of the email-verification UX.
+- both authenticated sessions successfully inserted protected `organizations` rows under production RLS:
+  - tenant resource A `09810b57-5e85-49e9-b278-66f4645af98d`
+  - tenant resource B `4b21e638-e3f1-42ff-9af9-dac0c94806c8`
+- the existing invalid-session negative-path evidence remains separate: production smoke run `36364520249`, job `108748168833`, returned HTTP 401 for a deliberately invalid bearer session.
+- therefore the production user session boundary is **RUNTIME_VERIFIED** for positive valid-session protected-resource access plus negative invalid-session rejection.
+- tenant isolation is **not yet promoted**: attempt 3 failed at the direct browser founder-membership insertion (HTTP 403) before cross-tenant probes. The production application bootstrap path is server-only; a replacement real-session creator-RLS proof is running separately.
+- GitHub reports `main` is still unprotected, so branch protection remains a release blocker requiring repository administration permission.
 
 ## 2026-09-27 Production Verification Progress
 
@@ -33,7 +48,7 @@ Repository/deployment evidence captured after the original governance baseline:
 - main CI run `36364668266` passed on `4953fd096b4038061f660fd4046ff01fa526e178`
 - Lovable readback reports `latest_commit_sha=4953fd096b4038061f660fd4046ff01fa526e178`, published=true, project status=ready
 
-These facts strengthen deployment and negative-authentication evidence. They do **not** prove a successful valid login, tenant isolation, provider execution, policy allow/deny, PII forwarding state, prompt-injection enforcement, hard-budget zero-dispatch, MCP/tool invocation, intent persistence, full trace reconstruction, or Paddle lifecycle.
+These earlier facts strengthened deployment and negative-authentication evidence. A valid production session and protected-resource access were subsequently proven on 2026-09-28 as recorded above. Tenant isolation, provider execution, policy allow/deny, PII forwarding state, prompt-injection enforcement, hard-budget zero-dispatch, MCP/tool invocation, intent persistence, full trace reconstruction, and Paddle lifecycle remain subject to their own runtime proof.
 
 ## Governance Core Integration — IMPLEMENTED + CI VERIFIED
 
