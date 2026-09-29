@@ -3,6 +3,12 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 
+test("migration versions are unique", async () => {
+  const names = (await readdir("supabase/migrations")).filter((name) => name.endsWith(".sql"));
+  const versions = names.map((name) => name.split("_")[0]);
+  assert.equal(new Set(versions).size, versions.length, "Duplicate migration versions skip production DDL");
+});
+
 test("migration, atomic admission, tenant separation, grants and single-use approvals", async () => {
   const db = new PGlite();
   try {
