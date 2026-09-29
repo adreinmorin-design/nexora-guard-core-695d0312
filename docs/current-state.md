@@ -2,6 +2,19 @@
 
 > Evidence-backed snapshot. Do not promote product capabilities based on code existence or repository tests alone.
 
+## 2026-09-29 current production baseline
+
+- Exact main HEAD: `02aa20932666a7a6322d30b5cdc5c1d4f5f29313` (merge of PR #39 live Paddle payment-link implementation).
+- Exact main push CI: run `36531746709`, conclusion `success`, head SHA `02aa20932666a7a6322d30b5cdc5c1d4f5f29313`.
+- PR #39 exact pre-merge head `e48748fc7d8e7d64adba5c337c655011dd8faaab` is tree-equivalent to the merge commit: GitHub compare reports zero changed files.
+- Lovable production readback: project `f46c7dc2-f8c6-4710-96bb-07ffc11e5270`, `latest_commit_sha=02aa20932666a7a6322d30b5cdc5c1d4f5f29313`, `is_published=true`, project status `ready`.
+- Production database readback: cloud database enabled with Supabase stack; 36/36 inspected public tables have RLS enabled.
+- Provider readback: OpenAI is active, credential state `MANAGED`, with 3 active models. Anthropic and Google remain `NOT_CONFIGURED` and have 0 active models.
+- Provider evidence columns `requests.provider_request_id` and `requests.provider_response_id` both exist as `text`.
+- Governance RPC privilege readback remains fail-closed: `nexora_append_governance_event` and `nexora_record_execution_risk` are SECURITY INVOKER; anon/authenticated EXECUTE=false; service_role EXECUTE=true.
+- This reconciliation does not promote any product capability. Tenant isolation, live provider ALLOW/DENY, PII forwarding state, prompt-injection enforcement, hard-budget zero-dispatch, provider routing/attribution, MCP/tool authorization, multi-step intent persistence, forensic reconstruction, and Paddle lifecycle remain subject to direct runtime proof.
+- A fresh two-tenant proof is active under GitHub Actions run `36505135893`, attempt 2. Two purpose-tagged disposable users were created and their email-confirmation state was set directly in production Auth so the workflow can obtain real password sessions; no isolation status is promoted until the workflow completes all four own/cross-tenant assertions.
+
 ## 2026-09-29 repair and deployment baseline
 
 - Verified main implementation SHA: `99633c961a4e6ea5e631f59f1aabca7601c01d00`.
