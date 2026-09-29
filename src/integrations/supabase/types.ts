@@ -800,6 +800,8 @@ export type Database = {
           policy_version: number | null;
           prompt_preview: string | null;
           provider: string | null;
+          provider_request_id: string | null;
+          provider_response_id: string | null;
           reason: string | null;
           redacted: boolean;
           response_preview: string | null;
@@ -825,6 +827,8 @@ export type Database = {
           policy_version?: number | null;
           prompt_preview?: string | null;
           provider?: string | null;
+          provider_request_id?: string | null;
+          provider_response_id?: string | null;
           reason?: string | null;
           redacted?: boolean;
           response_preview?: string | null;
@@ -850,6 +854,8 @@ export type Database = {
           policy_version?: number | null;
           prompt_preview?: string | null;
           provider?: string | null;
+          provider_request_id?: string | null;
+          provider_response_id?: string | null;
           reason?: string | null;
           redacted?: boolean;
           response_preview?: string | null;

@@ -30,6 +30,8 @@ export type ProviderResult = {
   inputTokens: number;
   outputTokens: number;
   latencyMs: number;
+  providerRequestId?: string | null;
+  providerResponseId?: string | null;
 };
 
 export type ProviderExecutor = (modelKey: string, prompt: string) => Promise<ProviderResult>;
@@ -121,6 +123,8 @@ export type GatewayOutcome = {
   approvalId: string | null;
   requestId: string | null;
   usage: { inputTokens: number; outputTokens: number; costUsd: number; latency: number };
+  providerRequestId?: string | null;
+  providerResponseId?: string | null;
   replayed?: boolean;
 };
 
@@ -468,6 +472,8 @@ export async function runGovernedRequest(params: {
   let outputTokens = 0;
   let costUsd = 0;
   let latency = 0;
+  let providerRequestId: string | null = null;
+  let providerResponseId: string | null = null;
   let redactedFlag = false;
   let status = "completed";
   let approvalId: string | null = null;
@@ -524,6 +530,8 @@ export async function runGovernedRequest(params: {
       inputTokens = result.inputTokens || estTokens;
       outputTokens = result.outputTokens || Math.ceil(result.text.length / 4);
       latency = result.latencyMs;
+      providerRequestId = result.providerRequestId ?? null;
+      providerResponseId = result.providerResponseId ?? null;
       costUsd =
         (inputTokens / 1000) * Number(model.input_cost_per_1k ?? 0) +
         (outputTokens / 1000) * Number(model.output_cost_per_1k ?? 0);
@@ -607,6 +615,8 @@ export async function runGovernedRequest(params: {
           outputTokens,
           costUsd: Number(costUsd.toFixed(6)),
           responseFindings: responseDetections.length,
+          providerRequestId,
+          providerResponseId,
         },
       });
 
@@ -650,6 +660,8 @@ export async function runGovernedRequest(params: {
     cost_usd: Number(costUsd.toFixed(6)),
     latency_ms: latency || Date.now() - startedAt,
     status,
+    provider_request_id: providerRequestId,
+    provider_response_id: providerResponseId,
   });
 
   if (findingsToWrite.length > 0) {
@@ -716,7 +728,13 @@ export async function runGovernedRequest(params: {
     request_id: requestRow?.id ?? null,
     risk: finalAction === "BLOCK" ? "high" : finalAction === "REQUIRE_APPROVAL" ? "medium" : "info",
     result: status,
-    metadata: { detections: detections.length, cost: costUsd, principal: principal.kind },
+    metadata: {
+      detections: detections.length,
+      cost: costUsd,
+      principal: principal.kind,
+      providerRequestId,
+      providerResponseId,
+    },
   });
 
   await trace({
@@ -749,6 +767,8 @@ export async function runGovernedRequest(params: {
     status,
     approvalId,
     requestId: requestRow?.id ?? null,
+    providerRequestId,
+    providerResponseId,
     usage: { inputTokens, outputTokens, costUsd, latency },
   };
 }
