@@ -23,8 +23,13 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
     const bootstrapUser = "00000000-0000-4000-8000-000000000101";
     const bootstrapOther = "00000000-0000-4000-8000-000000000102";
     const bootstrapOrg = "00000000-0000-4000-8000-000000000103";
-    await db.query("INSERT INTO auth.users(id) VALUES($1),($2)", [bootstrapUser, bootstrapOther]);
-    await db.exec(`CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $ SELECT '${bootstrapUser}'::uuid $;`);
+    await db.query("INSERT INTO auth.users(id) VALUES($1),($2)", [
+      bootstrapUser,
+      bootstrapOther,
+    ]);
+    await db.exec(
+      `CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'SELECT '''${bootstrapUser}'''::uuid';`,
+    );
     await db.exec("SET ROLE authenticated");
     await db.query(
       "INSERT INTO organizations(id,name,slug,created_by) VALUES($1,'bootstrap','bootstrap',$2)",
@@ -47,7 +52,9 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       ]),
     );
     await db.exec("RESET ROLE");
-    await db.exec("CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $ SELECT null::uuid $");
+    await db.exec(
+      "CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'SELECT null::uuid';",
+    );
 
     const org = "00000000-0000-4000-8000-000000000001";
     const other = "00000000-0000-4000-8000-000000000002";
