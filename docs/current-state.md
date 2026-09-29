@@ -27,7 +27,7 @@ Post-proof verification-harness, workflow, and documentation commits may be newe
   - tenant resource B `4b21e638-e3f1-42ff-9af9-dac0c94806c8`
 - the existing invalid-session negative-path evidence remains separate: production smoke run `36364520249`, job `108748168833`, returned HTTP 401 for a deliberately invalid bearer session.
 - therefore the production user session boundary is **RUNTIME_VERIFIED** for positive valid-session protected-resource access plus negative invalid-session rejection.
-- tenant isolation is **not yet promoted**: attempt 3 failed at the direct browser founder-membership insertion (HTTP 403) before cross-tenant probes. The production application bootstrap path is server-only; a replacement real-session creator-RLS proof is running separately.
+- tenant isolation is **not yet promoted**: attempt 3 failed at the direct browser founder-membership insertion (HTTP 403) before cross-tenant probes. Replacement real-session creator-RLS run `36505135893` then timed out waiting for both fresh verification users to confirm, before any isolation assertion ran.
 - GitHub reports `main` is still unprotected, so branch protection remains a release blocker requiring repository administration permission.
 
 ## 2026-09-27 Production Verification Progress
