@@ -110,7 +110,10 @@ function Pricing() {
       <main className="px-6 py-16 lg:px-12">
         <div className="mx-auto max-w-3xl text-center">
           {paymentLinkError ? (
-            <p role="alert" className="mb-5 rounded-md border border-critical/30 bg-critical/5 p-3 text-sm text-critical">
+            <p
+              role="alert"
+              className="mb-5 rounded-md border border-critical/30 bg-critical/5 p-3 text-sm text-critical"
+            >
               {paymentLinkError}
             </p>
           ) : null}
