@@ -23,10 +23,7 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
     const bootstrapUser = "00000000-0000-4000-8000-000000000101";
     const bootstrapOther = "00000000-0000-4000-8000-000000000102";
     const bootstrapOrg = "00000000-0000-4000-8000-000000000103";
-    await db.query("INSERT INTO auth.users(id) VALUES($1),($2)", [
-      bootstrapUser,
-      bootstrapOther,
-    ]);
+    await db.query("INSERT INTO auth.users(id) VALUES($1),($2)", [bootstrapUser, bootstrapOther]);
     await db.exec(
       `CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'SELECT ''${bootstrapUser}''::uuid';`,
     );
@@ -36,15 +33,15 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       [bootstrapOrg, bootstrapUser],
     );
     await assert.rejects(
-      db.query(
-        "INSERT INTO org_members(org_id,user_id,role) VALUES($1,$2,'org_admin')",
-        [bootstrapOrg, bootstrapOther],
-      ),
+      db.query("INSERT INTO org_members(org_id,user_id,role) VALUES($1,$2,'org_admin')", [
+        bootstrapOrg,
+        bootstrapOther,
+      ]),
     );
-    await db.query(
-      "INSERT INTO org_members(org_id,user_id,role) VALUES($1,$2,'org_admin')",
-      [bootstrapOrg, bootstrapUser],
-    );
+    await db.query("INSERT INTO org_members(org_id,user_id,role) VALUES($1,$2,'org_admin')", [
+      bootstrapOrg,
+      bootstrapUser,
+    ]);
     await db.exec("RESET ROLE");
     await db.exec(
       "CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'SELECT null::uuid';",
