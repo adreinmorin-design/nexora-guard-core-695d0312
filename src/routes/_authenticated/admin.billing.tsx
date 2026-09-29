@@ -567,13 +567,26 @@ function Billing() {
         })}
       </div>
 
-      <p className="mt-6 text-xs text-muted-foreground">
-        Need to compare plans publicly?{" "}
-        <Link to="/pricing" className="text-primary hover:underline">
-          View pricing
-        </Link>
-        .
-      </p>
+      <div className="mt-6 space-y-2 text-xs text-muted-foreground">
+        <p>
+          Paid digital subscriptions are non-refundable except where applicable law requires
+          otherwise. Trial cancellation preserves access through the end of the trial.
+        </p>
+        <p className="flex flex-wrap gap-x-3 gap-y-1">
+          <Link to="/pricing" className="text-primary hover:underline">
+            Pricing
+          </Link>
+          <Link to="/terms" className="text-primary hover:underline">
+            Terms of Service
+          </Link>
+          <Link to="/privacy" className="text-primary hover:underline">
+            Privacy Notice
+          </Link>
+          <Link to="/refund" className="text-primary hover:underline">
+            Refund Policy
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
