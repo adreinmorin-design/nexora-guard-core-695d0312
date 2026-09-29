@@ -29,11 +29,11 @@ sent to a model provider or remote tool.
 
 ## Plans
 
-| Plan       |                              Price |      Seats |     Agents | Requests/month | Audit retention |
-| ---------- | ---------------------------------: | ---------: | ---------: | -------------: | --------------: |
-| Solo       |             $49/month or $490/year |          1 |          3 |         25,000 |         30 days |
-| Team       |          $399/month or $3,990/year |         10 |         25 |        250,000 |        180 days |
-| Enterprise |       Custom annual contract       | Contracted | Contracted |     Contracted |      Contracted |
+| Plan       |                     Price |      Seats |     Agents | Requests/month | Audit retention |
+| ---------- | ------------------------: | ---------: | ---------: | -------------: | --------------: |
+| Solo       |    $49/month or $490/year |          1 |          3 |         25,000 |         30 days |
+| Team       | $399/month or $3,990/year |         10 |         25 |        250,000 |        180 days |
+| Enterprise |    Custom annual contract | Contracted | Contracted |     Contracted |      Contracted |
 
 Model-provider charges and custom implementation work are separate. New
 organizations receive a 14-day Team trial.
