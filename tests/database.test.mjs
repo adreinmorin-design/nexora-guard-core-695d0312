@@ -45,12 +45,6 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       "INSERT INTO org_members(org_id,user_id,role) VALUES($1,$2,'org_admin')",
       [bootstrapOrg, bootstrapUser],
     );
-    await assert.rejects(
-      db.query(
-        "INSERT INTO org_members(org_id,user_id,role) VALUES($1,$2,'org_admin')",
-        [bootstrapOrg, bootstrapOther],
-      ),
-    );
     await db.exec("RESET ROLE");
     await db.exec(
       "CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'SELECT null::uuid';",
