@@ -78,9 +78,7 @@ function Pricing() {
                 ) : null}
               </div>
               {plan.key === "enterprise" ? (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Starting price · annual contract
-                </p>
+                <p className="mt-1 text-xs text-muted-foreground">Custom annual contract</p>
               ) : (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Two months free annually · 14-day trial

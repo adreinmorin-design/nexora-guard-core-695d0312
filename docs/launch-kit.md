@@ -24,9 +24,9 @@ sensitive data and prompt injection, evaluated against versioned policy,
 checked against budgets and subscription limits, and written to an audit trail.
 High-risk operations can require a second authorized person before execution.
 
-Private-beta plans start at $49 per month for solo businesses and $249 per month
-for teams. Enterprise deployments start at $1,500 per month under an annual
-contract. Model-provider charges are separate.
+Private-beta plans start at $49 per month for solo businesses and $399 per month
+for teams. Enterprise deployments use custom annual contracts based on scale,
+retention, identity, deployment and support requirements. Model-provider charges are separate.
 
 We are looking for design partners running real AI applications or agents who
 need stronger cost control, permission boundaries and auditability.

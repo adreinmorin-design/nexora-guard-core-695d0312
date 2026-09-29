@@ -83,7 +83,7 @@ function PlanWizard({
   const isCurrentTrial = current.key === plan.key && status === "trialing";
   const price =
     plan.key === "enterprise"
-      ? "From $1,500/month"
+      ? "Custom annual contract"
       : interval === "annual"
         ? `$${plan.annualPriceUsd?.toLocaleString()}/year`
         : `$${plan.monthlyPriceUsd?.toLocaleString()}/month`;
