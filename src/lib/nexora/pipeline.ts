@@ -635,9 +635,10 @@ export async function runGovernedRequest(params: {
       }
     }
   } catch (error) {
-    providerRequestId = validateProviderIdentifier(
-      error instanceof Error && "providerRequestId" in error ? error.providerRequestId : null,
-    );
+    providerRequestId =
+      validateProviderIdentifier(
+        error instanceof Error && "providerRequestId" in error ? error.providerRequestId : null,
+      ) ?? providerRequestId;
     status = "provider_error";
     finalReason = `${finalReason} · provider request failed; details withheld`;
     await trace({

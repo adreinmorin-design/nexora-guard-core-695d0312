@@ -7,8 +7,8 @@ control plane does not trust browser checkout state.
 ## Plans
 
 - Solo: $49/month or $490/year.
-- Team: $249/month or $2,490/year.
-- Enterprise: starts at $1,500/month under an annual contract.
+- Team: $399/month or $3,990/year.
+- Enterprise: custom pricing under an annual contract.
 - Model-provider usage, taxes outside the merchant-of-record flow, and custom
   implementation work are not included in the platform price.
 
