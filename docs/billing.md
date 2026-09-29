@@ -12,8 +12,14 @@ control plane does not trust browser checkout state.
 - Model-provider usage, taxes outside the merchant-of-record flow, and custom
   implementation work are not included in the platform price.
 
-New organizations receive a 14-day Team trial. Seat, agent, MCP-server and
-monthly request limits are enforced server-side. Premium capabilities are also
+New organizations receive a 14-day Team trial. If a user cancels during the
+trial, access remains available through the end of the trial. Continuing after
+the trial requires activation of a paid tier at the displayed price. Because
+NEXORA is a digital subscription service offered with a trial period, paid
+subscription charges are non-refundable except where applicable law requires
+otherwise.
+
+Seat, agent, MCP-server and monthly request limits are enforced server-side. Premium capabilities are also
 checked against the current subscription on the server and again at the
 database boundary where applicable.
 
@@ -58,3 +64,17 @@ from a browser redirect alone. Store Paddle customer and subscription IDs in
 If any Paddle value is absent, checkout remains disabled and the billing page
 explains that state. The pricing and entitlement layer can deploy independently
 without pretending that payment collection is active.
+
+## Public legal policies
+
+Paddle-facing website policy pages are public and linked from the public site and
+billing surfaces:
+
+- Terms of Service: `/terms`
+- Privacy Notice: `/privacy`
+- Refund Policy: `/refund`
+
+The refund policy states that paid digital subscription charges are
+non-refundable except where applicable law requires otherwise. Trial cancellation
+keeps access active through the stated trial end, and paid continuation requires
+selection or activation of the desired paid tier at its displayed price.

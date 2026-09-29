@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { PLANS, formatLimit } from "@/lib/nexora/plans";
 import { cn } from "@/lib/utils";
+import { PublicFooter } from "@/components/public-footer";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -138,6 +139,8 @@ function Pricing() {
           Limits apply per organization and reset monthly unless otherwise stated.
         </p>
       </main>
+
+      <PublicFooter />
     </div>
   );
 }
