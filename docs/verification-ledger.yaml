@@ -5,6 +5,16 @@ branch: "main"
 implementation_baseline_commit: "a3fc42213d2d240e016cf05bc2cbe383a6253b88"
 
 capabilities:
+  provider_request_evidence:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - type: implementation
+        value: "PR #33 merged at a2a13c4c9af601ea8665d2caa3225bbd9e576542; additive provider request/response columns and adapter/pipeline evidence"
+      - type: regression_tests
+        value: "tests/providers.test.mjs and tests/gateway.test.mjs cover HTTP error correlation, body failures, Gemini responseId, bounded validation and request/audit/trace persistence"
+    blocker: "Repair needs exact-head CI and deployment; live successful and failed provider correlation evidence and production column readback remain unverified"
+
   authentication:
     status: NOT_VERIFIED
     evidence:
