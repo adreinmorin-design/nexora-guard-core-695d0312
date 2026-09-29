@@ -143,12 +143,21 @@ runtime_controls:
         value: "run_id=36364520249; job_id=108748168833; anonymous POST /api/agent returned 401"
     blocker: null
 
-  production_user_invalid_session_boundary:
+  production_user_invalid_session_rejection:
     status: RUNTIME_VERIFIED
     evidence:
       - type: production_invalid_session_negative_path
         value: "run_id=36364520249; job_id=108748168833; deliberately invalid bearer JWT against production Supabase/PostgREST organizations endpoint returned HTTP 401"
     blocker: null
+
+  production_user_session_boundary:
+    status: NOT_VERIFIED
+    evidence:
+      - type: production_invalid_session_negative_path
+        value: "run_id=36364520249; job_id=108748168833; invalid bearer JWT was rejected with HTTP 401"
+      - type: production_valid_login_attempt
+        value: "run_id=36363244693; attempt=2; job_id=108746938565; two fresh test users were created but email confirmation timed out before successful authentication"
+    blocker: "Requires a confirmed valid user session successfully accessing the intended protected resource; keep the full session boundary unverified until both positive and negative paths are proven"
 
   production_governance_schema:
     status: RUNTIME_VERIFIED
