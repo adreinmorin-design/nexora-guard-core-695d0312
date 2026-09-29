@@ -1,5 +1,5 @@
 version: 1
-last_updated: "2026-09-27"
+last_updated: "2026-09-28"
 repository: "adreinmorin-design/nexora-guard-core-695d0312"
 branch: "main"
 implementation_baseline_commit: "a3fc42213d2d240e016cf05bc2cbe383a6253b88"
@@ -22,9 +22,13 @@ capabilities:
         value: "run_id=36279456208; job_id=108508386247; GET /auth=200; anonymous POST /api/agent=401 with expected fail-closed error"
       - type: production_invalid_session_negative_path
         value: "run_id=36364520249; job_id=108748168833; deliberately invalid user bearer session against production Supabase/PostgREST returned HTTP 401"
-      - type: production_valid_login_attempt
-        value: "run_id=36363244693; attempt=2; job_id=108746938565; two fresh test users created; email confirmation required; timed out before either user authenticated"
-    blocker: "Requires a fresh live-proof rerun plus confirmation of both disposable-user verification emails during the active run; then valid login and authenticated protected-operation proof can proceed"
+      - type: production_valid_session_positive_path
+        value: "run_id=36363244693; attempt=3; job_id=109201239548; two disposable users established valid password sessions; User A authenticated at 2026-09-29T00:38:30.515Z and User B at 2026-09-29T00:38:30.841Z"
+      - type: production_authenticated_protected_write
+        value: "same run/attempt; authenticated users inserted distinct organizations under production RLS: A=09810b57-5e85-49e9-b278-66f4645af98d; B=4b21e638-e3f1-42ff-9af9-dac0c94806c8"
+      - type: verification_note
+        value: "The two purpose-tagged disposable accounts were confirmed directly in production Auth for this test only; this verifies the valid-session boundary, not the email-verification UX"
+    blocker: "Actual deployed application signup/login and protected UI access have not been verified; direct password grants and PostgREST writes prove only production_user_session_boundary"
 
   tenant_isolation:
     status: NOT_VERIFIED
@@ -32,8 +36,10 @@ capabilities:
       - type: production_rls_negative_path
         value: "Synthetic authenticated non-member previously observed zero protected rows"
       - type: live_two_tenant_attempt
-        value: "run_id=36363244693; attempt=2; job_id=108746938565; failed at email-confirmation gate; tenant provisioning and cross-tenant probes were skipped"
-    blocker: "Requires a true tenant-A-versus-tenant-B test with two confirmed authorized identities; rerun the live proof and confirm both fresh verification emails before the workflow timeout"
+        value: "run_id=36363244693; attempt=3; job_id=109201239548; two valid sessions created distinct organizations, then direct browser founder-membership insertion returned HTTP 403 before cross-tenant probes"
+      - type: live_two_tenant_replacement
+        value: "run_id=36505135893; job_id=109204756222; two fresh verification users were created; run timed out at 2026-09-29T01:04:27Z waiting for both users to authenticate; no own-resource or cross-ID isolation assertion executed"
+    blocker: "Requires a fresh v2 proof with both disposable users confirmed during the active run, followed by positive own-resource reads and negative cross-ID substitution checks; do not promote based on the successful auth portion alone"
 
   policy_allow:
     status: NOT_VERIFIED
@@ -142,6 +148,10 @@ runtime_controls:
         value: "2026-09-27: published=true; project_status=ready; latest_commit_sha=4953fd096b4038061f660fd4046ff01fa526e178"
       - type: production_smoke
         value: "run_id=36364520249; job_id=108748168833; GET /=200; GET /auth=200; anonymous POST /api/agent=401; invalid user bearer session=401"
+      - type: lovable_project_readback
+        value: "2026-09-28: published=true; project_status=ready; latest_commit_sha=f6e6499d02fb853ea1da2b55316eb766dfed17a6; historical PR34 evidence"
+      - type: lovable_deploy_request
+        value: "deployment_id=2bba2ebb-1516-4024-be04-3ec915b0e6fe; head=f6e6499d02fb853ea1da2b55316eb766dfed17a6; historical PR34 evidence"
     blocker: null
 
   production_agent_auth_boundary:
@@ -161,13 +171,15 @@ runtime_controls:
     blocker: null
 
   production_user_session_boundary:
-    status: NOT_VERIFIED
+    status: RUNTIME_VERIFIED
     evidence:
       - type: production_invalid_session_negative_path
         value: "run_id=36364520249; job_id=108748168833; invalid bearer JWT was rejected with HTTP 401"
-      - type: production_valid_login_attempt
-        value: "run_id=36363244693; attempt=2; job_id=108746938565; two fresh test users were created but email confirmation timed out before successful authentication"
-    blocker: "Requires a confirmed valid user session successfully accessing the intended protected resource; keep the full session boundary unverified until both positive and negative paths are proven"
+      - type: production_valid_session_positive_path
+        value: "run_id=36363244693; attempt=3; job_id=109201239548; two disposable production users successfully authenticated with password sessions"
+      - type: production_authenticated_protected_write
+        value: "same run/attempt; each valid session successfully created its own protected organizations row through production PostgREST/RLS"
+    blocker: null
 
   production_governance_schema:
     status: RUNTIME_VERIFIED
@@ -230,6 +242,12 @@ repository_controls:
         value: "artifact_id=10917808932; sha256=73bf8b9953a3e97d7af1b25faa130dbaaab560e19b605fa875fc5611388a480e"
       - type: github_actions_run
         value: "run_id=36364668266; head_sha=4953fd096b4038061f660fd4046ff01fa526e178; conclusion=success"
+      - type: github_actions_run
+        value: "run_id=36503707985; head_sha=f6e6499d02fb853ea1da2b55316eb766dfed17a6; conclusion=success"
+      - type: github_actions_run
+        value: "run_id=36506103783; head_sha=a2a13c4c9af601ea8665d2caa3225bbd9e576542; conclusion=success"
+      - type: github_actions_run
+        value: "run_id=36523207207; head_sha=4702e11a2befecead753c30be4f624e69222785f; conclusion=success; provider evidence repair PR35"
     blocker: null
 
   main_branch_protection:
