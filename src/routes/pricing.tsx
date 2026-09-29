@@ -1,8 +1,41 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { Check } from "lucide-react";
+import { useEffect, useState } from "react";
 import { PLANS, formatLimit } from "@/lib/nexora/plans";
 import { cn } from "@/lib/utils";
 import { PublicFooter } from "@/components/public-footer";
+import { getPaddlePublicConfig } from "@/lib/nexora.functions";
+
+type PaddlePaymentApi = {
+  Initialize: (options: {
+    token: string;
+    checkout?: {
+      settings?: {
+        displayMode?: "overlay" | "inline";
+        theme?: "light" | "dark";
+      };
+    };
+  }) => void;
+};
+
+async function loadPaddle(): Promise<PaddlePaymentApi> {
+  if (typeof window === "undefined") throw new Error("Checkout is only available in a browser.");
+  const browser = window as typeof window & { Paddle?: PaddlePaymentApi };
+  if (browser.Paddle) return browser.Paddle;
+
+  return new Promise<PaddlePaymentApi>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[data-nexora-paddle="true"]');
+    const script = existing ?? document.createElement("script");
+    script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
+    script.async = true;
+    script.dataset["nexoraPaddle"] = "true";
+    script.onload = () =>
+      browser.Paddle ? resolve(browser.Paddle) : reject(new Error("Paddle failed to load."));
+    script.onerror = () => reject(new Error("Paddle checkout could not load."));
+    if (!existing) document.head.appendChild(script);
+  });
+}
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -24,6 +57,40 @@ export const Route = createFileRoute("/pricing")({
 });
 
 function Pricing() {
+  const getPaddleConfig = useServerFn(getPaddlePublicConfig);
+  const [paymentLinkError, setPaymentLinkError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const config = await getPaddleConfig({});
+        if (!config.enabled) {
+          if (window.location.search.includes("_ptxn=") && !cancelled) {
+            setPaymentLinkError("Live checkout is not configured yet.");
+          }
+          return;
+        }
+
+        const paddle = await loadPaddle();
+        if (cancelled) return;
+        paddle.Initialize({
+          token: config.clientToken,
+          checkout: { settings: { displayMode: "overlay", theme: "light" } },
+        });
+      } catch {
+        if (window.location.search.includes("_ptxn=") && !cancelled) {
+          setPaymentLinkError("Secure checkout could not be initialized.");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getPaddleConfig]);
+
   return (
     <div className="min-h-screen">
       <header className="flex items-center justify-between border-b border-border px-6 py-5 lg:px-12">
@@ -42,6 +109,11 @@ function Pricing() {
 
       <main className="px-6 py-16 lg:px-12">
         <div className="mx-auto max-w-3xl text-center">
+          {paymentLinkError ? (
+            <p role="alert" className="mb-5 rounded-md border border-critical/30 bg-critical/5 p-3 text-sm text-critical">
+              {paymentLinkError}
+            </p>
+          ) : null}
           <p className="label-caps">Simple platform pricing</p>
           <h1 className="mt-3 font-display text-4xl font-semibold">
             Govern AI before it governs your spend.
