@@ -65,7 +65,6 @@ If any Paddle value is absent, checkout remains disabled and the billing page
 explains that state. The pricing and entitlement layer can deploy independently
 without pretending that payment collection is active.
 
-
 ## Public legal policies
 
 Paddle-facing website policy pages are public and linked from the public site and
