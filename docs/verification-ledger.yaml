@@ -5,14 +5,17 @@ branch: "main"
 implementation_baseline_commit: "a3fc42213d2d240e016cf05bc2cbe383a6253b88"
 
 verification_baseline:
-  implementation_sha: "99633c961a4e6ea5e631f59f1aabca7601c01d00"
-  main_ci_run: 36523472864
+  implementation_sha: "02aa20932666a7a6322d30b5cdc5c1d4f5f29313"
+  main_ci_run: 36531746709
   main_ci_conclusion: success
-  lovable_latest_commit_sha: "99633c961a4e6ea5e631f59f1aabca7601c01d00"
+  lovable_latest_commit_sha: "02aa20932666a7a6322d30b5cdc5c1d4f5f29313"
   lovable_published: true
   lovable_status: ready
   deployment_request_id: "8cf3143d-cc00-4baa-9670-fb4a105ebd81"
   deployment_request_initial_status: pending
+  exact_main_ci_evidence: "run_id=36531746709; head_sha=02aa20932666a7a6322d30b5cdc5c1d4f5f29313; conclusion=success"
+  pr39_tree_equivalence: "pre_merge_head=e48748fc7d8e7d64adba5c337c655011dd8faaab; merge=02aa20932666a7a6322d30b5cdc5c1d4f5f29313; zero changed files"
+
   independent_http_build_attestation: NOT_VERIFIED
   http_probe_artifact: "docs/evidence/2026-09-29-baseline-http.json"
   http_probe_limitation: "Client/edge returned 403 error code 1010; not application-level authorization evidence"
@@ -20,6 +23,8 @@ verification_baseline:
   migration_history: "NOT_VERIFIED: history readback timed out (connector HTTP 504); earlier history omitted manually applied governance migration"
   provider_column_readback: "Both provider_request_id and provider_response_id exist as text after additive migration"
   public_rls_readback: "36 public tables inspected; all rowsecurity=true"
+  provider_readback: "OpenAI active/MANAGED with 3 active models; Anthropic and Google NOT_CONFIGURED with 0 active models"
+
   governance_privileges: "nexora_append_governance_event/nexora_record_execution_risk: SECURITY INVOKER; anon/authenticated EXECUTE=false; service_role EXECUTE=true"
   branch_protection: "FAILED: protected=false; GitHub Settings browser signed out"
   pilot_readiness: NOT_VERIFIED
@@ -175,6 +180,8 @@ runtime_controls:
         value: "deployment_id=2bba2ebb-1516-4024-be04-3ec915b0e6fe; head=f6e6499d02fb853ea1da2b55316eb766dfed17a6; historical PR34 evidence"
       - type: lovable_project_readback
         value: "2026-09-29: latest_commit_sha=99633c961a4e6ea5e631f59f1aabca7601c01d00; published=true; status=ready; deployment request 8cf3143d-cc00-4baa-9670-fb4a105ebd81 initially pending"
+      - type: lovable_project_readback
+        value: "2026-09-29: latest_commit_sha=02aa20932666a7a6322d30b5cdc5c1d4f5f29313; published=true; status=ready"
     blocker: "Independent HTTP build attestation not available; client HTTP probes returned edge 403/1010"
 
   production_agent_auth_boundary:
