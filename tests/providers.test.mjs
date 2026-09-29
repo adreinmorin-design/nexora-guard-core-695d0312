@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  ProviderError,
   executeProviderRequest,
   parseResponseText,
   parseUsage,
@@ -100,4 +101,112 @@ test("custom provider endpoints fail closed unless explicitly allowlisted", () =
   assert.equal(providerReadiness("mistral"), "NOT_CONFIGURED");
   process.env.PROVIDER_ALLOWED_ORIGINS = "https://mistral.example";
   assert.equal(providerReadiness("mistral"), "CONFIGURED");
+});
+
+for (const [upstream, expected] of [
+  [400, 502],
+  [401, 502],
+  [403, 502],
+  [404, 400],
+  [429, 429],
+  [500, 502],
+]) {
+  test(`upstream ${upstream} retains correlation and safe error mapping`, async () => {
+    process.env.OPENAI_API_KEY = "test-secret";
+    globalThis.fetch = async () =>
+      new Response("secret upstream body", {
+        status: upstream,
+        headers: { "x-request-id": "req_failure-123" },
+      });
+    await assert.rejects(executeProviderRequest("openai/test", "safe"), (error) => {
+      assert.ok(error instanceof ProviderError);
+      assert.equal(error.status, expected);
+      assert.equal(error.providerRequestId, "req_failure-123");
+      assert.ok(!error.message.includes("secret"));
+      return true;
+    });
+  });
+}
+
+test("body decoding and cleanup failures retain received request IDs", async () => {
+  process.env.OPENAI_API_KEY = "test-secret";
+  globalThis.fetch = async () =>
+    new Response("not json", { headers: { "request-id": "req_decode" } });
+  await assert.rejects(executeProviderRequest("openai/test", "safe"), {
+    status: 502,
+    providerRequestId: "req_decode",
+  });
+  globalThis.fetch = async () => ({
+    ok: false,
+    status: 429,
+    headers: new Headers({ "x-correlation-id": "req_cleanup" }),
+    body: {
+      cancel: async () => {
+        throw new Error("cleanup");
+      },
+    },
+  });
+  await assert.rejects(executeProviderRequest("openai/test", "safe"), {
+    status: 429,
+    providerRequestId: "req_cleanup",
+  });
+});
+
+test("native and compatible adapters preserve their actual response identifiers", async () => {
+  process.env.OPENAI_API_KEY = "test-secret";
+  process.env.ANTHROPIC_API_KEY = "test-secret";
+  process.env.GOOGLE_AI_API_KEY = "test-secret";
+  process.env.NEXORA_MISTRAL_API_KEY = "test-secret";
+  process.env.NEXORA_MISTRAL_BASE_URL = "https://mistral.example/v1";
+  process.env.PROVIDER_ALLOWED_ORIGINS = "https://mistral.example";
+  for (const vendor of ["openai", "anthropic", "google", "mistral"]) {
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          id: "response_generic",
+          responseId: "gemini_actual",
+          output_text: "safe",
+        }),
+        { headers: { "x-request-id": "req_ok" } },
+      );
+    const result = await executeProviderRequest(`${vendor}/test`, "safe");
+    assert.equal(result.providerRequestId, "req_ok");
+    assert.equal(
+      result.providerResponseId,
+      vendor === "google" ? "gemini_actual" : "response_generic",
+    );
+  }
+});
+
+test("untrusted IDs reject invalid values without truncation or affecting responses", async () => {
+  process.env.OPENAI_API_KEY = "test-secret";
+  for (const id of [
+    null,
+    42,
+    {},
+    "",
+    "a".repeat(257),
+    "bad id",
+    "bad\\nvalue",
+    "<script>",
+    "ümlaut",
+  ]) {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ id, output_text: "safe" }), {
+        headers: { "x-request-id": "x".repeat(257), "request-id": "req_fallback" },
+      });
+    const result = await executeProviderRequest("openai/test", "safe");
+    assert.equal(result.providerResponseId, null);
+    assert.equal(result.providerRequestId, "req_fallback");
+    assert.equal(result.text, "safe");
+  }
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ id: "a".repeat(256) }), {
+      headers: { "x-request-id": "req_ok" },
+    });
+  assert.equal(
+    (await executeProviderRequest("openai/test", "safe")).providerResponseId.length,
+    256,
+  );
+  assert.equal(new ProviderError(502, "safe", "bad\nvalue").providerRequestId, null);
 });

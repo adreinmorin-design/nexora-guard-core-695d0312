@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { ProviderError } from "../src/lib/ai-gateway.server.ts";
 import { runGovernedRequest } from "../src/lib/nexora/pipeline.ts";
 import { executeUnderDecision } from "../src/lib/nexora/enforcement.ts";
 
@@ -252,4 +253,47 @@ test("model and response enforcement boundaries are emitted in order", async () 
   );
   assert.equal(points[0].decision, "ALLOW");
   assert.equal(points[1].decision, "ALLOW");
+});
+
+test("provider failure correlation persists in request, audit, trace and result", async () => {
+  const f = fixture();
+  const events = [];
+  const result = await f.run({
+    execute: async () => {
+      throw new ProviderError(429, "safe", "req_failed");
+    },
+    trace: async (event) => events.push(event),
+  });
+  assert.equal(result.status, "provider_error");
+  assert.equal(result.providerRequestId, "req_failed");
+  assert.equal(result.providerResponseId, null);
+  assert.equal(f.rows.at(-1).provider_request_id, "req_failed");
+  assert.equal(f.audits.at(-1).metadata.providerRequestId, "req_failed");
+  assert.ok(
+    events.some((e) => e.status === "failed" && e.detail.providerRequestId === "req_failed"),
+  );
+  assert.equal(f.settled, 0, "ambiguous billable failure keeps its reservation");
+});
+
+test("pipeline validates identifiers at persistence boundary", async () => {
+  for (const fails of [false, true]) {
+    const f = fixture();
+    const result = await f.run({
+      execute: async () => {
+        if (fails) throw Object.assign(new Error("safe"), { providerRequestId: "x".repeat(257) });
+        return {
+          text: "safe",
+          inputTokens: 1,
+          outputTokens: 1,
+          latencyMs: 1,
+          providerRequestId: "bad id",
+          providerResponseId: "x".repeat(257),
+        };
+      },
+    });
+    assert.equal(result.providerRequestId, null);
+    assert.equal(result.providerResponseId, null);
+    assert.equal(f.rows.at(-1).provider_request_id, null);
+    assert.equal(f.rows.at(-1).provider_response_id, null);
+  }
 });

@@ -15,6 +15,7 @@
  *   -> request + findings + audit persistence
  */
 
+import { validateProviderIdentifier } from "./provider-evidence";
 import { inspect, redact, maskPreview, type Detection } from "./dlp";
 import { evaluate, type Decision, type GovAction, type PolicyRecord } from "./policy-engine";
 import { executeUnderDecision } from "./enforcement";
@@ -530,8 +531,8 @@ export async function runGovernedRequest(params: {
       inputTokens = result.inputTokens || estTokens;
       outputTokens = result.outputTokens || Math.ceil(result.text.length / 4);
       latency = result.latencyMs;
-      providerRequestId = result.providerRequestId ?? null;
-      providerResponseId = result.providerResponseId ?? null;
+      providerRequestId = validateProviderIdentifier(result.providerRequestId);
+      providerResponseId = validateProviderIdentifier(result.providerResponseId);
       costUsd =
         (inputTokens / 1000) * Number(model.input_cost_per_1k ?? 0) +
         (outputTokens / 1000) * Number(model.output_cost_per_1k ?? 0);
@@ -634,12 +635,16 @@ export async function runGovernedRequest(params: {
       }
     }
   } catch (error) {
+    providerRequestId = validateProviderIdentifier(
+      error instanceof Error && "providerRequestId" in error ? error.providerRequestId : null,
+    );
     status = "provider_error";
     finalReason = `${finalReason} · provider request failed; details withheld`;
     await trace({
       stage: "execution",
       status: "failed",
       summary: "Provider execution failed; upstream details withheld.",
+      detail: { providerRequestId, providerResponseId },
     });
   }
 

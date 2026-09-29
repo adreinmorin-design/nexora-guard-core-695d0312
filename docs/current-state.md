@@ -16,6 +16,14 @@
 
 Post-proof verification-harness, workflow, and documentation commits may be newer than the production implementation baseline above. No governed-execution core rewrite was performed.
 
+## Provider evidence review repair — IMPLEMENTED / NOT_VERIFIED
+
+PR #33 is merged at `a2a13c4c9af601ea8665d2caa3225bbd9e576542`; main CI run `36506103783` passed. On 2026-09-29 the Lovable project readback reports this same latest commit, published=true and status=ready. This is a project readback, not a new post-repair production deployment proof.
+
+The review repair captures upstream correlation headers before HTTP error handling, retains them through safe ProviderError and body-decoding failures, reads Gemini `responseId`, and validates identifiers at adapter and persistence boundaries. Identifiers must be 1–256 ASCII characters in the documented correlation alphabet; malformed/oversized values become null rather than being truncated. No upstream error body is exposed. Error status mapping and ambiguous-failure budget reservations remain unchanged.
+
+Regression coverage: `tests/providers.test.mjs` and `tests/gateway.test.mjs`, including rejected/rate-limited/server-error responses, cleanup/decoding failures, native and compatible response IDs, malformed IDs, and request/audit/trace persistence. This is implementation/test evidence only. Live upstream response and failure correlation evidence, exact repaired-head CI/deployment, and production schema readback remain required before runtime verification.
+
 ## 2026-09-27 Production Verification Progress
 
 Repository/deployment evidence captured after the original governance baseline:

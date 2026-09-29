@@ -7,6 +7,8 @@
  * deployment-specific base URL are configured.
  */
 
+import { validateProviderIdentifier } from "./nexora/provider-evidence";
+
 import { MAX_OUTPUT_TOKENS } from "./nexora/limits";
 
 export type ProviderResult = {
@@ -22,9 +24,11 @@ export type ProviderResult = {
 
 export class ProviderError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  providerRequestId: string | null;
+  constructor(status: number, message: string, providerRequestId: unknown = null) {
     super(message);
     this.status = status;
+    this.providerRequestId = validateProviderIdentifier(providerRequestId);
     this.name = "ProviderError";
   }
 }
@@ -240,16 +244,24 @@ async function requestJson(
 ): Promise<{ json: any; latencyMs: number; providerRequestId: string | null }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let providerRequestId: string | null = null;
   try {
     const response = await fetch(url, { ...init, signal: controller.signal });
+    providerRequestId =
+      validateProviderIdentifier(response.headers.get("x-request-id")) ??
+      validateProviderIdentifier(response.headers.get("request-id")) ??
+      validateProviderIdentifier(response.headers.get("x-correlation-id"));
     if (!response.ok) {
-      await response.body?.cancel();
-      throw mapUpstreamStatus(response.status);
+      const error = mapUpstreamStatus(response.status);
+      error.providerRequestId = providerRequestId;
+      // A body cleanup failure must not replace the upstream status or correlation ID.
+      try {
+        await response.body?.cancel();
+      } catch {
+        /* best-effort cleanup */
+      }
+      throw error;
     }
-    const providerRequestId =
-      response.headers.get("x-request-id") ??
-      response.headers.get("request-id") ??
-      response.headers.get("x-correlation-id");
     return {
       json: await response.json(),
       latencyMs: Date.now() - started,
@@ -258,8 +270,8 @@ async function requestJson(
   } catch (error) {
     if (error instanceof ProviderError) throw error;
     if (controller.signal.aborted)
-      throw new ProviderError(504, "Provider request timed out after 30s.");
-    throw new ProviderError(502, "Provider request could not be completed.");
+      throw new ProviderError(504, "Provider request timed out after 30s.", providerRequestId);
+    throw new ProviderError(502, "Provider request could not be completed.", providerRequestId);
   } finally {
     clearTimeout(timer);
   }
@@ -302,7 +314,7 @@ async function runOpenAI(model: string, prompt: string): Promise<ProviderResult>
     ...usage,
     latencyMs,
     providerRequestId,
-    providerResponseId: typeof json?.id === "string" ? json.id : null,
+    providerResponseId: validateProviderIdentifier(json?.id),
   };
 }
 
@@ -335,7 +347,7 @@ async function runAnthropic(model: string, prompt: string): Promise<ProviderResu
     ...usage,
     latencyMs,
     providerRequestId,
-    providerResponseId: typeof json?.id === "string" ? json.id : null,
+    providerResponseId: validateProviderIdentifier(json?.id),
   };
 }
 
@@ -365,7 +377,7 @@ async function runGoogle(model: string, prompt: string): Promise<ProviderResult>
     ...usage,
     latencyMs,
     providerRequestId,
-    providerResponseId: typeof json?.id === "string" ? json.id : null,
+    providerResponseId: validateProviderIdentifier(json?.responseId),
   };
 }
 
@@ -406,7 +418,7 @@ async function runOpenAiCompatible(
     ...usage,
     latencyMs,
     providerRequestId,
-    providerResponseId: typeof json?.id === "string" ? json.id : null,
+    providerResponseId: validateProviderIdentifier(json?.id),
   };
 }
 
