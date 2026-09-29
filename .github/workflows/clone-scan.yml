@@ -20,7 +20,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p clone-reports/core
-          npx --yes jscpd@5.3.1             src/lib             src/routes             src/integrations             src/components/nexora             src/hooks             src/router.tsx             src/server.ts             src/start.ts             --min-lines 8             --min-tokens 60             --mode mild             --ignore "**/routeTree.gen.ts,**/src/components/ui/**,**/*.gen.*,**/node_modules/**,**/dist/**,**/build/**,**/coverage/**"             --reporters console-full,json             --output clone-reports/core             | tee clone-reports/core-console.txt
+          npx --yes jscpd@5.3.1             src/lib             src/routes             src/integrations             src/components/nexora             src/hooks             src/router.tsx             src/server.ts             src/start.ts             --min-lines 8             --min-tokens 60             --mode mild             --ignore "**/routeTree.gen.ts,**/src/integrations/supabase/types.ts,**/src/components/ui/**,**/*.gen.*,**/node_modules/**,**/dist/**,**/build/**,**/coverage/**"             --reporters console-full,json             --output clone-reports/core             | tee clone-reports/core-console.txt
 
       - name: Supporting-code duplication scan
         shell: bash
