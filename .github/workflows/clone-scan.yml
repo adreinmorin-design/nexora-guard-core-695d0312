@@ -1,0 +1,39 @@
+name: Clone Scan
+
+on:
+  push:
+    branches:
+      - analysis/clone-scan-20260928
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Core product duplication scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p clone-reports/core
+          npx --yes jscpd@5.3.1             src/lib             src/routes             src/integrations             src/components/nexora             src/hooks             src/router.tsx             src/server.ts             src/start.ts             --min-lines 8             --min-tokens 60             --mode mild             --ignore "**/routeTree.gen.ts,**/src/components/ui/**,**/*.gen.*,**/node_modules/**,**/dist/**,**/build/**,**/coverage/**"             --reporters console-full,json             --output clone-reports/core             | tee clone-reports/core-console.txt
+
+      - name: Supporting-code duplication scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p clone-reports/support
+          npx --yes jscpd@5.3.1             tests             supabase/migrations             scripts             .github/workflows             --min-lines 8             --min-tokens 60             --mode mild             --ignore "**/node_modules/**,**/dist/**,**/build/**,**/coverage/**,**/clone-scan.yml"             --reporters console-full,json             --output clone-reports/support             | tee clone-reports/support-console.txt
+
+      - name: Upload clone reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexora-clone-scan
+          path: clone-reports/
+          if-no-files-found: error
+          retention-days: 3
