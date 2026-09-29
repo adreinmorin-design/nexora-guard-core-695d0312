@@ -53,6 +53,16 @@ export function paddlePriceId(plan: CheckoutPlan, interval: CheckoutInterval): s
   return value(PRICE_ENV[plan][interval]);
 }
 
+export function livePaymentLinkConfig():
+  | { enabled: true; clientToken: string }
+  | { enabled: false; reason: "LIVE_PADDLE_NOT_CONFIGURED" } {
+  const clientToken = value("PADDLE_CLIENT_TOKEN");
+  if (paddleEnvironment() !== "production" || !clientToken?.startsWith("live_")) {
+    return { enabled: false, reason: "LIVE_PADDLE_NOT_CONFIGURED" };
+  }
+  return { enabled: true, clientToken };
+}
+
 /** Keep this canonical representation stable; it is part of webhook security. */
 export function checkoutSigningPayload(data: Omit<PaddleCheckoutData, "signature">): string {
   return [data.org_id, data.plan_key, data.interval, data.user_id].join(".");
