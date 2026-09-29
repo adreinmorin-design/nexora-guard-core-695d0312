@@ -8,9 +8,12 @@ test("commercial plans have increasing paid value and safe limits", () => {
   assert.equal(solo.key, "solo");
   assert.equal(team.key, "team");
   assert.equal(enterprise.key, "enterprise");
-  assert.ok(solo.monthlyPriceUsd > 0);
-  assert.ok(team.monthlyPriceUsd > solo.monthlyPriceUsd);
-  assert.ok(enterprise.monthlyPriceUsd > team.monthlyPriceUsd);
+  assert.equal(solo.monthlyPriceUsd, 49);
+  assert.equal(solo.annualPriceUsd, 490);
+  assert.equal(team.monthlyPriceUsd, 399);
+  assert.equal(team.annualPriceUsd, 3_990);
+  assert.equal(enterprise.monthlyPriceUsd, null);
+  assert.equal(enterprise.annualPriceUsd, null);
   assert.ok(team.seats > solo.seats);
   assert.ok(team.agents > solo.agents);
   assert.ok(team.monthlyRequests > solo.monthlyRequests);

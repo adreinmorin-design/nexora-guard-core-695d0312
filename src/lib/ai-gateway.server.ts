@@ -7,6 +7,8 @@
  * deployment-specific base URL are configured.
  */
 
+import { validateProviderIdentifier } from "./nexora/provider-evidence";
+
 import { MAX_OUTPUT_TOKENS } from "./nexora/limits";
 
 export type ProviderResult = {
@@ -14,13 +16,19 @@ export type ProviderResult = {
   inputTokens: number;
   outputTokens: number;
   latencyMs: number;
+  /** Upstream provider request identifier, e.g. OpenAI x-request-id. */
+  providerRequestId?: string | null;
+  /** Provider response object identifier, e.g. OpenAI response id. */
+  providerResponseId?: string | null;
 };
 
 export class ProviderError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  providerRequestId: string | null;
+  constructor(status: number, message: string, providerRequestId: unknown = null) {
     super(message);
     this.status = status;
+    this.providerRequestId = validateProviderIdentifier(providerRequestId);
     this.name = "ProviderError";
   }
 }
@@ -233,21 +241,37 @@ async function requestJson(
   url: string,
   init: RequestInit,
   started: number,
-): Promise<{ json: any; latencyMs: number }> {
+): Promise<{ json: any; latencyMs: number; providerRequestId: string | null }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let providerRequestId: string | null = null;
   try {
     const response = await fetch(url, { ...init, signal: controller.signal });
+    providerRequestId =
+      validateProviderIdentifier(response.headers.get("x-request-id")) ??
+      validateProviderIdentifier(response.headers.get("request-id")) ??
+      validateProviderIdentifier(response.headers.get("x-correlation-id"));
     if (!response.ok) {
-      await response.body?.cancel();
-      throw mapUpstreamStatus(response.status);
+      const error = mapUpstreamStatus(response.status);
+      error.providerRequestId = providerRequestId;
+      // A body cleanup failure must not replace the upstream status or correlation ID.
+      try {
+        await response.body?.cancel();
+      } catch {
+        /* best-effort cleanup */
+      }
+      throw error;
     }
-    return { json: await response.json(), latencyMs: Date.now() - started };
+    return {
+      json: await response.json(),
+      latencyMs: Date.now() - started,
+      providerRequestId,
+    };
   } catch (error) {
     if (error instanceof ProviderError) throw error;
     if (controller.signal.aborted)
-      throw new ProviderError(504, "Provider request timed out after 30s.");
-    throw new ProviderError(502, "Provider request could not be completed.");
+      throw new ProviderError(504, "Provider request timed out after 30s.", providerRequestId);
+    throw new ProviderError(502, "Provider request could not be completed.", providerRequestId);
   } finally {
     clearTimeout(timer);
   }
@@ -265,7 +289,7 @@ async function runOpenAI(model: string, prompt: string): Promise<ProviderResult>
   const started = Date.now();
   const base = providerBaseUrl("openai")!;
   const url = endpoint(base, "/responses");
-  const { json, latencyMs } = await requestJson(
+  const { json, latencyMs, providerRequestId } = await requestJson(
     url === OPENAI_RESPONSES_URL ? url : url,
     {
       method: "POST",
@@ -285,7 +309,13 @@ async function runOpenAI(model: string, prompt: string): Promise<ProviderResult>
     started,
   );
   const usage = parseUsage(json);
-  return { text: parseResponseText(json), ...usage, latencyMs };
+  return {
+    text: parseResponseText(json),
+    ...usage,
+    latencyMs,
+    providerRequestId,
+    providerResponseId: validateProviderIdentifier(json?.id),
+  };
 }
 
 async function runAnthropic(model: string, prompt: string): Promise<ProviderResult> {
@@ -293,7 +323,7 @@ async function runAnthropic(model: string, prompt: string): Promise<ProviderResu
   if (!key) throw new ProviderError(503, "Anthropic provider is NOT_CONFIGURED.");
   validatePrompt(prompt);
   const started = Date.now();
-  const { json, latencyMs } = await requestJson(
+  const { json, latencyMs, providerRequestId } = await requestJson(
     endpoint(providerBaseUrl("anthropic")!, "/messages"),
     {
       method: "POST",
@@ -312,7 +342,13 @@ async function runAnthropic(model: string, prompt: string): Promise<ProviderResu
     started,
   );
   const usage = parseUsage(json);
-  return { text: parseResponseText(json), ...usage, latencyMs };
+  return {
+    text: parseResponseText(json),
+    ...usage,
+    latencyMs,
+    providerRequestId,
+    providerResponseId: validateProviderIdentifier(json?.id),
+  };
 }
 
 async function runGoogle(model: string, prompt: string): Promise<ProviderResult> {
@@ -323,7 +359,7 @@ async function runGoogle(model: string, prompt: string): Promise<ProviderResult>
   const modelName = encodeURIComponent(toUpstreamModel(model));
   const base = providerBaseUrl("google")!.replace(/\/$/, "");
   const url = `${base}/${modelName}:generateContent`;
-  const { json, latencyMs } = await requestJson(
+  const { json, latencyMs, providerRequestId } = await requestJson(
     url,
     {
       method: "POST",
@@ -336,7 +372,13 @@ async function runGoogle(model: string, prompt: string): Promise<ProviderResult>
     started,
   );
   const usage = parseUsage(json);
-  return { text: parseResponseText(json), ...usage, latencyMs };
+  return {
+    text: parseResponseText(json),
+    ...usage,
+    latencyMs,
+    providerRequestId,
+    providerResponseId: validateProviderIdentifier(json?.responseId),
+  };
 }
 
 async function runOpenAiCompatible(
@@ -350,7 +392,7 @@ async function runOpenAiCompatible(
   validatePrompt(prompt);
   const started = Date.now();
   const url = endpoint(base, "/chat/completions");
-  const { json, latencyMs } = await requestJson(
+  const { json, latencyMs, providerRequestId } = await requestJson(
     url,
     {
       method: "POST",
@@ -371,7 +413,13 @@ async function runOpenAiCompatible(
     started,
   );
   const usage = parseUsage(json);
-  return { text: parseResponseText(json), ...usage, latencyMs };
+  return {
+    text: parseResponseText(json),
+    ...usage,
+    latencyMs,
+    providerRequestId,
+    providerResponseId: validateProviderIdentifier(json?.id),
+  };
 }
 
 export async function executeProviderRequest(

@@ -5,8 +5,18 @@ branch: "main"
 implementation_baseline_commit: "a3fc42213d2d240e016cf05bc2cbe383a6253b88"
 
 capabilities:
+  provider_request_evidence:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - type: implementation
+        value: "PR #33 merged at a2a13c4c9af601ea8665d2caa3225bbd9e576542; additive provider request/response columns and adapter/pipeline evidence"
+      - type: regression_tests
+        value: "tests/providers.test.mjs and tests/gateway.test.mjs cover HTTP error correlation, body failures, Gemini responseId, bounded validation and request/audit/trace persistence"
+    blocker: "Repair needs exact-head CI and deployment; live successful and failed provider correlation evidence and production column readback remain unverified"
+
   authentication:
-    status: RUNTIME_VERIFIED
+    status: NOT_VERIFIED
     evidence:
       - type: production_smoke_negative_path
         value: "run_id=36279456208; job_id=108508386247; GET /auth=200; anonymous POST /api/agent=401 with expected fail-closed error"
@@ -18,7 +28,7 @@ capabilities:
         value: "same run/attempt; authenticated users inserted distinct organizations under production RLS: A=09810b57-5e85-49e9-b278-66f4645af98d; B=4b21e638-e3f1-42ff-9af9-dac0c94806c8"
       - type: verification_note
         value: "The two purpose-tagged disposable accounts were confirmed directly in production Auth for this test only; this verifies the valid-session boundary, not the email-verification UX"
-    blocker: null
+    blocker: "Actual deployed application signup/login and protected UI access have not been verified; direct password grants and PostgREST writes prove only production_user_session_boundary"
 
   tenant_isolation:
     status: NOT_VERIFIED
@@ -138,6 +148,10 @@ runtime_controls:
         value: "2026-09-27: published=true; project_status=ready; latest_commit_sha=4953fd096b4038061f660fd4046ff01fa526e178"
       - type: production_smoke
         value: "run_id=36364520249; job_id=108748168833; GET /=200; GET /auth=200; anonymous POST /api/agent=401; invalid user bearer session=401"
+      - type: lovable_project_readback
+        value: "2026-09-28: published=true; project_status=ready; latest_commit_sha=f6e6499d02fb853ea1da2b55316eb766dfed17a6; historical PR34 evidence"
+      - type: lovable_deploy_request
+        value: "deployment_id=2bba2ebb-1516-4024-be04-3ec915b0e6fe; head=f6e6499d02fb853ea1da2b55316eb766dfed17a6; historical PR34 evidence"
     blocker: null
 
   production_agent_auth_boundary:
@@ -228,6 +242,12 @@ repository_controls:
         value: "artifact_id=10917808932; sha256=73bf8b9953a3e97d7af1b25faa130dbaaab560e19b605fa875fc5611388a480e"
       - type: github_actions_run
         value: "run_id=36364668266; head_sha=4953fd096b4038061f660fd4046ff01fa526e178; conclusion=success"
+      - type: github_actions_run
+        value: "run_id=36503707985; head_sha=f6e6499d02fb853ea1da2b55316eb766dfed17a6; conclusion=success"
+      - type: github_actions_run
+        value: "run_id=36506103783; head_sha=a2a13c4c9af601ea8665d2caa3225bbd9e576542; conclusion=success"
+      - type: github_actions_run
+        value: "run_id=36523207207; head_sha=4702e11a2befecead753c30be4f624e69222785f; conclusion=success; provider evidence repair PR35"
     blocker: null
 
   main_branch_protection:
