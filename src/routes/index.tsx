@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check, ShieldCheck } from "lucide-react";
+import { PublicFooter } from "@/components/public-footer";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -127,10 +128,7 @@ function Landing() {
         </section>
       </main>
 
-      <footer className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 text-xs text-muted-foreground lg:px-8">
-        <span>NEXORA</span>
-        <span>AI Security & Governance</span>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
