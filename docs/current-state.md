@@ -7,12 +7,33 @@
 - Repository: `adreinmorin-design/nexora-guard-core-695d0312`
 - Branch: `main`
 - Production implementation baseline: `a3fc42213d2d240e016cf05bc2cbe383a6253b88`
-- Snapshot date: 2026-09-26
+- Current `main` head: `4953fd096b4038061f660fd4046ff01fa526e178`
+- Latest verified main CI: run `36364668266` (success)
+- Snapshot date: 2026-09-27
 - CI run: `36279267631`
 - CI artifact: `10917808932`
 - Artifact digest: `sha256:73bf8b9953a3e97d7af1b25faa130dbaaab560e19b605fa875fc5611388a480e`
 
-Post-proof documentation-only commits may be newer than the production implementation baseline above.
+Post-proof verification-harness, workflow, and documentation commits may be newer than the production implementation baseline above. No governed-execution core rewrite was performed.
+
+## 2026-09-27 Production Verification Progress
+
+Repository/deployment evidence captured after the original governance baseline:
+
+- verification-harness PR #29 merged as `87d6397ec3e1d737e0e61e5b150bf534d9cbd12e`; PR CI run `36362509373` passed
+- live tenant-isolation harness reruns now use unique users and tenant slugs per GitHub run attempt, preventing stale-account collisions without disabling email confirmation
+- live proof run `36363244693`, attempt 2, created two fresh production Auth users but failed at the email-confirmation gate at 2026-09-28T01:10:06Z; neither user authenticated, tenant provisioning was skipped, and no isolation claim was promoted
+- production smoke run `36364520249`, job `108748168833`, passed against the live deployment:
+  - `GET /` = 200
+  - `GET /auth` = 200
+  - anonymous `POST /api/agent` = 401
+  - deliberately invalid user bearer session against production Supabase/PostgREST = 401
+- invalid-session smoke change merged in PR #30 as `b1e33e710e0996de5ed0a20e37af74ab1a9fc3ef`
+- branch-protection activation change merged in PR #31 as `4953fd096b4038061f660fd4046ff01fa526e178`
+- main CI run `36364668266` passed on `4953fd096b4038061f660fd4046ff01fa526e178`
+- Lovable readback reports `latest_commit_sha=4953fd096b4038061f660fd4046ff01fa526e178`, published=true, project status=ready
+
+These facts strengthen deployment and negative-authentication evidence. They do **not** prove a successful valid login, tenant isolation, provider execution, policy allow/deny, PII forwarding state, prompt-injection enforcement, hard-budget zero-dispatch, MCP/tool invocation, intent persistence, full trace reconstruction, or Paddle lifecycle.
 
 ## Governance Core Integration — IMPLEMENTED + CI VERIFIED
 
@@ -132,7 +153,7 @@ A configured provider record is not proof of a successful live provider invocati
 
 Do not promote these to `RUNTIME_VERIFIED` until direct live evidence is captured:
 
-- successful interactive authentication through the deployed application (the auth route is reachable and anonymous /api/agent access is denied, but valid login is not yet proven)
+- successful valid authentication through the deployed application (the auth route is reachable; anonymous agent access and a deliberately invalid user bearer session are both rejected with HTTP 401; valid login is not yet proven)
 - full identity → tenant → intent runtime flow
 - true tenant-A versus tenant-B isolation using two authorized identities
 - policy allow path with a real downstream provider response
@@ -155,7 +176,7 @@ Direct GitHub readback still reports:
 - `main` protected: false
 - required status-check enforcement: off
 
-The connected GitHub integration and built-in Actions token do not have repository administration permission to enable branch protection. This is not treated as fixed until GitHub reports protection enabled.
+The repository now contains an activated protection workflow. GitHub Actions run `36364668290` proved that `BRANCH_PROTECTION_TOKEN` is configured, but the protection PUT returned HTTP 403 with `Resource not accessible by personal access token`. The remaining blocker is the token's repository-administration permission (or an equivalent direct GitHub Settings action). This is not treated as fixed until GitHub reports protection enabled.
 
 ## Rule
 
