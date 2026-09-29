@@ -28,7 +28,7 @@ test("migration, atomic admission, tenant separation, grants and single-use appr
       bootstrapOther,
     ]);
     await db.exec(
-      `CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'SELECT '''${bootstrapUser}'''::uuid';`,
+      `CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'SELECT ''${bootstrapUser}''::uuid';`,
     );
     await db.exec("SET ROLE authenticated");
     await db.query(
