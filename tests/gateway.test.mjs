@@ -224,6 +224,11 @@ test("administrator per-request cost ceiling blocks before provider dispatch", a
     events.some((event) => event.stage === "budget" && event.status === "blocked"),
     true,
   );
+  assert.equal(
+    events.some((event) => event.stage === "audit" && event.requestId === "1"),
+    true,
+    "blocked request must link the execution to its persisted audit row",
+  );
 });
 
 test("governance evidence failure at PRE_MODEL_INVOCATION prevents provider dispatch", async () => {
