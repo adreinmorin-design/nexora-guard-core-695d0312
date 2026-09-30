@@ -1,0 +1,505 @@
+{
+  "observed_at": "2026-09-30T22:42:15.054Z",
+  "repository": "adreinmorin-design/nexora-guard-core-695d0312",
+  "implementation_sha": "f54b698b23e176473fac9e8eeb0c92294edbeb1a",
+  "branch": {
+    "name": "main",
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    }
+  },
+  "ci": [
+    {
+      "id": 36612760244,
+      "head_sha": "f54b698b23e176473fac9e8eeb0c92294edbeb1a",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/adreinmorin-design/nexora-guard-core-695d0312/actions/runs/36612760244"
+    },
+    {
+      "id": 36558118622,
+      "head_sha": "eccf8edb96cb07535c7e9d1d03b2e53c84c5494f",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/adreinmorin-design/nexora-guard-core-695d0312/actions/runs/36558118622"
+    },
+    {
+      "id": 36531746709,
+      "head_sha": "02aa20932666a7a6322d30b5cdc5c1d4f5f29313",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/adreinmorin-design/nexora-guard-core-695d0312/actions/runs/36531746709"
+    },
+    {
+      "id": 36529074952,
+      "head_sha": "22897a49ac411c2114bfb08e2a7a12c2d0dfb106",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/adreinmorin-design/nexora-guard-core-695d0312/actions/runs/36529074952"
+    },
+    {
+      "id": 36526620093,
+      "head_sha": "4cc926a1e939821c8648fe949bd29ebcaa8efda5",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/adreinmorin-design/nexora-guard-core-695d0312/actions/runs/36526620093"
+    }
+  ],
+  "ci_jobs": {
+    "jobs": [
+      {
+        "id": 109558068871,
+        "name": "validate",
+        "status": "completed",
+        "conclusion": "success",
+        "run_id": 36612760244,
+        "logs_url": null,
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1
+          },
+          {
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2
+          },
+          {
+            "name": "Run actions/setup-node@820762786026740c76f36085b0efc47a31fe5020",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3
+          },
+          {
+            "name": "Run oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4
+          },
+          {
+            "name": "Verify toolchain",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5
+          },
+          {
+            "name": "Run bun install --frozen-lockfile --ignore-scripts",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6
+          },
+          {
+            "name": "Run complete Nexora verification",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7
+          },
+          {
+            "name": "Upload verification evidence",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 8
+          },
+          {
+            "name": "Alert Slack on CI failure",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 9
+          },
+          {
+            "name": "Post Run oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 16
+          },
+          {
+            "name": "Post Run actions/setup-node@820762786026740c76f36085b0efc47a31fe5020",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 17
+          },
+          {
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 18
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 19
+          }
+        ]
+      }
+    ]
+  },
+  "lovable": {
+    "project_id": "f46c7dc2-f8c6-4710-96bb-07ffc11e5270",
+    "latest_commit_sha": "f54b698b23e176473fac9e8eeb0c92294edbeb1a",
+    "published": true,
+    "status": "ready",
+    "source": "lovable_get_project",
+    "independent_build_attestation": "NOT_VERIFIED"
+  },
+  "database": {
+    "tables": {
+      "rows": [
+        {
+          "rowsecurity": true,
+          "tablename": "agent_calls"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "agent_capabilities"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "agent_connections"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "agents"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "approvals"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "audit_events"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "billing_plans"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "billing_subscriptions"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "budgets"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "device_ai_inventory"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "email_deliveries"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "email_mailboxes"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "execution_events"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "gateway_reservations"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "governance_audit_events"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "governance_audit_heads"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "governance_risk_thresholds"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "governed_executions"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "intent_lineage_events"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "intents"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "mcp_servers"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "mcp_tool_grants"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "mcp_tools"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "models"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "org_ai_controls"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "org_invites"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "org_members"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "organizations"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "paddle_webhook_events"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "policies"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "policy_versions"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "profiles"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "providers"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "requests"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "security_findings"
+        },
+        {
+          "rowsecurity": true,
+          "tablename": "tool_invocations"
+        }
+      ]
+    },
+    "functions": {
+      "rows": [
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_agent_finding",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_agent_usage",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_append_governance_event",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_apply_paddle_event",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_billing_usage",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_claim_agent",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_consent_connection",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_decide_approval",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_enforce_feature_entitlement",
+          "prosecdef": true
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_enforce_plan_resource_limit",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_enforce_seat_limit",
+          "prosecdef": true
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_exchange_connection",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_mailbox",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_monthly_spend",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_provision_trial",
+          "prosecdef": true
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_record_execution_risk",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_reserve",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_revoke_connection",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_rotate_agent",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_seed_ai_controls",
+          "prosecdef": true
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_settle",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "nexora_start_connection",
+          "prosecdef": false
+        },
+        {
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "proname": "update_updated_at_column",
+          "prosecdef": false
+        }
+      ]
+    },
+    "migration_history_observed": [
+      "20260910210116",
+      "20260910210137",
+      "20260913163400",
+      "20260913163548",
+      "20260914053810",
+      "20260917000100",
+      "20260917000200",
+      "20260917000300",
+      "20260917000400",
+      "20260917000500",
+      "20260917000600",
+      "20260917000700",
+      "20260918000100",
+      "20260919000100",
+      "20260919000200",
+      "20260919000300",
+      "20260920070137",
+      "20260921000100",
+      "20260929000100",
+      "20260929000300"
+    ],
+    "repository_versions_missing_from_history": [
+      "20260920000100",
+      "20260925000100",
+      "20260929000200"
+    ]
+  },
+  "authentication": {
+    "observed_at": "2026-09-30T22:42:15.055Z",
+    "url": "https://nexora-guard-core.lovable.app/auth?next=%2Foverview",
+    "secure_request_result": "submitted",
+    "application_result": "Invalid login credentials",
+    "protected_access": "NOT_VERIFIED",
+    "signup": "NOT_VERIFIED",
+    "secrets_recorded": false
+  },
+  "protection": {
+    "protected": false,
+    "enforcement": "off",
+    "administration_read_error": {
+      "error": "GitHub API error 403: {\"message\":\"Resource not accessible by integration\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"403\"}",
+      "error_code": "FORBIDDEN",
+      "error_data": {
+        "message": "Resource not accessible by integration",
+        "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+        "status": "403"
+      }
+    }
+  },
+  "open_prs": [19, 20],
+  "open_issues": [22],
+  "reproduction": {
+    "github_branch": "GET /repos/adreinmorin-design/nexora-guard-core-695d0312/branches/main",
+    "github_ci": "GET /repos/adreinmorin-design/nexora-guard-core-695d0312/actions/runs?branch=main&per_page=5",
+    "database_tables": "select tablename,rowsecurity from pg_tables where schemaname='public' order by tablename;",
+    "database_functions": "select p.proname,p.prosecdef,has_function_privilege('anon',p.oid,'execute') as anon_execute,has_function_privilege('authenticated',p.oid,'execute') as authenticated_execute from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' order by p.proname;",
+    "migration_history": "select version,name from supabase_migrations.schema_migrations order by version;",
+    "browser": "Open production /auth; submit an existing disposable account through secure browser authentication; observe application response without recording credentials."
+  }
+}

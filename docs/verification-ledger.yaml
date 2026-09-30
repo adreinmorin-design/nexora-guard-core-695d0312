@@ -1,289 +1,282 @@
-version: 1
-last_updated: "2026-09-29"
-repository: "adreinmorin-design/nexora-guard-core-695d0312"
-branch: "main"
-implementation_baseline_commit: "a3fc42213d2d240e016cf05bc2cbe383a6253b88"
-
+version: 2
+dependency_audit_repair:
+  status: IMPLEMENTED
+  regression_run: 36787600726
+  regression_job: 110132644341
+  repair_run: 36787823073
+  repair_artifact: 11130477483
+  lock_changes:
+    - "brace-expansion 1.1.18 -> 1.1.21"
+    - "brace-expansion 5.0.9 -> 5.0.12"
+  audit_result: success
+  production_runtime_status: NOT_VERIFIED
+  note: Full exact-head CI is required before integration; no security gate was bypassed.
+last_updated: "2026-09-30"
+repository: adreinmorin-design/nexora-guard-core-695d0312
+branch: main
 verification_baseline:
-  implementation_sha: "99633c961a4e6ea5e631f59f1aabca7601c01d00"
-  main_ci_run: 36523472864
+  implementation_sha: f54b698b23e176473fac9e8eeb0c92294edbeb1a
+  observed_at: "2026-09-30T22:42:15.054Z"
+  main_ci_run: 36612760244
+  main_ci_job: 109558068871
   main_ci_conclusion: success
-  lovable_latest_commit_sha: "99633c961a4e6ea5e631f59f1aabca7601c01d00"
+  lovable_latest_commit_sha: f54b698b23e176473fac9e8eeb0c92294edbeb1a
   lovable_published: true
   lovable_status: ready
-  deployment_request_id: "8cf3143d-cc00-4baa-9670-fb4a105ebd81"
-  deployment_request_initial_status: pending
   independent_http_build_attestation: NOT_VERIFIED
-  http_probe_artifact: "docs/evidence/2026-09-29-baseline-http.json"
-  http_probe_limitation: "Client/edge returned 403 error code 1010; not application-level authorization evidence"
-  browser_authentication: "Login form rendered; secure sign-in canceled; no positive application-login evidence"
-  migration_history: "NOT_VERIFIED: history readback timed out (connector HTTP 504); earlier history omitted manually applied governance migration"
-  provider_column_readback: "Both provider_request_id and provider_response_id exist as text after additive migration"
-  public_rls_readback: "36 public tables inspected; all rowsecurity=true"
-  governance_privileges: "nexora_append_governance_event/nexora_record_execution_risk: SECURITY INVOKER; anon/authenticated EXECUTE=false; service_role EXECUTE=true"
-  branch_protection: "FAILED: protected=false; GitHub Settings browser signed out"
-  pilot_readiness: NOT_VERIFIED
-  broader_release_readiness: NOT_VERIFIED
-
+  evidence_ref: docs/evidence/2026-09-30-live-inspection.json
+  documentation_commit_note:
+    This ledger identifies the inspected implementation. A later documentation-only
+    commit must be verified separately before claiming deployment of that new HEAD.
 capabilities:
   provider_request_evidence:
     status: IMPLEMENTED
     verification_status: NOT_VERIFIED
     evidence:
       - type: implementation
-        value: "PR #33 merged at a2a13c4c9af601ea8665d2caa3225bbd9e576542; additive provider request/response columns and adapter/pipeline evidence"
+        value:
+          "PR #33 merged at a2a13c4c9af601ea8665d2caa3225bbd9e576542; additive provider request/response
+          columns and adapter/pipeline evidence"
       - type: regression_tests
-        value: "tests/providers.test.mjs and tests/gateway.test.mjs cover HTTP error correlation, body failures, Gemini responseId, bounded validation and request/audit/trace persistence"
-    blocker: "Repair merged after exact-head CI success (36523207207), production columns read back; live successful and failed provider correlation evidence remains unverified"
-
+        value:
+          tests/providers.test.mjs and tests/gateway.test.mjs cover HTTP error correlation, body failures,
+          Gemini responseId, bounded validation and request/audit/trace persistence
+    blocker:
+      Repair merged after exact-head CI success (36523207207), production columns read back; live
+      successful and failed provider correlation evidence remains unverified
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   authentication:
     status: NOT_VERIFIED
     evidence:
       - type: production_smoke_negative_path
-        value: "run_id=36279456208; job_id=108508386247; GET /auth=200; anonymous POST /api/agent=401 with expected fail-closed error"
+        value:
+          run_id=36279456208; job_id=108508386247; GET /auth=200; anonymous POST /api/agent=401 with
+          expected fail-closed error
       - type: production_invalid_session_negative_path
-        value: "run_id=36364520249; job_id=108748168833; deliberately invalid user bearer session against production Supabase/PostgREST returned HTTP 401"
+        value:
+          run_id=36364520249; job_id=108748168833; deliberately invalid user bearer session against
+          production Supabase/PostgREST returned HTTP 401
       - type: production_valid_session_positive_path
-        value: "run_id=36363244693; attempt=3; job_id=109201239548; two disposable users established valid password sessions; User A authenticated at 2026-09-29T00:38:30.515Z and User B at 2026-09-29T00:38:30.841Z"
+        value:
+          run_id=36363244693; attempt=3; job_id=109201239548; two disposable users established valid
+          password sessions; User A authenticated at 2026-09-29T00:38:30.515Z and User B at 2026-09-29T00:38:30.841Z
       - type: production_authenticated_protected_write
-        value: "same run/attempt; authenticated users inserted distinct organizations under production RLS: A=09810b57-5e85-49e9-b278-66f4645af98d; B=4b21e638-e3f1-42ff-9af9-dac0c94806c8"
+        value:
+          "same run/attempt; authenticated users inserted distinct organizations under production RLS:
+          A=09810b57-5e85-49e9-b278-66f4645af98d; B=4b21e638-e3f1-42ff-9af9-dac0c94806c8"
       - type: verification_note
-        value: "The two purpose-tagged disposable accounts were confirmed directly in production Auth for this test only; this verifies the valid-session boundary, not the email-verification UX"
-    blocker: "Actual deployed application signup/login and protected UI access have not been verified; direct password grants and PostgREST writes prove only production_user_session_boundary"
-
+        value:
+          The two purpose-tagged disposable accounts were confirmed directly in production Auth for
+          this test only; this verifies the valid-session boundary, not the email-verification UX
+      - type: current_browser_result
+        value: docs/evidence/2026-09-30-live-inspection.json#/authentication
+    blocker:
+      2026-09-30 deployed application secure sign-in returned Invalid login credentials. Needs
+      a usable disposable account and successful protected application access; signup/email confirmation
+      also remains unverified.
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   tenant_isolation:
     status: NOT_VERIFIED
     evidence:
       - type: production_rls_negative_path
-        value: "Synthetic authenticated non-member previously observed zero protected rows"
+        value: Synthetic authenticated non-member previously observed zero protected rows
       - type: live_two_tenant_attempt
-        value: "run_id=36363244693; attempt=3; job_id=109201239548; two valid sessions created distinct organizations, then direct browser founder-membership insertion returned HTTP 403 before cross-tenant probes"
+        value:
+          run_id=36363244693; attempt=3; job_id=109201239548; two valid sessions created distinct organizations,
+          then direct browser founder-membership insertion returned HTTP 403 before cross-tenant probes
       - type: live_two_tenant_replacement
-        value: "run_id=36505135893; job_id=109204756222; two fresh verification users were created; run timed out at 2026-09-29T01:04:27Z waiting for both users to authenticate; no own-resource or cross-ID isolation assertion executed"
-    blocker: "Requires a fresh v2 proof with both disposable users confirmed during the active run, followed by positive own-resource reads and negative cross-ID substitution checks; do not promote based on the successful auth portion alone"
-
+        value:
+          run_id=36505135893; job_id=109204756222; two fresh verification users were created; run timed
+          out at 2026-09-29T01:04:27Z waiting for both users to authenticate; no own-resource or cross-ID
+          isolation assertion executed
+    blocker:
+      Bootstrap RLS migration is present with creator/self-membership checks, but the four real-user
+      access assertions must be rerun after successful deployed application authentication.
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   policy_allow:
     status: NOT_VERIFIED
     evidence:
       - type: ci_gateway_tests
-        value: "Repository allow/enforcement behavior covered by successful main CI run 36279267631"
-    blocker: "Requires live governed execution with a real downstream provider response"
-
+        value: Repository allow/enforcement behavior covered by successful main CI run 36279267631
+    blocker: Requires live governed execution with a real downstream provider response
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   policy_deny:
     status: NOT_VERIFIED
     evidence:
       - type: ci_gateway_tests
-        value: "Gateway tests prove BLOCK and REQUIRE_APPROVAL prevent dispatch in the test runtime"
-    blocker: "Requires live proof of zero downstream provider dispatch after DENY"
-
+        value: Gateway tests prove BLOCK and REQUIRE_APPROVAL prevent dispatch in the test runtime
+    blocker: Requires live proof of zero downstream provider dispatch after DENY
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   pii_redaction:
     status: NOT_VERIFIED
     evidence:
       - type: ci_gateway_tests
-        value: "Repository tests cover request redaction before provider execution"
-    blocker: "Requires live payload-state evidence immediately before external forwarding"
-
+        value: Repository tests cover request redaction before provider execution
+    blocker: Requires live payload-state evidence immediately before external forwarding
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   prompt_injection_controls:
     status: NOT_VERIFIED
     evidence:
       - type: ci_security_tests
-        value: "Security suite passed in main CI run 36279267631"
-    blocker: "Requires privileged-action negative-path live verification"
-
+        value: Security suite passed in main CI run 36279267631
+    blocker: Requires privileged-action negative-path live verification
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   budget_enforcement:
     status: NOT_VERIFIED
     evidence:
       - type: ci_gateway_tests
-        value: "Repository test proves administrator per-request cost ceiling blocks before dispatch"
-    blocker: "Requires live proof a hard limit blocks before billable provider invocation"
-
+        value: Repository test proves administrator per-request cost ceiling blocks before dispatch
+    blocker: Requires live proof a hard limit blocks before billable provider invocation
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   provider_routing:
     status: NOT_VERIFIED
     evidence:
       - type: production_provider_readback
-        value: "OpenAI provider active; credential_state=MANAGED; three active models"
+        value: OpenAI provider active; credential_state=MANAGED; three active models
       - type: ci_provider_tests
-        value: "Provider adapters and endpoint allowlisting passed in main CI run 36279267631"
-    blocker: "Requires successful live provider invocation and response/usage evidence"
-
+        value: Provider adapters and endpoint allowlisting passed in main CI run 36279267631
+    blocker: Requires successful live provider invocation and response/usage evidence
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   mcp_authorization:
     status: NOT_VERIFIED
     evidence:
       - type: ci_tests
-        value: "MCP/governance implementation is merged and covered by repository tests"
-    blocker: "Requires live MCP server, approved tool, grant, and allow/deny proof"
-
+        value: MCP/governance implementation is merged and covered by repository tests
+    blocker: Requires live MCP server, approved tool, grant, and allow/deny proof
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   tool_authorization:
     status: NOT_VERIFIED
     evidence:
       - type: ci_tests
-        value: "Governed tool authorization implementation is merged"
-    blocker: "Requires positive and negative live tool invocation tests"
-
+        value: Governed tool authorization implementation is merged
+    blocker: Requires positive and negative live tool invocation tests
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   intent_persistence:
     status: NOT_VERIFIED
     evidence:
       - type: implementation
-        value: "Persistent intent primitives and lineage are merged on main"
-    blocker: "Requires a real multi-step agent execution retaining the same intent"
-
+        value: Persistent intent primitives and lineage are merged on main
+    blocker: Requires a real multi-step agent execution retaining the same intent
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   audit_reconstruction:
     status: NOT_VERIFIED
     evidence:
       - type: ci_governance_tests
-        value: "Tamper-evident chain and immutable evidence tests passed"
-    blocker: "Requires reconstruction from live intent_id/execution_id/request_id evidence"
-
+        value: Tamper-evident chain and immutable evidence tests passed
+    blocker: Requires reconstruction from live intent_id/execution_id/request_id evidence
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
   billing_entitlements:
     status: NOT_VERIFIED
     evidence:
       - type: ci_billing_tests
-        value: "Billing and Paddle repository tests passed"
-    blocker: "Requires Paddle sandbox lifecycle and server-side entitlement verification"
-
-runtime_controls:
-  governance_core_on_main:
-    status: RUNTIME_VERIFIED
-    context: "repository/CI"
-    evidence:
-      - type: merged_pull_request
-        value: "PR #24 merged governed execution core from superseded PR #21 onto main"
-      - type: github_actions_run
-        value: "run_id=36279267631; head_sha=a3fc42213d2d240e016cf05bc2cbe383a6253b88; conclusion=success; 16 groups passed; 0 failed"
-      - type: github_actions_tree_equivalence
-        value: "pull_request checkout commit e1471455498fbf3f842a84fd156d165edf1210fa compares to head a3fc42213d2d240e016cf05bc2cbe383a6253b88 with zero changed files"
-      - type: github_actions_artifact
-        value: "artifact_id=10917808932; sha256=73bf8b9953a3e97d7af1b25faa130dbaaab560e19b605fa875fc5611388a480e"
-    blocker: null
-
-  production_lovable_deployment:
-    status: RUNTIME_VERIFIED
-    evidence:
-      - type: lovable_project_readback
-        value: "published=true; project_status=ready; latest_commit_sha=a3fc42213d2d240e016cf05bc2cbe383a6253b88"
-      - type: lovable_deploy_request
-        value: "deployment_id=a4eae11e-2849-4593-bcc3-bf0eea9fa84c; url=https://nexora-guard-core.lovable.app"
-      - type: production_smoke
-        value: "run_id=36279456208; job_id=108508386247; GET /=200; GET /auth=200; anonymous POST /api/agent=401"
-      - type: lovable_project_readback
-        value: "2026-09-27: published=true; project_status=ready; latest_commit_sha=4953fd096b4038061f660fd4046ff01fa526e178"
-      - type: production_smoke
-        value: "run_id=36364520249; job_id=108748168833; GET /=200; GET /auth=200; anonymous POST /api/agent=401; invalid user bearer session=401"
-      - type: lovable_project_readback
-        value: "2026-09-28: published=true; project_status=ready; latest_commit_sha=f6e6499d02fb853ea1da2b55316eb766dfed17a6; historical PR34 evidence"
-      - type: lovable_deploy_request
-        value: "deployment_id=2bba2ebb-1516-4024-be04-3ec915b0e6fe; head=f6e6499d02fb853ea1da2b55316eb766dfed17a6; historical PR34 evidence"
-      - type: lovable_project_readback
-        value: "2026-09-29: latest_commit_sha=99633c961a4e6ea5e631f59f1aabca7601c01d00; published=true; status=ready; deployment request 8cf3143d-cc00-4baa-9670-fb4a105ebd81 initially pending"
-    blocker: "Independent HTTP build attestation not available; client HTTP probes returned edge 403/1010"
-
-  production_agent_auth_boundary:
-    status: RUNTIME_VERIFIED
-    evidence:
-      - type: production_smoke_negative_path
-        value: "run_id=36279456208; job_id=108508386247; anonymous POST /api/agent returned 401 with expected credential-required error"
-      - type: production_smoke_negative_path
-        value: "run_id=36364520249; job_id=108748168833; anonymous POST /api/agent returned 401"
-    blocker: null
-
-  production_user_invalid_session_rejection:
-    status: RUNTIME_VERIFIED
-    evidence:
-      - type: production_invalid_session_negative_path
-        value: "run_id=36364520249; job_id=108748168833; deliberately invalid bearer JWT against production Supabase/PostgREST organizations endpoint returned HTTP 401"
-    blocker: null
-
-  production_user_session_boundary:
-    status: RUNTIME_VERIFIED
-    evidence:
-      - type: production_invalid_session_negative_path
-        value: "run_id=36364520249; job_id=108748168833; invalid bearer JWT was rejected with HTTP 401"
-      - type: production_valid_session_positive_path
-        value: "run_id=36363244693; attempt=3; job_id=109201239548; two disposable production users successfully authenticated with password sessions"
-      - type: production_authenticated_protected_write
-        value: "same run/attempt; each valid session successfully created its own protected organizations row through production PostgREST/RLS"
-    blocker: null
-
-  production_governance_schema:
-    status: RUNTIME_VERIFIED
-    evidence:
-      - type: production_migration
-        value: "20260925000100_governed_execution_core.sql applied through connected Lovable production database"
-      - type: production_sql
-        value: "RLS=true on intents, governed_executions, governance_audit_events, governance_audit_heads, intent_lineage_events, governance_risk_thresholds"
-      - type: production_sql
-        value: "nexora_append_governance_event and nexora_record_execution_risk are SECURITY INVOKER; anon/authenticated EXECUTE=false; service_role EXECUTE=true"
-    blocker: null
-
-  production_provider_configuration:
-    status: IMPLEMENTED
-    evidence:
-      - type: production_sql
-        value: "OpenAI active; credential_state=MANAGED; three active models"
-    blocker: "Configured credentials do not prove successful live provider execution"
-
-  production_database_connectivity:
-    status: RUNTIME_VERIFIED
-    evidence:
-      - type: lovable_database_readback
-        value: "cloud database enabled; stack=supabase"
-    blocker: null
-
-  production_public_table_rls:
-    status: RUNTIME_VERIFIED
-    evidence:
-      - type: production_sql
-        value: "Previously verified application public tables report rowsecurity=true"
-      - type: production_sql
-        value: "New governance tables verified with rowsecurity=true after migration"
-    blocker: null
-
-  anonymous_data_boundary:
-    status: RUNTIME_VERIFIED
-    evidence:
-      - type: production_sql_negative_test
-        value: "Previous production evidence: anon protected-table access rejected"
-    blocker: null
-
-  authenticated_nonmember_isolation:
-    status: RUNTIME_VERIFIED
-    evidence:
-      - type: production_rls_negative_path
-        value: "Previous production synthetic authenticated non-member observed zero protected rows"
-    blocker: null
-
+        value: Billing and Paddle repository tests passed
+    blocker: Requires Paddle sandbox lifecycle and server-side entitlement verification
+    verification_status: NOT_VERIFIED
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
+      behavior.
+database_inspection:
+  status: DEPLOYED
+  runtime_behavior_status: NOT_VERIFIED
+  public_tables_with_rls: 36
+  public_functions_browser_executable: 0
+  bootstrap_migration_present: "20260929000300"
+  migration_versions_missing_from_history:
+    - "20260920000100"
+    - "20260925000100"
+    - "20260929000200"
+  governed_executions: 0
+  governance_audit_events: 0
+  tool_invocations: 0
+  paddle_webhook_events: 0
+  evidence_ref: docs/evidence/2026-09-30-live-inspection.json
+  blocker:
+    Related objects exist but complete schema/history reconciliation has not been proved. Do not
+    replay non-idempotent DDL based on missing history alone.
 repository_controls:
   ci:
-    status: RUNTIME_VERIFIED
-    context: "repository/CI"
+    status: IMPLEMENTED
+    check_result: success
+    runtime_verification_status: NOT_VERIFIED
     evidence:
       - type: github_actions_run
-        value: "run_id=36279267631; head_sha=a3fc42213d2d240e016cf05bc2cbe383a6253b88; conclusion=success; 16 groups passed; 0 failed"
-      - type: github_actions_tree_equivalence
-        value: "PR merge commit e1471455498fbf3f842a84fd156d165edf1210fa has zero file differences from a3fc42213d2d240e016cf05bc2cbe383a6253b88"
-      - type: github_actions_artifact
-        value: "artifact_id=10917808932; sha256=73bf8b9953a3e97d7af1b25faa130dbaaab560e19b605fa875fc5611388a480e"
-      - type: github_actions_run
-        value: "run_id=36364668266; head_sha=4953fd096b4038061f660fd4046ff01fa526e178; conclusion=success"
-      - type: github_actions_run
-        value: "run_id=36503707985; head_sha=f6e6499d02fb853ea1da2b55316eb766dfed17a6; conclusion=success"
-      - type: github_actions_run
-        value: "run_id=36506103783; head_sha=a2a13c4c9af601ea8665d2caa3225bbd9e576542; conclusion=success"
-      - type: github_actions_run
-        value: "run_id=36523207207; head_sha=4702e11a2befecead753c30be4f624e69222785f; conclusion=success; provider evidence repair PR35"
-      - type: github_actions_run
-        value: "run_id=36523472864; head_sha=99633c961a4e6ea5e631f59f1aabca7601c01d00; conclusion=success"
-    blocker: null
-
+        value:
+          run_id=36612760244; job_id=109558068871; head_sha=f54b698b23e176473fac9e8eeb0c92294edbeb1a;
+          conclusion=success
+    note: CI validates the repository test runtime; it is not product production proof.
   main_branch_protection:
     status: FAILED
-    evidence:
-      - type: github_branch_readback
-        value: "main protected=false; required status-check enforcement=off"
-      - type: github_actions_attempt
-        value: "run_id=36364668290; BRANCH_PROTECTION_TOKEN was present; protection PUT returned HTTP 403 Resource not accessible by personal access token"
-    blocker: "Replace BRANCH_PROTECTION_TOKEN with a credential authorized to administer this repository's branch protection, or apply the equivalent protection directly in GitHub Settings; then verify protected=true and required checks enabled"
-
+    evidence_ref: docs/evidence/2026-09-30-live-inspection.json#/protection
+    blocker:
+      GitHub connection returns 403 Resource not accessible by integration for administration.
+      Owner must enable main protection in Settings with strict required validate check, required PRs,
+      no force pushes/deletions, resolved conversations, and rules applying to admins. Keep linear-history
+      requirement off to permit existing non-rewriting merge workflow. Add an independent required approval
+      when a reviewer is available; self-approval cannot satisfy it.
+historical_runtime_evidence:
+  status: NOT_VERIFIED
+  current_build_reverification_required: true
+  source: docs/evidence/2026-09-29-ledger-superseded.yaml
+  negative_agent_auth:
+    run_id: 36364520249
+    job_id: 108748168833
+    result: anonymous POST /api/agent=401
+  invalid_user_session:
+    run_id: 36364520249
+    job_id: 108748168833
+    result: invalid bearer against production PostgREST=401
+  valid_direct_session:
+    run_id: 36363244693
+    attempt: 3
+    job_id: 109201239548
+    result: Direct password grants and organization writes succeeded; not deployed application UX proof.
+  supersession:
+    Previous RUNTIME_VERIFIED labels based only on CI/schema/configuration are superseded
+    and do not qualify as product runtime proof.
+release_readiness:
+  controlled_design_partner_pilots: NOT_VERIFIED
+  broader_production_release: NOT_VERIFIED
+  next_step:
+    Secure login or manual signup of a disposable production application account, then execute
+    the ordered live proof chain.
 allowed_status_values:
   - NOT_IMPLEMENTED
   - IMPLEMENTED
