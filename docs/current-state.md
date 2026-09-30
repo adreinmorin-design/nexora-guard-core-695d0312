@@ -1,5 +1,15 @@
 # Nexora Current State
 
+## Dependency audit repair — 2026-09-30
+
+Fresh CI run `36787600726` failed the high-severity audit on four brace-expansion
+advisories; the other 15 verification groups passed. A targeted transitive update
+changed only the locked brace-expansion versions from 1.1.18 to 1.1.21 and from
+5.0.9 to 5.0.12. Repair workflow `36787823073`, artifact `11130477483`, passed
+the high-severity audit with those versions. Package manifests, policy code and
+security gates are unchanged. Full CI on the final repair head remains required
+before integration; production behavior still needs the ordered live proofs below.
+
 ## Current inspection — 2026-09-30
 
 This snapshot supersedes earlier baselines. No major product capability was newly runtime verified.
