@@ -1,4 +1,5 @@
 name: Live Tenant Isolation Proof
+# Evidence refresh 2026-09-30; production implementation 6c96ea31b4a495924bc2269b3d49577c36554bb4
 
 on:
   workflow_dispatch:
@@ -14,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
+      PRODUCTION_IMPLEMENTATION_SHA: 6c96ea31b4a495924bc2269b3d49577c36554bb4
       SUPABASE_URL: https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud
       SUPABASE_PUBLISHABLE_KEY: sb_publishable_eWI2U31KL-zYV8Mn_AzGlw_40-gaGMC
     steps:
@@ -180,6 +182,19 @@ jobs:
           test "$(jq 'length' /tmp/a-probe-b.json)" = "0"
           test "$(jq 'length' /tmp/b-probe-a.json)" = "0"
 
+          mkdir -p artifacts/live-tenant-proof
+          jq -n --arg sha "$PRODUCTION_IMPLEMENTATION_SHA" --arg harness "$GITHUB_SHA" \
+            --arg run "$GITHUB_RUN_ID" --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg user_a "$(cat /tmp/user-a)" --arg user_b "$(cat /tmp/user-b)" \
+            --arg org_a "$ORG_A" --arg org_b "$ORG_B" \
+            --slurpfile visible_a /tmp/visible-a.json --slurpfile visible_b /tmp/visible-b.json \
+            --slurpfile a_probe_b /tmp/a-probe-b.json --slurpfile b_probe_a /tmp/b-probe-a.json \
+            '{production_implementation_sha:$sha,harness_sha:$harness,run_id:$run,timestamp:$timestamp,
+              users:{a:$user_a,b:$user_b},tenants:{a:$org_a,b:$org_b},
+              results:{a_own:$visible_a[0],b_own:$visible_b[0],a_to_b:$a_probe_b[0],b_to_a:$b_probe_a[0]},
+              scope:"Production PostgREST organizations RLS with two real password sessions",
+              email_verification_ux:"NOT_VERIFIED",result:"PASS"}' \
+            > artifacts/live-tenant-proof/result.json
           echo "PASS: two authenticated production tenants are mutually isolated by RLS."
           {
             echo "## Live Tenant Isolation Proof"
@@ -188,3 +203,12 @@ jobs:
             echo "- Direct cross-tenant ID probes return zero rows."
             echo "- Result: PASS"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload sanitized tenant proof
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: live-tenant-proof-${{ github.run_id }}
+          path: artifacts/live-tenant-proof/
+          if-no-files-found: warn
+          retention-days: 30
