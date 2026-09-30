@@ -43,20 +43,20 @@ job `109201239548`; those do not prove application signup/login or two-tenant is
 
 ## Product capability status
 
-| Capability | Current verification status | Remaining proof |
-| --- | --- | --- |
-| Deployed signup/login and protected access | NOT_VERIFIED | Usable disposable account, signup confirmation, signed-in application resource |
-| Two-user / two-tenant isolation | NOT_VERIFIED | A→A, B→B allowed; A→B, B→A denied |
-| Governed provider ALLOW | NOT_VERIFIED | Actual response, provider IDs, usage/cost and intent/execution/audit linkage |
-| Governed DENY | NOT_VERIFIED | Pre-egress denial plus independent downstream zero-invocation proof |
-| PII masking | NOT_VERIFIED | Sanitized payload immediately before external forwarding |
-| Prompt injection enforcement | NOT_VERIFIED | Privileged-action denial before execution |
-| Hard budget | NOT_VERIFIED | Denied operation with zero billable provider calls |
-| Routing and attribution | NOT_VERIFIED | Actual selected provider/model and tenant/intent/execution costs |
-| MCP/tool authorization | NOT_VERIFIED | Controlled real tool succeeds when authorized; denied before invocation otherwise |
-| Persistent multi-step intent | NOT_VERIFIED | One live intent retained through model/tool steps |
-| Audit reconstruction / immutability | NOT_VERIFIED | Reconstruct real production chain and prove mutation rejection |
-| Paddle lifecycle / entitlements | NOT_VERIFIED | Sandbox webhook lifecycle and server-side allow/deny enforcement |
+| Capability                                 | Current verification status | Remaining proof                                                                   |
+| ------------------------------------------ | --------------------------- | --------------------------------------------------------------------------------- |
+| Deployed signup/login and protected access | NOT_VERIFIED                | Usable disposable account, signup confirmation, signed-in application resource    |
+| Two-user / two-tenant isolation            | NOT_VERIFIED                | A→A, B→B allowed; A→B, B→A denied                                                 |
+| Governed provider ALLOW                    | NOT_VERIFIED                | Actual response, provider IDs, usage/cost and intent/execution/audit linkage      |
+| Governed DENY                              | NOT_VERIFIED                | Pre-egress denial plus independent downstream zero-invocation proof               |
+| PII masking                                | NOT_VERIFIED                | Sanitized payload immediately before external forwarding                          |
+| Prompt injection enforcement               | NOT_VERIFIED                | Privileged-action denial before execution                                         |
+| Hard budget                                | NOT_VERIFIED                | Denied operation with zero billable provider calls                                |
+| Routing and attribution                    | NOT_VERIFIED                | Actual selected provider/model and tenant/intent/execution costs                  |
+| MCP/tool authorization                     | NOT_VERIFIED                | Controlled real tool succeeds when authorized; denied before invocation otherwise |
+| Persistent multi-step intent               | NOT_VERIFIED                | One live intent retained through model/tool steps                                 |
+| Audit reconstruction / immutability        | NOT_VERIFIED                | Reconstruct real production chain and prove mutation rejection                    |
+| Paddle lifecycle / entitlements            | NOT_VERIFIED                | Sandbox webhook lifecycle and server-side allow/deny enforcement                  |
 
 Do not infer missing provider secrets from this inspection: deployed credential validity and quota
 are unknown until exercised. No live payment was taken and no customer entitlement was altered.

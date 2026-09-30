@@ -492,13 +492,8 @@
       }
     }
   },
-  "open_prs": [
-    19,
-    20
-  ],
-  "open_issues": [
-    22
-  ],
+  "open_prs": [19, 20],
+  "open_issues": [22],
   "reproduction": {
     "github_branch": "GET /repos/adreinmorin-design/nexora-guard-core-695d0312/branches/main",
     "github_ci": "GET /repos/adreinmorin-design/nexora-guard-core-695d0312/actions/runs?branch=main&per_page=5",
