@@ -1,0 +1,30 @@
+name: Repair Audited Dependency
+on:
+  push:
+    branches: ["verify/live-state-20260930"]
+    paths: [".github/workflows/format-verification-evidence.yml"]
+permissions:
+  contents: read
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: bun update brace-expansion --ignore-scripts
+      - run: bun audit --audit-level=high
+      - run: bunx prettier --write docs/current-state.md docs/verification-ledger.yaml docs/evidence/2026-09-30-live-inspection.json docs/evidence/2026-09-29-ledger-superseded.yaml
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: repaired-verification-evidence
+          path: |
+            bun.lock
+            package.json
+            docs/current-state.md
+            docs/verification-ledger.yaml
+            docs/evidence/2026-09-30-live-inspection.json
+            docs/evidence/2026-09-29-ledger-superseded.yaml
+          retention-days: 3
