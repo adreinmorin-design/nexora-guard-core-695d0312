@@ -1,5 +1,4 @@
 name: Live Tenant Isolation Proof
-# Evidence refresh 2026-09-30; production implementation 6c96ea31b4a495924bc2269b3d49577c36554bb4
 
 on:
   workflow_dispatch:
@@ -15,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      PRODUCTION_IMPLEMENTATION_SHA: 6c96ea31b4a495924bc2269b3d49577c36554bb4
+      PRODUCTION_IMPLEMENTATION_SHA: a60c3bfd0b14e67ff088a57f524cab3b787002ea
       SUPABASE_URL: https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud
       SUPABASE_PUBLISHABLE_KEY: sb_publishable_eWI2U31KL-zYV8Mn_AzGlw_40-gaGMC
     steps:
@@ -110,12 +109,14 @@ jobs:
 
           post() {
             local token="$1" table="$2" json="$3" outfile="$4"
+            local prefer="return=representation"
+            if [[ "$table" == "org_members" ]]; then prefer="return=minimal"; fi
             curl --silent --show-error --fail-with-body \
               --request POST "$SUPABASE_URL/rest/v1/$table" \
               --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
               --header "Authorization: Bearer $token" \
               --header "Content-Type: application/json" \
-              --header "Prefer: return=representation" \
+              --header "Prefer: $prefer" \
               --data "$json" > "$outfile"
           }
 
@@ -182,19 +183,6 @@ jobs:
           test "$(jq 'length' /tmp/a-probe-b.json)" = "0"
           test "$(jq 'length' /tmp/b-probe-a.json)" = "0"
 
-          mkdir -p artifacts/live-tenant-proof
-          jq -n --arg sha "$PRODUCTION_IMPLEMENTATION_SHA" --arg harness "$GITHUB_SHA" \
-            --arg run "$GITHUB_RUN_ID" --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --arg user_a "$(cat /tmp/user-a)" --arg user_b "$(cat /tmp/user-b)" \
-            --arg org_a "$ORG_A" --arg org_b "$ORG_B" \
-            --slurpfile visible_a /tmp/visible-a.json --slurpfile visible_b /tmp/visible-b.json \
-            --slurpfile a_probe_b /tmp/a-probe-b.json --slurpfile b_probe_a /tmp/b-probe-a.json \
-            '{production_implementation_sha:$sha,harness_sha:$harness,run_id:$run,timestamp:$timestamp,
-              users:{a:$user_a,b:$user_b},tenants:{a:$org_a,b:$org_b},
-              results:{a_own:$visible_a[0],b_own:$visible_b[0],a_to_b:$a_probe_b[0],b_to_a:$b_probe_a[0]},
-              scope:"Production PostgREST organizations RLS with two real password sessions",
-              email_verification_ux:"NOT_VERIFIED",result:"PASS"}' \
-            > artifacts/live-tenant-proof/result.json
           echo "PASS: two authenticated production tenants are mutually isolated by RLS."
           {
             echo "## Live Tenant Isolation Proof"
@@ -204,11 +192,13 @@ jobs:
             echo "- Result: PASS"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload sanitized tenant proof
-        if: ${{ always() }}
+          mkdir -p artifacts/live-tenant-proof
+          jq -n --arg sha "$PRODUCTION_IMPLEMENTATION_SHA" --arg harness "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" --arg timestamp "$(date -u +%FT%TZ)" --arg user_a "$(cat /tmp/user-a)" --arg user_b "$(cat /tmp/user-b)" --arg org_a "$ORG_A" --arg org_b "$ORG_B" --slurpfile a /tmp/visible-a.json --slurpfile b /tmp/visible-b.json --slurpfile ab /tmp/a-probe-b.json --slurpfile ba /tmp/b-probe-a.json '{production_implementation_sha:$sha,harness_sha:$harness,run_id:$run,timestamp:$timestamp,user_a:$user_a,user_b:$user_b,org_a:$org_a,org_b:$org_b,a_own:$a[0],b_own:$b[0],a_cross:$ab[0],b_cross:$ba[0],result:"PASS",scope:"Production organizations read isolation under two real password sessions; no write-isolation or public email UX claim"}' > artifacts/live-tenant-proof/result.json
+
+      - name: Retain sanitized proof
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: live-tenant-proof-${{ github.run_id }}
+          name: live-tenant-proof-${{github.run_id}}
           path: artifacts/live-tenant-proof/
-          if-no-files-found: warn
           retention-days: 30
