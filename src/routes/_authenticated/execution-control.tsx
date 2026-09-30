@@ -69,6 +69,14 @@ function statusIcon(status?: string) {
   return <Clock3 className="h-4 w-4 text-muted-foreground" />;
 }
 
+function executionStatus(stages: Array<{ stage: string; status: string }> = []) {
+  if (stages.some((event) => event.status === "failed")) return "failed";
+  if (stages.some((event) => event.status === "blocked")) return "blocked";
+  if (stages.some((event) => event.stage === "audit" && event.status === "completed"))
+    return "completed";
+  return stages.length ? "live" : "pending";
+}
+
 function LiveExecutionControl() {
   const fn = useServerFn(getLiveExecutionControl);
   const { data, isLoading, error } = useQuery({
@@ -85,10 +93,7 @@ function LiveExecutionControl() {
   for (const event of active?.stages ?? []) latest.set(event.stage as StageKey, event);
 
   const finalEvent = active?.stages?.at(-1);
-  const blocked = active?.stages?.some((event: any) =>
-    ["blocked", "failed"].includes(event.status),
-  );
-  const completed = latest.get("audit")?.status === "completed";
+  const outcomeStatus = executionStatus(active?.stages);
 
   return (
     <div className="mx-auto w-full max-w-7xl">
@@ -187,7 +192,7 @@ function LiveExecutionControl() {
                     {active.agent?.name ??
                       (active.actorType === "agent" ? "Agent request" : "Console request")}
                   </h2>
-                  <Tag value={completed ? "completed" : blocked ? "blocked" : "live"} />
+                  <Tag value={outcomeStatus} />
                 </div>
                 <div className="mt-1 font-mono text-[11px] text-muted-foreground">
                   execution {active.executionId.slice(0, 8)}… ·{" "}
@@ -290,7 +295,7 @@ function LiveExecutionControl() {
                         <span className="truncate text-xs font-medium">
                           {execution.agent?.name ?? execution.actorType}
                         </span>
-                        <Tag value={last?.status ?? "pending"} />
+                        <Tag value={executionStatus(execution.stages)} />
                       </div>
                       <div className="mt-1 truncate text-[11px] text-muted-foreground">
                         {last?.summary ?? "Pending"}
