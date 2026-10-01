@@ -280,7 +280,9 @@
       "run": 36793077038,
       "job": 110150217165,
       "harness_sha": "73e848ba3b8602a4929be9d0f78492f88647835f",
-      "result": "PENDING_EMAIL_CONFIRMATION",
+      "result": "FAILED_CONFIRMATION_TIMEOUT",
+      "ended_at": "2026-10-01T00:02:42.034672Z",
+      "four_isolation_assertions_executed": false,
       "setup_change": "Membership write asks return=minimal, protected read remains a separate assertion. RLS unchanged.",
       "confirmation_mutation_result": [
         {
