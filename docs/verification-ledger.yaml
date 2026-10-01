@@ -1,10 +1,10 @@
 version: 2
-last_updated: '2026-09-30'
+last_updated: "2026-09-30"
 repository: adreinmorin-design/nexora-guard-core-695d0312
 branch: main
 verification_baseline:
   implementation_sha: a60c3bfd0b14e67ff088a57f524cab3b787002ea
-  observed_at: '2026-09-30T23:57:00Z'
+  observed_at: "2026-09-30T23:57:00Z"
   main_ci_run: 36792902422
   main_ci_conclusion: success
   lovable_latest_commit_sha: a60c3bfd0b14e67ff088a57f524cab3b787002ea
@@ -12,7 +12,8 @@ verification_baseline:
   lovable_status: ready
   independent_http_build_attestation: NOT_VERIFIED
   evidence_ref: docs/evidence/2026-09-30-runtime-verification.json
-  documentation_commit_note: Exact inspected production implementation above. Resolve the subsequent documentation
+  documentation_commit_note:
+    Exact inspected production implementation above. Resolve the subsequent documentation
     commit with git rev-parse HEAD and verify its own CI and Lovable latest_commit_sha; runtime evidence
     retains its tested SHA.
 capabilities:
@@ -20,201 +21,231 @@ capabilities:
     status: IMPLEMENTED
     verification_status: NOT_VERIFIED
     evidence:
-    - type: implementation
-      value: 'PR #33 merged at a2a13c4c9af601ea8665d2caa3225bbd9e576542; additive provider request/response
-        columns and adapter/pipeline evidence'
-    - type: regression_tests
-      value: tests/providers.test.mjs and tests/gateway.test.mjs cover HTTP error correlation, body failures,
-        Gemini responseId, bounded validation and request/audit/trace persistence
-    - type: failed_live_provider_request
-      value: docs/evidence/2026-09-30-runtime-verification.json#/provider_redact_probe
-    blocker: Live REDACT and harmless LOG dispatches returned provider_error. One upstream request ID
+      - type: implementation
+        value:
+          "PR #33 merged at a2a13c4c9af601ea8665d2caa3225bbd9e576542; additive provider request/response
+          columns and adapter/pipeline evidence"
+      - type: regression_tests
+        value:
+          tests/providers.test.mjs and tests/gateway.test.mjs cover HTTP error correlation, body failures,
+          Gemini responseId, bounded validation and request/audit/trace persistence
+      - type: failed_live_provider_request
+        value: docs/evidence/2026-09-30-runtime-verification.json#/provider_redact_probe
+    blocker:
+      Live REDACT and harmless LOG dispatches returned provider_error. One upstream request ID
       captured; no successful response, usage/cost attribution or full intent chain proved.
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   authentication:
     status: NOT_VERIFIED
     evidence:
-    - type: production_smoke_negative_path
-      value: run_id=36279456208; job_id=108508386247; GET /auth=200; anonymous POST /api/agent=401 with
-        expected fail-closed error
-    - type: production_invalid_session_negative_path
-      value: run_id=36364520249; job_id=108748168833; deliberately invalid user bearer session against
-        production Supabase/PostgREST returned HTTP 401
-    - type: production_valid_session_positive_path
-      value: run_id=36363244693; attempt=3; job_id=109201239548; two disposable users established valid
-        password sessions; User A authenticated at 2026-09-29T00:38:30.515Z and User B at 2026-09-29T00:38:30.841Z
-    - type: production_authenticated_protected_write
-      value: 'same run/attempt; authenticated users inserted distinct organizations under production RLS:
-        A=09810b57-5e85-49e9-b278-66f4645af98d; B=4b21e638-e3f1-42ff-9af9-dac0c94806c8'
-    - type: verification_note
-      value: The two purpose-tagged disposable accounts were confirmed directly in production Auth for
-        this test only; this verifies the valid-session boundary, not the email-verification UX
-    - type: current_browser_result
-      value: docs/evidence/2026-09-30-live-inspection.json#/authentication
-    - type: current_protected_access
-      value: docs/evidence/2026-09-30-runtime-verification.json#/protected_access
-    blocker: Protected existing-user session access is verified separately. Signup and public email-confirmation
+      - type: production_smoke_negative_path
+        value:
+          run_id=36279456208; job_id=108508386247; GET /auth=200; anonymous POST /api/agent=401 with
+          expected fail-closed error
+      - type: production_invalid_session_negative_path
+        value:
+          run_id=36364520249; job_id=108748168833; deliberately invalid user bearer session against
+          production Supabase/PostgREST returned HTTP 401
+      - type: production_valid_session_positive_path
+        value:
+          run_id=36363244693; attempt=3; job_id=109201239548; two disposable users established valid
+          password sessions; User A authenticated at 2026-09-29T00:38:30.515Z and User B at 2026-09-29T00:38:30.841Z
+      - type: production_authenticated_protected_write
+        value:
+          "same run/attempt; authenticated users inserted distinct organizations under production RLS:
+          A=09810b57-5e85-49e9-b278-66f4645af98d; B=4b21e638-e3f1-42ff-9af9-dac0c94806c8"
+      - type: verification_note
+        value:
+          The two purpose-tagged disposable accounts were confirmed directly in production Auth for
+          this test only; this verifies the valid-session boundary, not the email-verification UX
+      - type: current_browser_result
+        value: docs/evidence/2026-09-30-live-inspection.json#/authentication
+      - type: current_protected_access
+        value: docs/evidence/2026-09-30-runtime-verification.json#/protected_access
+    blocker:
+      Protected existing-user session access is verified separately. Signup and public email-confirmation
       lifecycle remain unverified.
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   tenant_isolation:
     status: NOT_VERIFIED
     evidence:
-    - type: production_rls_negative_path
-      value: Synthetic authenticated non-member previously observed zero protected rows
-    - type: live_two_tenant_attempt
-      value: run_id=36363244693; attempt=3; job_id=109201239548; two valid sessions created distinct organizations,
-        then direct browser founder-membership insertion returned HTTP 403 before cross-tenant probes
-    - type: live_two_tenant_replacement
-      value: run_id=36505135893; job_id=109204756222; two fresh verification users were created; run timed
-        out at 2026-09-29T01:04:27Z waiting for both users to authenticate; no own-resource or cross-ID
-        isolation assertion executed
-    - type: production_test_attempt
-      value: docs/evidence/2026-09-30-runtime-verification.json#/tenant_attempts
-    blocker: Run 36791629265 authenticated two users and inserted isolated organizations; founder membership
+      - type: production_rls_negative_path
+        value: Synthetic authenticated non-member previously observed zero protected rows
+      - type: live_two_tenant_attempt
+        value:
+          run_id=36363244693; attempt=3; job_id=109201239548; two valid sessions created distinct organizations,
+          then direct browser founder-membership insertion returned HTTP 403 before cross-tenant probes
+      - type: live_two_tenant_replacement
+        value:
+          run_id=36505135893; job_id=109204756222; two fresh verification users were created; run timed
+          out at 2026-09-29T01:04:27Z waiting for both users to authenticate; no own-resource or cross-ID
+          isolation assertion executed
+      - type: production_test_attempt
+        value: docs/evidence/2026-09-30-runtime-verification.json#/tenant_attempts
+    blocker:
+      Run 36791629265 authenticated two users and inserted isolated organizations; founder membership
       POST returned 403 before four assertions. Replacement 36793077038 awaits confirmation; RLS remains
       unchanged.
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   policy_allow:
     status: NOT_VERIFIED
     evidence:
-    - type: ci_gateway_tests
-      value: Repository allow/enforcement behavior covered by successful main CI run 36279267631
-    - type: failed_live_provider_request
-      value: docs/evidence/2026-09-30-runtime-verification.json#/provider_redact_probe
-    blocker: Live REDACT and harmless LOG dispatches returned provider_error. One upstream request ID
+      - type: ci_gateway_tests
+        value: Repository allow/enforcement behavior covered by successful main CI run 36279267631
+      - type: failed_live_provider_request
+        value: docs/evidence/2026-09-30-runtime-verification.json#/provider_redact_probe
+    blocker:
+      Live REDACT and harmless LOG dispatches returned provider_error. One upstream request ID
       captured; no successful response, usage/cost attribution or full intent chain proved.
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   policy_deny:
     status: NOT_VERIFIED
     evidence:
-    - type: ci_gateway_tests
-      value: Gateway tests prove BLOCK and REQUIRE_APPROVAL prevent dispatch in the test runtime
+      - type: ci_gateway_tests
+        value: Gateway tests prove BLOCK and REQUIRE_APPROVAL prevent dispatch in the test runtime
     blocker: Requires live proof of zero downstream provider dispatch after DENY
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   pii_redaction:
     status: NOT_VERIFIED
     evidence:
-    - type: ci_gateway_tests
-      value: Repository tests cover request redaction before provider execution
+      - type: ci_gateway_tests
+        value: Repository tests cover request redaction before provider execution
     blocker: Requires live payload-state evidence immediately before external forwarding
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   prompt_injection_controls:
     status: NOT_VERIFIED
     evidence:
-    - type: ci_security_tests
-      value: Security suite passed in main CI run 36279267631
-    - type: production_console_gate
-      value: docs/evidence/2026-09-30-runtime-verification.json#/injection_probe
-    blocker: Console REQUIRE_APPROVAL and withheld output observed; actual privileged tool action and
+      - type: ci_security_tests
+        value: Security suite passed in main CI run 36279267631
+      - type: production_console_gate
+        value: docs/evidence/2026-09-30-runtime-verification.json#/injection_probe
+    blocker:
+      Console REQUIRE_APPROVAL and withheld output observed; actual privileged tool action and
       independent zero-egress evidence remain missing.
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   budget_enforcement:
     status: NOT_VERIFIED
     evidence:
-    - type: ci_gateway_tests
-      value: Repository test proves administrator per-request cost ceiling blocks before dispatch
+      - type: ci_gateway_tests
+        value: Repository test proves administrator per-request cost ceiling blocks before dispatch
     blocker: Requires live proof a hard limit blocks before billable provider invocation
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   provider_routing:
     status: NOT_VERIFIED
     evidence:
-    - type: production_provider_readback
-      value: OpenAI provider active; credential_state=MANAGED; three active models
-    - type: ci_provider_tests
-      value: Provider adapters and endpoint allowlisting passed in main CI run 36279267631
+      - type: production_provider_readback
+        value: OpenAI provider active; credential_state=MANAGED; three active models
+      - type: ci_provider_tests
+        value: Provider adapters and endpoint allowlisting passed in main CI run 36279267631
     blocker: Requires successful live provider invocation and response/usage evidence
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   mcp_authorization:
     status: NOT_VERIFIED
     evidence:
-    - type: ci_tests
-      value: MCP/governance implementation is merged and covered by repository tests
+      - type: ci_tests
+        value: MCP/governance implementation is merged and covered by repository tests
     blocker: Requires live MCP server, approved tool, grant, and allow/deny proof
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   tool_authorization:
     status: NOT_VERIFIED
     evidence:
-    - type: ci_tests
-      value: Governed tool authorization implementation is merged
+      - type: ci_tests
+        value: Governed tool authorization implementation is merged
     blocker: Requires positive and negative live tool invocation tests
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   intent_persistence:
     status: NOT_VERIFIED
     evidence:
-    - type: implementation
-      value: Persistent intent primitives and lineage are merged on main
+      - type: implementation
+        value: Persistent intent primitives and lineage are merged on main
     blocker: Requires a real multi-step agent execution retaining the same intent
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   audit_reconstruction:
     status: NOT_VERIFIED
     evidence:
-    - type: ci_governance_tests
-      value: Tamper-evident chain and immutable evidence tests passed
+      - type: ci_governance_tests
+        value: Tamper-evident chain and immutable evidence tests passed
     blocker: Requires reconstruction from live intent_id/execution_id/request_id evidence
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   billing_entitlements:
     status: NOT_VERIFIED
     evidence:
-    - type: ci_billing_tests
-      value: Billing and Paddle repository tests passed
+      - type: ci_billing_tests
+        value: Billing and Paddle repository tests passed
     blocker: Requires Paddle sandbox lifecycle and server-side entitlement verification
     verification_status: NOT_VERIFIED
-    evidence_scope: Historical references below are retained; they do not establish current deployed application
+    evidence_scope:
+      Historical references below are retained; they do not establish current deployed application
       behavior.
   authenticated_session_protected_access:
     status: RUNTIME_VERIFIED
     verification_status: RUNTIME_VERIFIED
     evidence:
-    - type: production_runtime
-      value: docs/evidence/2026-09-30-runtime-verification.json#/protected_access
-    evidence_scope: Existing user signed in via manual handoff and accessed server-backed tenant-scoped
+      - type: production_runtime
+        value: docs/evidence/2026-09-30-runtime-verification.json#/protected_access
+    evidence_scope:
+      Existing user signed in via manual handoff and accessed server-backed tenant-scoped
       Requests history.
   execution_outcome_display:
     status: RUNTIME_VERIFIED
     verification_status: RUNTIME_VERIFIED
     evidence:
-    - type: production_runtime
-      value: docs/evidence/2026-09-30-runtime-verification.json#/outcome_display
+      - type: production_runtime
+        value: docs/evidence/2026-09-30-runtime-verification.json#/outcome_display
     evidence_scope: Deployed execution screen preserves FAILED/BLOCKED despite completed audit persistence.
 database_inspection:
   status: DEPLOYED
   runtime_behavior_status: NOT_VERIFIED
   public_tables_with_rls: 36
   public_functions_browser_executable: 0
-  bootstrap_migration_present: '20260929000300'
+  bootstrap_migration_present: "20260929000300"
   migration_versions_missing_from_history:
-  - '20260920000100'
-  - '20260925000100'
-  - '20260929000200'
+    - "20260920000100"
+    - "20260925000100"
+    - "20260929000200"
   evidence_ref: docs/evidence/2026-09-30-live-inspection.json
-  blocker: Related objects exist but complete schema/history reconciliation has not been proved. Do not
+  blocker:
+    Related objects exist but complete schema/history reconciliation has not been proved. Do not
     replay non-idempotent DDL based on missing history alone.
-  observed_at: '2026-09-30T22:42:15.054Z'
+  observed_at: "2026-09-30T22:42:15.054Z"
   current_evidence_query_status: BLOCKED_BY_CONNECTOR_TIMEOUT
   initial_zero_row_counts_are_historical: true
   initial_governed_executions: 0
@@ -227,16 +258,18 @@ repository_controls:
     check_result: success
     runtime_verification_status: NOT_VERIFIED
     evidence:
-    - type: github_actions_run
-      value: run_id=36612760244; job_id=109558068871; head_sha=f54b698b23e176473fac9e8eeb0c92294edbeb1a;
-        conclusion=success
-    - type: github_actions_run
-      value: run_id=36792902422; head_sha=a60c3bfd0b14e67ff088a57f524cab3b787002ea; conclusion=success
+      - type: github_actions_run
+        value:
+          run_id=36612760244; job_id=109558068871; head_sha=f54b698b23e176473fac9e8eeb0c92294edbeb1a;
+          conclusion=success
+      - type: github_actions_run
+        value: run_id=36792902422; head_sha=a60c3bfd0b14e67ff088a57f524cab3b787002ea; conclusion=success
     note: CI validates the repository test runtime; it is not product production proof.
   main_branch_protection:
     status: FAILED
     evidence_ref: docs/evidence/2026-09-30-live-inspection.json#/protection
-    blocker: GitHub connection returns 403 Resource not accessible by integration for administration.
+    blocker:
+      GitHub connection returns 403 Resource not accessible by integration for administration.
       Owner must enable main protection in Settings with strict required validate check, required PRs,
       no force pushes/deletions, resolved conversations, and rules applying to admins. Keep linear-history
       requirement off to permit existing non-rewriting merge workflow. Add an independent required approval
@@ -258,18 +291,20 @@ historical_runtime_evidence:
     attempt: 3
     job_id: 109201239548
     result: Direct password grants and organization writes succeeded; not deployed application UX proof.
-  supersession: Previous RUNTIME_VERIFIED labels based only on CI/schema/configuration are superseded
+  supersession:
+    Previous RUNTIME_VERIFIED labels based only on CI/schema/configuration are superseded
     and do not qualify as product runtime proof.
 release_readiness:
   controlled_design_partner_pilots: NOT_VERIFIED
   broader_production_release: NOT_VERIFIED
-  next_step: Owner inspect OpenAI upstream request req_bb13af116fc64e3a892a98b27aa1bc0e and restore valid
+  next_step:
+    Owner inspect OpenAI upstream request req_bb13af116fc64e3a892a98b27aa1bc0e and restore valid
     provider credentials/quota/model access through deployment secrets, then resume exact-build live proof.
     Never share secrets in chat.
 allowed_status_values:
-- NOT_IMPLEMENTED
-- IMPLEMENTED
-- DEPLOYED
-- RUNTIME_VERIFIED
-- FAILED
-- NOT_VERIFIED
+  - NOT_IMPLEMENTED
+  - IMPLEMENTED
+  - DEPLOYED
+  - RUNTIME_VERIFIED
+  - FAILED
+  - NOT_VERIFIED
