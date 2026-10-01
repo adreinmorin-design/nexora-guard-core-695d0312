@@ -1,23 +1,29 @@
 # Nexora Current State
 
-## Production verification — 2026-09-30 UTC
+## Production verification — 2026-10-01 UTC
 
 This supersedes earlier baselines. Preserve Identity → Intent → Governed Execution → Policy →
 Action → Model/Tool Invocation → Result → Evidence. Configuration, rows and CI do not establish
 production behavior.
 
-- Exact inspected production implementation: `a60c3bfd0b14e67ff088a57f524cab3b787002ea`.
-- Main CI `36792902422` passed on that SHA; PR #43 CI `36792803403` also passed.
-- Lovable reports the same latest SHA, published=true, ready. Publish request
-  `ae2fd4bb-c047-4722-a17b-199e7439a04b` was accepted. Production browser reload shows the fix.
+- Latest reported production HEAD: `7b5f01b8b7ba8329454239c13b40d257bad5e1ea` (PR #44 integration).
+- Main CI `36794447207`, job `110154537300` (`validate`), passed on that SHA.
+- Lovable reports the same latest SHA, published=true, ready. The final publish request
+  `4732981b-6289-481c-9229-6565d0666311` was pending in the report; its completion is not separately proved.
   Independent served-build SHA attestation remains NOT_VERIFIED.
+- Final report observed at `2026-10-01T00:09:31.934Z`; protected Requests rechecked at
+  `2026-10-01T00:09:01.231Z` and outcome display at `2026-10-01T00:08:27.109Z`.
+  Evidence: `docs/evidence/2026-10-01-production-attestation.json`.
+- Earlier tested implementation `a60c3bfd0b14e67ff088a57f524cab3b787002ea`, main CI
+  `36792902422` and PR #43 CI `36792803403`, remain historical evidence.
 - PR #42 repaired the brace-expansion security regression with lockfile versions 1.1.21/5.0.12.
   CI `36788107043` passed on `6c96ea31b4a495924bc2269b3d49577c36554bb4`.
 - PR #43 fixes a real reporting defect: failed provider execution used to show COMPLETED after
   its audit write succeeded. Active/recent summaries now preserve FAILED/BLOCKED and show audit
   completion separately. Persisted production outcomes verified this after deployment.
 
-This records the tested implementation. Resolve this document's later integration commit with
+This records the latest report and its exact observed production baseline, not a new runtime test.
+Resolve this document's later integration commit with
 `git rev-parse HEAD` and verify its own CI/Lovable readback; runtime evidence retains its tested SHA.
 
 ## Capability evidence
@@ -25,7 +31,8 @@ This records the tested implementation. Resolve this document's later integratio
 Every RUNTIME_VERIFIED label below has concrete evidence in
 `docs/evidence/2026-09-30-runtime-verification.json`, with browser observations in
 `docs/evidence/2026-09-30-protected-access.json` and
-`docs/evidence/2026-09-30-runtime-outcomes.json`.
+`docs/evidence/2026-09-30-runtime-outcomes.json`. Final reported-HEAD rechecks are in
+`docs/evidence/2026-10-01-production-attestation.json#/final_head_browser_reverification`.
 
 | Capability                                    | Status           | Actual result / remaining proof                                                                                                                                                                                                                                                        |
 | --------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

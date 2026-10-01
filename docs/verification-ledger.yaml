@@ -1,17 +1,21 @@
 version: 2
-last_updated: "2026-09-30"
+last_updated: "2026-10-01"
 repository: adreinmorin-design/nexora-guard-core-695d0312
 branch: main
 verification_baseline:
-  implementation_sha: a60c3bfd0b14e67ff088a57f524cab3b787002ea
-  observed_at: "2026-09-30T23:57:00Z"
-  main_ci_run: 36792902422
+  implementation_sha: 7b5f01b8b7ba8329454239c13b40d257bad5e1ea
+  earlier_runtime_test_sha: a60c3bfd0b14e67ff088a57f524cab3b787002ea
+  observed_at: "2026-10-01T00:09:31.934Z"
+  main_ci_run: 36794447207
+  main_ci_job: 110154537300
   main_ci_conclusion: success
-  lovable_latest_commit_sha: a60c3bfd0b14e67ff088a57f524cab3b787002ea
+  lovable_latest_commit_sha: 7b5f01b8b7ba8329454239c13b40d257bad5e1ea
   lovable_published: true
   lovable_status: ready
   independent_http_build_attestation: NOT_VERIFIED
-  evidence_ref: docs/evidence/2026-09-30-runtime-verification.json
+  evidence_ref: docs/evidence/2026-10-01-production-attestation.json
+  publish_request_id: 4732981b-6289-481c-9229-6565d0666311
+  publish_request_status_at_report: pending
   documentation_commit_note:
     Exact inspected production implementation above. Resolve the subsequent documentation
     commit with git rev-parse HEAD and verify its own CI and Lovable latest_commit_sha; runtime evidence
@@ -89,14 +93,14 @@ capabilities:
         value: docs/evidence/2026-09-30-runtime-verification.json#/tenant_attempts
     blocker:
       Run 36791629265 authenticated two users and inserted isolated organizations; founder membership
-      POST returned 403 before four assertions. Replacement 36793077038 awaits confirmation; RLS remains
-      unchanged.
+      POST returned 403 before four assertions. Replacement 36793077038/job 110150217165 expired at 2026-10-01T00:02:42.034672Z
+      waiting for confirmed sessions; no isolation assertions ran. RLS remains unchanged.
     verification_status: NOT_VERIFIED
     evidence_scope:
       Historical references below are retained; they do not establish current deployed application
       behavior.
   policy_allow:
-    status: NOT_VERIFIED
+    status: FAILED
     evidence:
       - type: ci_gateway_tests
         value: Repository allow/enforcement behavior covered by successful main CI run 36279267631
@@ -221,6 +225,8 @@ capabilities:
     evidence:
       - type: production_runtime
         value: docs/evidence/2026-09-30-runtime-verification.json#/protected_access
+      - type: final_report_runtime_recheck
+        value: docs/evidence/2026-10-01-production-attestation.json#/final_head_browser_reverification
     evidence_scope:
       Existing user signed in via manual handoff and accessed server-backed tenant-scoped
       Requests history.
@@ -230,6 +236,8 @@ capabilities:
     evidence:
       - type: production_runtime
         value: docs/evidence/2026-09-30-runtime-verification.json#/outcome_display
+      - type: final_report_runtime_recheck
+        value: docs/evidence/2026-10-01-production-attestation.json#/final_head_browser_reverification
     evidence_scope: Deployed execution screen preserves FAILED/BLOCKED despite completed audit persistence.
 database_inspection:
   status: DEPLOYED
@@ -264,6 +272,8 @@ repository_controls:
           conclusion=success
       - type: github_actions_run
         value: run_id=36792902422; head_sha=a60c3bfd0b14e67ff088a57f524cab3b787002ea; conclusion=success
+      - type: github_actions_run
+        value: run_id=36794447207; job_id=110154537300; head_sha=7b5f01b8b7ba8329454239c13b40d257bad5e1ea; conclusion=success
     note: CI validates the repository test runtime; it is not product production proof.
   main_branch_protection:
     status: FAILED
@@ -272,8 +282,7 @@ repository_controls:
       GitHub connection returns 403 Resource not accessible by integration for administration.
       Owner must enable main protection in Settings with strict required validate check, required PRs,
       no force pushes/deletions, resolved conversations, and rules applying to admins. Keep linear-history
-      requirement off to permit existing non-rewriting merge workflow. Add an independent required approval
-      when a reviewer is available; self-approval cannot satisfy it.
+      requirement off to permit existing non-rewriting merge workflow. Require one independent approval and stale-review dismissal; self-approval cannot satisfy it.
 historical_runtime_evidence:
   status: NOT_VERIFIED
   current_build_reverification_required: true

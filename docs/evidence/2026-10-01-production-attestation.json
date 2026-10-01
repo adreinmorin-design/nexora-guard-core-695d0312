@@ -1,0 +1,108 @@
+{
+  "observed_at": "2026-10-01T00:09:31.934Z",
+  "production_head": "7b5f01b8b7ba8329454239c13b40d257bad5e1ea",
+  "repository": "adreinmorin-design/nexora-guard-core-695d0312",
+  "ci": {
+    "run_id": 36794447207,
+    "head_sha": "7b5f01b8b7ba8329454239c13b40d257bad5e1ea",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/adreinmorin-design/nexora-guard-core-695d0312/actions/runs/36794447207"
+  },
+  "jobs": [
+    {
+      "id": 110154537300,
+      "name": "validate",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "deployment": {
+    "project_id": "f46c7dc2-f8c6-4710-96bb-07ffc11e5270",
+    "latest_commit_sha": "7b5f01b8b7ba8329454239c13b40d257bad5e1ea",
+    "published": true,
+    "project_status": "ready",
+    "publish_request": {
+      "status": "pending",
+      "deployment_id": "4732981b-6289-481c-9229-6565d0666311",
+      "url": "https://nexora-guard-core.lovable.app",
+      "preview_url": "https://id-preview--f46c7dc2-f8c6-4710-96bb-07ffc11e5270.lovable.app"
+    },
+    "independent_served_build_attestation": "NOT_VERIFIED"
+  },
+  "branch_protection": {
+    "sha": "7b5f01b8b7ba8329454239c13b40d257bad5e1ea",
+    "protected": false
+  },
+  "merged_prs": [42, 43, 44],
+  "docs_commit": "7b5f01b8b7ba8329454239c13b40d257bad5e1ea",
+  "docs": {
+    "current_state": "https://github.com/adreinmorin-design/nexora-guard-core-695d0312/blob/7b5f01b8b7ba8329454239c13b40d257bad5e1ea/docs/current-state.md",
+    "ledger": "https://github.com/adreinmorin-design/nexora-guard-core-695d0312/blob/7b5f01b8b7ba8329454239c13b40d257bad5e1ea/docs/verification-ledger.yaml"
+  },
+  "runtime_verified": [
+    {
+      "capability": "authenticated_session_protected_access",
+      "evidence": "Browser protected Requests returned real tenant-scoped rows; identity in repository runtime evidence.",
+      "evidence_ref": "docs/evidence/2026-09-30-runtime-verification.json#/protected_access"
+    },
+    {
+      "capability": "execution_outcome_display",
+      "evidence": "Live screen shows BLOCKED approval request, FAILED provider histories, independent COMPLETED audit stage.",
+      "evidence_ref": "docs/evidence/2026-09-30-runtime-verification.json#/outcome_display"
+    }
+  ],
+  "final_head_browser_reverification": {
+    "observed_at": "2026-10-01T00:08:27.109Z",
+    "reported_production_sha": "7b5f01b8b7ba8329454239c13b40d257bad5e1ea",
+    "url": "https://nexora-guard-core.lovable.app/execution-control",
+    "state": "Browser tab: 2, Title: \"Live Agent Execution \u2014 NEXORA\", URL: \"https://nexora-guard-core.lovable.app/execution-control\".\n1 AXWebArea Live Agent Execution \u2014 NEXORA, URL: nexora-guard-core.lovable.app/execution-control\n\t2 container\n\t\t3 container Description: Edit with Lovable, ID: lovable-badge\n\t\t\t4 link Description: Edit with Lovable, ID: lovable-badge-cta, Value: lovable.dev/projects/lovp_2zq643jz3t99zvy78ytv66x3gx?utm_source=lovable-badge&utm_campaign=badge-wording-disabled\n\t\t\t5 button Description: Dismiss, ID: lovable-badge-close\n\t\t6 text NEXORA\n\t\t7 text AI control plane\n\t\t8 container\n\t\t\t9 link Description: Overview, Value: nexora-guard-core.lovable.app/overview\n\t\t\t10 link Description: Live execution, Value: nexora-guard-core.lovable.app/execution-control\n\t\t\t11 link Description: Playground, Value: nexora-guard-core.lovable.app/gateway/playground\n\t\t\t12 link Description: Requests, Value: nexora-guard-core.lovable.app/gateway/requests\n\t\t\t13 link Description: Agents, Value: nexora-guard-core.lovable.app/connect-agent\n\t\t\t14 link Description: Findings, Value: nexora-guard-core.lovable.app/security/findings\n\t\t\t15 link Description: Approvals, Value: nexora-guard-core.lovable.app/approvals\n\t\t\t16 button (collapsed) Advanced, Secondary Actions: Expand\n\t\t17 text Gmail Organization\n\t\t18 text Protected \u00b7  org admin adreinmorin@gmail.com\n\t\t19 button Sign out\n\t\t20 heading Live Agent Execution Control, Value: 1\n\t\t\t21 text Live Agent Execution Control\n\t\t22 text Follow a governed request from identity to audit. This view is driven by real server-side execution events, not a UI simulation.\n\t\t23 text Live \u00b7 1s refresh\n\t\t24 link Description: Admin controls, Value: nexora-guard-core.lovable.app/admin/ai-control\n\t\t25 text MASTER EXECUTION\n\t\t26 text Enabled\n\t\t27 text AGENT CHANNEL\n\t\t28 text Enabled\n\t\t29 text LIVE EXECUTIONS\n\t\t30 text 12\n\t\t31 text PER-REQUEST CEILING\n\t\t32 text Not set\n\t\t33 heading Console request, Value: 2\n\t\t\t34 text Console request\n\t\t35 text BLOCKED\n\t\t36 container\n\t\t\t37 text execution  644c2742 \u2026 \u00b7 4:47:08 PM\n\t\t38 text Latest event\n\t\t39 text Governed request, findings and audit evidence persisted.\n\t\t40 text Identity\n\t\t41 text Authenticated user identity resolved to organization membership.\n\t\t42 text PASSED\n\t\t43 text Permissions\n\t\t44 text User role is authorized for governed AI execution.\n\t\t45 text PASSED\n\t\t46 text PII\n\t\t47 text No PII or secret pattern detected.\n\t\t48 text PASSED\n\t\t49 text Injection\n\t\t50 text 2 injection/exfiltration signal(s) detected.\n\t\t51 text PASSED\n\t\t52 text Budget\n\t\t53 text Budget admitted. Estimated cost $0.000793.\n\t\t54 text PASSED\n\t\t55 text Provider\n\t\t56 text openai selected for GPT-4o Mini.\n\t\t57 text PASSED\n\t\t58 text Tool auth\n\t\t59 text No external tool requested; model execution path only.\n\t\t60 text NOT APPLICABLE\n\t\t61 text Execution\n\t\t62 text Execution paused for human approval.\n\t\t63 text BLOCKED\n\t\t64 text Audit\n\t\t65 text Governed request, findings and audit evidence persisted.\n\t\t66 text COMPLETED\n\t\t67 heading Execution evidence, Value: 3\n\t\t\t68 text Execution evidence\n\t\t69 text 10  events\n\t\t70 text Audit\n\t\t71 text 4:47:08 PM\n\t\t72 text Governed request, findings and audit evidence persisted.\n\t\t73 text Audit\n\t\t74 text 4:47:08 PM\n\t\t75 text Writing governed request and immutable audit evidence.\n\t\t76 text Execution\n\t\t77 text 4:47:07 PM\n\t\t78 text Execution paused for human approval.\n\t\t79 text Tool Authorization\n\t\t80 text 4:47:07 PM\n\t\t81 text No external tool requested; model execution path only.\n\t\t82 text Provider Selection\n\t\t83 text 4:47:07 PM\n\t\t84 text openai selected for GPT-4o Mini.\n\t\t85 text Budget\n\t\t86 text 4:47:07 PM\n\t\t87 text Budget admitted. Estimated cost $0.000793.\n\t\t88 text Injection\n\t\t89 text 4:47:06 PM\n\t\t90 text 2 injection/exfiltration signal(s) detected.\n\t\t91 text Pii\n\t\t92 text 4:47:06 PM\n\t\t93 text No PII or secret pattern detected.\n\t\t94 text Permissions\n\t\t95 text 4:47:06 PM\n\t\t96 text User role is authorized for governed AI execution.\n\t\t97 text Identity\n\t\t98 text 4:47:05 PM\n\t\t99 text Authenticated user identity resolved to organization membership.\n\t\t100 heading Recent executions, Value: 3\n\t\t\t101 text Recent executions\n\t\t102 text user BLOCKED\n\t\t103 text Governed request, findings and audit evidence persisted.\n\t\t104 text user FAILED\n\t\t105 text Governed request, findings and audit evidence persisted.\n\t\t106 text user FAILED\n\t\t107 text Governed request, findings and audit evidence persisted.\n\t\t108 text user FAILED\n\t\t109 text Governed request, findings and audit evidence persisted.\n\t\t110 text user FAILED\n\t\t111 text Governed request, findings and audit evidence persisted.\n\t\t112 text user FAILED\n\t\t113 text Governed request, findings and audit evidence persisted.\n\t\t114 text Two-Minute Demo Agent LIVE\n\t\t115 text Agent credential, lifecycle and owner membership verified.\n\t\t116 text Two-Minute Demo Agent FAILED\n\t\t117 text Governed request, findings and audit evidence persisted.\n\t\t118 text The screen shows control-plane events only. Prompts, credentials and raw model responses are deliberately excluded from the live trace.\n\nThe focused UI element is 1 AXWebArea Live Agent Execution \u2014 NEXORA, URL: nexora-guard-core.lovable.app/execution-control",
+    "scope": "Protected live outcome data; failed and blocked status preserved after audit completion. SHA is connector readback, not independent HTTP attestation.",
+    "protected_requests_observed_at": "2026-10-01T00:09:01.231Z",
+    "protected_requests_state": "Browser tab: 2, Title: \"Requests \u2014 NEXORA AI Gateway\", URL: \"https://nexora-guard-core.lovable.app/gateway/requests\".\n1 AXWebArea Requests \u2014 NEXORA AI Gateway, URL: nexora-guard-core.lovable.app/gateway/requests\n\t2 container\n\t\t3 container Description: Edit with Lovable, ID: lovable-badge\n\t\t\t4 link Description: Edit with Lovable, ID: lovable-badge-cta, Value: lovable.dev/projects/lovp_2zq643jz3t99zvy78ytv66x3gx?utm_source=lovable-badge&utm_campaign=badge-wording-disabled\n\t\t\t5 button Description: Dismiss, ID: lovable-badge-close\n\t\t6 text NEXORA\n\t\t7 text AI control plane\n\t\t8 container\n\t\t\t9 link Description: Overview, Value: nexora-guard-core.lovable.app/overview\n\t\t\t10 link Description: Live execution, Value: nexora-guard-core.lovable.app/execution-control\n\t\t\t11 link Description: Playground, Value: nexora-guard-core.lovable.app/gateway/playground\n\t\t\t12 link Description: Requests, Value: nexora-guard-core.lovable.app/gateway/requests\n\t\t\t13 link Description: Agents, Value: nexora-guard-core.lovable.app/connect-agent\n\t\t\t14 link Description: Findings, Value: nexora-guard-core.lovable.app/security/findings\n\t\t\t15 link Description: Approvals, Value: nexora-guard-core.lovable.app/approvals\n\t\t\t16 button (collapsed) Advanced, Secondary Actions: Expand\n\t\t17 text Gmail Organization\n\t\t18 text Protected \u00b7  org admin adreinmorin@gmail.com\n\t\t19 button Sign out\n\t\t20 heading Requests, Value: 1\n\t\t\t21 text Requests\n\t\t22 text Request records are append-only and scoped to your organization.\n\t\t23 pop up button (collapsed, settable) Value: ALL, Secondary Actions: Expand\n\t\t\t24 menu\n\t\t\t\t25 (selected) ALL\n\t\t\t\t26 ALLOW\n\t\t\t\t27 LOG\n\t\t\t\t28 REDACT\n\t\t\t\t29 REQUIRE_APPROVAL\n\t\t\t\t30 BLOCK\n\t\t31 table\n\t\t\t32 row\n\t\t\t\t33 cell\n\t\t\t\t\t34 text TIME\n\t\t\t\t35 cell\n\t\t\t\t\t36 text DECISION\n\t\t\t\t37 cell\n\t\t\t\t\t38 text MODEL\n\t\t\t\t39 cell\n\t\t\t\t\t40 text PROVIDER\n\t\t\t\t41 cell\n\t\t\t\t\t42 text TOKENS\n\t\t\t\t43 cell\n\t\t\t\t\t44 text COST\n\t\t\t\t45 cell\n\t\t\t\t\t46 text LATENCY\n\t\t\t\t47 cell\n\t\t\t\t\t48 text REASON\n\t\t\t49 row\n\t\t\t\t50 cell\n\t\t\t\t\t51 text 9/30/2026, 4:47:07 PM\n\t\t\t\t52 cell\n\t\t\t\t\t53 text REQUIRE APPROVAL\n\t\t\t\t54 cell\n\t\t\t\t\t55 text openai/gpt-4o-mini\n\t\t\t\t56 cell\n\t\t\t\t\t57 text openai\n\t\t\t\t58 cell\n\t\t\t\t\t59 text 0 / 0\n\t\t\t\t60 cell\n\t\t\t\t\t61 text $ 0.000000\n\t\t\t\t62 cell\n\t\t\t\t\t63 text 1339  ms\n\t\t\t\t64 cell\n\t\t\t\t\t65 text Prompt Injection Containment v1 \u2192 REQUIRE_APPROVAL (detection_category=prompt_injection)\n\t\t\t66 row\n\t\t\t\t67 cell\n\t\t\t\t\t68 text 9/30/2026, 4:44:39 PM\n\t\t\t\t69 cell\n\t\t\t\t\t70 text LOG\n\t\t\t\t71 cell\n\t\t\t\t\t72 text openai/gpt-4o-mini\n\t\t\t\t73 cell\n\t\t\t\t\t74 text openai\n\t\t\t\t75 cell\n\t\t\t\t\t76 text 0 / 0\n\t\t\t\t77 cell\n\t\t\t\t\t78 text $ 0.000000\n\t\t\t\t79 cell\n\t\t\t\t\t80 text 7303  ms\n\t\t\t\t81 cell\n\t\t\t\t\t82 text Baseline Traffic Logging v1 \u2192 LOG \u00b7 provider request failed; details withheld\n\t\t\t83 row\n\t\t\t\t84 cell\n\t\t\t\t\t85 text 9/30/2026, 4:37:30 PM\n\t\t\t\t86 cell\n\t\t\t\t\t87 text REDACT\n\t\t\t\t88 cell\n\t\t\t\t\t89 text openai/gpt-4o-mini\n\t\t\t\t90 cell\n\t\t\t\t\t91 text openai\n\t\t\t\t92 cell\n\t\t\t\t\t93 text 0 / 0\n\t\t\t\t94 cell\n\t\t\t\t\t95 text $ 0.000000\n\t\t\t\t96 cell\n\t\t\t\t\t97 text 7991  ms\n\t\t\t\t98 cell\n\t\t\t\t\t99 text PII Redaction v1 \u2192 REDACT (detection_category=phone) \u00b7 provider request failed; details withheld\n\t\t\t100 row\n\t\t\t\t101 cell\n\t\t\t\t\t102 text 9/21/2026, 12:36:23 AM\n\t\t\t\t103 cell\n\t\t\t\t\t104 text LOG\n\t\t\t\t105 cell\n\t\t\t\t\t106 text openai/gpt-4.1\n\t\t\t\t107 cell\n\t\t\t\t\t108 text openai\n\t\t\t\t109 cell\n\t\t\t\t\t110 text 0 / 0\n\t\t\t\t111 cell\n\t\t\t\t\t112 text $ 0.000000\n\t\t\t\t113 cell\n\t\t\t\t\t114 text 1664  ms\n\t\t\t\t115 cell\n\t\t\t\t\t116 text Baseline Traffic Logging v1 \u2192 LOG \u00b7 provider request failed; details withheld\n\t\t\t117 row\n\t\t\t\t118 cell\n\t\t\t\t\t119 text 9/21/2026, 12:36:12 AM\n\t\t\t\t120 cell\n\t\t\t\t\t121 text LOG\n\t\t\t\t122 cell\n\t\t\t\t\t123 text openai/gpt-4.1-mini\n\t\t\t\t124 cell\n\t\t\t\t\t125 text openai\n\t\t\t\t126 cell\n\t\t\t\t\t127 text 0 / 0\n\t\t\t\t128 cell\n\t\t\t\t\t129 text $ 0.000000\n\t\t\t\t130 cell\n\t\t\t\t\t131 text 6463  ms\n\t\t\t\t132 cell\n\t\t\t\t\t133 text Baseline Traffic Logging v1 \u2192 LOG \u00b7 provider request failed; details withheld\n\t\t\t134 row\n\t\t\t\t135 cell\n\t\t\t\t\t136 text 9/21/2026, 12:35:18 AM\n\t\t\t\t137 cell\n\t\t\t\t\t138 text LOG\n\t\t\t\t139 cell\n\t\t\t\t\t140 text openai/gpt-4o-mini\n\t\t\t\t141 cell\n\t\t\t\t\t142 text openai\n\t\t\t\t143 cell\n\t\t\t\t\t144 text 0 / 0\n\t\t\t\t145 cell\n\t\t\t\t\t146 text $ 0.000000\n\t\t\t\t147 cell\n\t\t\t\t\t148 text 8075  ms\n\t\t\t\t149 cell\n\t\t\t\t\t150 text Baseline Traffic Logging v1 \u2192 LOG \u00b7 provider request failed; details withheld\n\t\t\t151 row\n\t\t\t\t152 cell\n\t\t\t\t\t153 text 9/20/2026, 3:54:33 PM\n\t\t\t\t154 cell\n\t\t\t\t\t155 text LOG\n\t\t\t\t156 cell\n\t\t\t\t\t157 text openai/gpt-4o-mini\n\t\t\t\t158 cell\n\t\t\t\t\t159 text openai\n\t\t\t\t160 cell\n\t\t\t\t\t161 text 0 / 0\n\t\t\t\t162 cell\n\t\t\t\t\t163 text $ 0.000000\n\t\t\t\t164 cell\n\t\t\t\t\t165 text 9086  ms\n\t\t\t\t166 cell\n\t\t\t\t\t167 text Baseline Traffic Logging v1 \u2192 LOG \u00b7 provider request failed; details withheld\n\t\t\t168 row\n\t\t\t\t169 cell\n\t\t\t\t\t170 text 9/20/2026, 3:51:36 PM\n\t\t\t\t171 cell\n\t\t\t\t\t172 text LOG\n\t\t\t\t173 cell\n\t\t\t\t\t174 text openai/gpt-4o-mini\n\t\t\t\t175 cell\n\t\t\t\t\t176 text openai\n\t\t\t\t177 cell\n\t\t\t\t\t178 text 0 / 0\n\t\t\t\t179 cell\n\t\t\t\t\t180 text $ 0.000000\n\t\t\t\t181 cell\n\t\t\t\t\t182 text 8074  ms\n\t\t\t\t183 cell\n\t\t\t\t\t184 text Baseline Traffic Logging v1 \u2192 LOG \u00b7 provider request failed; details withheld\n\t\t\t185 row\n\t\t\t\t186 cell\n\t\t\t\t\t187 text 9/20/2026, 3:49:49 PM\n\t\t\t\t188 cell\n\t\t\t\t\t189 text LOG\n\t\t\t\t190 cell\n\t\t\t\t\t191 text openai/gpt-4o-mini\n\t\t\t\t192 cell\n\t\t\t\t\t193 text openai\n\t\t\t\t194 cell\n\t\t\t\t\t195 text 0 / 0\n\t\t\t\t196 cell\n\t\t\t\t\t197 text $ 0.000000\n\t\t\t\t198 cell\n\t\t\t\t\t199 text 9619  ms\n\t\t\t\t200 cell\n\t\t\t\t\t201 text Baseline Traffic Logging v1 \u2192 LOG \u00b7 provider request failed; details withheld\n\nThe focused UI element is 12 link Description: Requests, URL: nexora-guard-core.lovable.app/gateway/requests"
+  },
+  "failed": {
+    "provider_allow": {
+      "request_id": "fde06fa9-c3ef-47d4-84eb-ad86429b1a2a",
+      "execution_id": "32c9c05b-1d16-490d-8559-f3193a28a8ba",
+      "provider_request_id": "req_bb13af116fc64e3a892a98b27aa1bc0e",
+      "status": "provider_error"
+    },
+    "tenant_setup": [
+      {
+        "run_id": 36791629265,
+        "job_id": 110145611471,
+        "result": "founder membership HTTP 403; no four-way assertions"
+      },
+      {
+        "run_id": 36793077038,
+        "job_id": 110150217165,
+        "result": "email confirmation timeout",
+        "ended_at": "2026-10-01T00:02:42.034672Z"
+      }
+    ]
+  },
+  "not_verified": [
+    "signup_email_lifecycle",
+    "two_tenant_isolation",
+    "governed_deny_zero_provider_calls",
+    "pre_forward_pii_masking",
+    "privileged_prompt_injection_enforcement",
+    "hard_budget_zero_billing",
+    "successful_routing_and_cost_attribution",
+    "mcp_tool_authorization",
+    "persistent_multi_step_intent",
+    "complete_forensic_chain",
+    "paddle_entitlements"
+  ],
+  "owner_actions": [
+    "Diagnose OpenAI request req_bb13af116fc64e3a892a98b27aa1bc0e in provider logs, then restore correct deployment credentials/quota/model access. Do not share secrets in chat.",
+    "Enable main protection through GitHub owner Settings: strict validate, PRs, one independent review, stale dismissal, resolved conversations, admins, no force pushes/deletions; linear history off. Connector administration unavailable.",
+    "Restore working production DB connection; confirm fresh disposable-user emails while rerun harness is waiting. Previous run expired; confirmation mutation outcome remains unknown.",
+    "Configure a controlled live MCP fixture and Paddle sandbox credentials through deployment secret interfaces."
+  ],
+  "readiness": {
+    "controlled_design_partner_pilots": "NOT_ESTABLISHED",
+    "broader_production_release": "NOT_ESTABLISHED"
+  }
+}
