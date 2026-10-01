@@ -1,94 +1,98 @@
 # Nexora Current State
 
-## Dependency audit repair — 2026-09-30
+## Production verification — 2026-09-30 UTC
 
-Fresh CI run `36787600726` failed the high-severity audit on four brace-expansion
-advisories; the other 15 verification groups passed. A targeted transitive update
-changed only the locked brace-expansion versions from 1.1.18 to 1.1.21 and from
-5.0.9 to 5.0.12. Repair workflow `36787823073`, artifact `11130477483`, passed
-the high-severity audit with those versions. Package manifests, policy code and
-security gates are unchanged. Full CI on the final repair head remains required
-before integration; production behavior still needs the ordered live proofs below.
+This supersedes earlier baselines. Preserve Identity → Intent → Governed Execution → Policy →
+Action → Model/Tool Invocation → Result → Evidence. Configuration, rows and CI do not establish
+production behavior.
 
-## Current inspection — 2026-09-30
+- Exact inspected production implementation: `a60c3bfd0b14e67ff088a57f524cab3b787002ea`.
+- Main CI `36792902422` passed on that SHA; PR #43 CI `36792803403` also passed.
+- Lovable reports the same latest SHA, published=true, ready. Publish request
+  `ae2fd4bb-c047-4722-a17b-199e7439a04b` was accepted. Production browser reload shows the fix.
+  Independent served-build SHA attestation remains NOT_VERIFIED.
+- PR #42 repaired the brace-expansion security regression with lockfile versions 1.1.21/5.0.12.
+  CI `36788107043` passed on `6c96ea31b4a495924bc2269b3d49577c36554bb4`.
+- PR #43 fixes a real reporting defect: failed provider execution used to show COMPLETED after
+  its audit write succeeded. Active/recent summaries now preserve FAILED/BLOCKED and show audit
+  completion separately. Persisted production outcomes verified this after deployment.
 
-This snapshot supersedes earlier baselines. No major product capability was newly runtime verified.
-Historical evidence is preserved in `docs/evidence/2026-09-29-ledger-superseded.yaml`; earlier labels
-based only on CI, schema, rows, or configuration do not establish production behavior.
+This records the tested implementation. Resolve this document's later integration commit with
+`git rev-parse HEAD` and verify its own CI/Lovable readback; runtime evidence retains its tested SHA.
 
-- Inspected main / implementation SHA: `f54b698b23e176473fac9e8eeb0c92294edbeb1a`.
-- CI run `36612760244`, job `109558068871`, completed successfully on that SHA.
-- Lovable project `f46c7dc2-f8c6-4710-96bb-07ffc11e5270` reports that exact latest SHA,
-  published=true, status=ready. This is connector readback; independent served-build attestation
-  remains NOT_VERIFIED.
-- Production migration `20260929000300_org_bootstrap_rls_fix` is in history. The live membership
-  INSERT policy requires the creator's own authenticated identity for initial org_admin bootstrap.
-- All 36 public tables inspected have RLS enabled. None of the inspected public functions is
-  executable by anon or authenticated. These are configuration observations, not isolation proof.
-- Repository migration versions `20260920000100`, `20260925000100`, and `20260929000200` are
-  absent from production migration history. Related AI-control/governance objects exist, so
-  schema/history reconciliation needs definition-level verification before recording migration
-  history. Do not blindly replay non-idempotent migrations.
-- Production has zero governed_executions, governance_audit_events, tool_invocations, and
-  paddle_webhook_events at inspection. This does not prove the controls fail; it means these stores
-  supply no existing positive-path evidence.
-- Open PRs: #19 and #20, both old and nonmergeable. Open issue: #22. No newer main CI regression
-  was observed. Do not merge stale branches without comparing their changes against current main.
-- Main protected=false, required-check enforcement=off. The connector's protection read returned
-  HTTP 403, `Resource not accessible by integration`; administration is unavailable through it.
+## Capability evidence
 
-Reproducible inspection evidence and timestamps: `docs/evidence/2026-09-30-live-inspection.json`.
+Every RUNTIME_VERIFIED label below has concrete evidence in
+`docs/evidence/2026-09-30-runtime-verification.json`, with browser observations in
+`docs/evidence/2026-09-30-protected-access.json` and
+`docs/evidence/2026-09-30-runtime-outcomes.json`.
 
-## Authentication gate
+| Capability                                    | Status           | Actual result / remaining proof                                                                                                                                                                                                                                                        |
+| --------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Existing-user authenticated protected access  | RUNTIME_VERIFIED | Manual deployed sign-in produced a valid session; protected Requests returned server-backed tenant history. Evidence `/protected_access`. Signup/email UX is separate.                                                                                                                 |
+| Execution outcome display                     | RUNTIME_VERIFIED | Deployed fix preserves FAILED/BLOCKED despite later audit completion. Evidence `/outcome_display`.                                                                                                                                                                                     |
+| Signup/email lifecycle                        | NOT_VERIFIED     | Direct disposable Auth creation/administrative confirmation is setup, not public signup/email UX proof.                                                                                                                                                                                |
+| Two-user / two-tenant isolation               | NOT_VERIFIED     | Run 36791629265/job 110145611471 authenticated two users and inserted two organizations; founder membership POST returned 403 before the four assertions. Replacement 36793077038/job 110150217165 separates write from protected read and timed out awaiting sessions. RLS unchanged. |
+| Governed provider ALLOW                       | FAILED           | Harmless LOG request and separate REDACT request reached dispatch but returned provider_error. No successful provider response/usage/full intent linkage.                                                                                                                              |
+| Governed DENY / zero invocation               | NOT_VERIFIED     | Injection request paused for approval; independent downstream zero-call evidence is absent.                                                                                                                                                                                            |
+| PII masking                                   | NOT_VERIFIED     | Synthetic numeric timestamp triggered phone REDACT; immediate pre-forward payload was not captured.                                                                                                                                                                                    |
+| Injection before privileged action            | NOT_VERIFIED     | Console prompt triggered REQUIRE_APPROVAL/pending_approval and withheld output. No privileged tool was requested.                                                                                                                                                                      |
+| Hard budget / zero billable calls             | NOT_VERIFIED     | No complete denied-operation billing proof. Failed requests recording zero usage do not prove zero upstream billing.                                                                                                                                                                   |
+| Routing / attribution                         | NOT_VERIFIED     | openai/gpt-4o-mini selected in trace; successful response and tenant/intent/execution usage/cost linkage missing.                                                                                                                                                                      |
+| MCP authorization                             | NOT_VERIFIED     | Controlled external fixture and deployed origin/credential configuration unavailable through current connectors.                                                                                                                                                                       |
+| Multi-step persistent intent / forensic chain | NOT_VERIFIED     | No successful live multi-step chain reconstructed.                                                                                                                                                                                                                                     |
+| Paddle / server entitlements                  | NOT_VERIFIED     | Sandbox lifecycle/secret access unavailable; no live customer charge made.                                                                                                                                                                                                             |
 
-The deployed `/auth` form rendered. Secure sign-in submitted and the application returned
-`Invalid login credentials`. No credentials were read or recorded. Signup/email-confirmation,
-successful application login, and authenticated protected application access remain NOT_VERIFIED.
-This is a credential rejection observation, not proof that application authentication is broken.
+Protected identity: user `b74c83ab-5488-4517-9c6c-a9ff1d4a75cc`, org
+`9949362e-405f-4fef-9596-12d47f4239b7`. Historical invalid-login/session evidence stays separate in
+`docs/evidence/2026-09-30-live-inspection.json` and run `36364520249`, job `108748168833`
+(anonymous agent request and invalid PostgREST bearer each HTTP 401).
 
-Preserve historical negative evidence separately: run `36364520249`, job `108748168833`, recorded
-anonymous agent API rejection and invalid user JWT rejection (HTTP 401). Direct valid password
-sessions and protected organization inserts were recorded in run `36363244693`, attempt 3,
-job `109201239548`; those do not prove application signup/login or two-tenant isolation.
+Provider failure on implementation `6c96ea31b4a495924bc2269b3d49577c36554bb4`:
+request `fde06fa9-c3ef-47d4-84eb-ad86429b1a2a`, execution
+`32c9c05b-1d16-490d-8559-f3193a28a8ba`, upstream request
+`req_bb13af116fc64e3a892a98b27aa1bc0e`, 2026-09-30T23:37:30Z.
+Execution event 93 failed; audit event 95 completed. Response ID absent; recorded tokens/cost zero.
+This is failure evidence, not successful ALLOW or zero-call proof. Intent IDs/newer request IDs were
+not retrieved because the database connector timed out. Injection execution prefix `644c2742`
+appeared BLOCKED at 23:47:08Z; full reconstruction remains incomplete.
 
-## Product capability status
+## Database and repository controls
 
-| Capability                                 | Current verification status | Remaining proof                                                                   |
-| ------------------------------------------ | --------------------------- | --------------------------------------------------------------------------------- |
-| Deployed signup/login and protected access | NOT_VERIFIED                | Usable disposable account, signup confirmation, signed-in application resource    |
-| Two-user / two-tenant isolation            | NOT_VERIFIED                | A→A, B→B allowed; A→B, B→A denied                                                 |
-| Governed provider ALLOW                    | NOT_VERIFIED                | Actual response, provider IDs, usage/cost and intent/execution/audit linkage      |
-| Governed DENY                              | NOT_VERIFIED                | Pre-egress denial plus independent downstream zero-invocation proof               |
-| PII masking                                | NOT_VERIFIED                | Sanitized payload immediately before external forwarding                          |
-| Prompt injection enforcement               | NOT_VERIFIED                | Privileged-action denial before execution                                         |
-| Hard budget                                | NOT_VERIFIED                | Denied operation with zero billable provider calls                                |
-| Routing and attribution                    | NOT_VERIFIED                | Actual selected provider/model and tenant/intent/execution costs                  |
-| MCP/tool authorization                     | NOT_VERIFIED                | Controlled real tool succeeds when authorized; denied before invocation otherwise |
-| Persistent multi-step intent               | NOT_VERIFIED                | One live intent retained through model/tool steps                                 |
-| Audit reconstruction / immutability        | NOT_VERIFIED                | Reconstruct real production chain and prove mutation rejection                    |
-| Paddle lifecycle / entitlements            | NOT_VERIFIED                | Sandbox webhook lifecycle and server-side allow/deny enforcement                  |
+Initial 22:42Z inspection found all 36 public tables with RLS and no inspected public function
+executable by anon/authenticated. Initial zero counts are historical, not current counts or runtime
+proof. Production events 85–95 were later retrieved. Subsequent queries returned HTTP 504
+`MCP request timed out`; separate Supabase connector inventory is empty.
 
-Do not infer missing provider secrets from this inspection: deployed credential validity and quota
-are unknown until exercised. No live payment was taken and no customer entitlement was altered.
+Bootstrap migration `20260929000300` is present. History versions `20260920000100`,
+`20260925000100`, `20260929000200` remain absent despite related objects existing. Reconcile
+definitions/privileges/constraints before recording history; do not blindly replay DDL.
 
-## Required external actions and continuation
+Legacy PRs #19/#20 remain nonmergeable; issue #22 remains open. Main is unprotected. GitHub
+administration returns HTTP 403 `Resource not accessible by integration`. A workflow file is not
+an enabled rule. The workflow template now requires one review, dismisses stale approvals,
+and leaves linear history off. It requires manual dispatch after admin credentials are configured;
+this is implementation, not protection verification.
 
-1. Complete secure login with an existing disposable account, or manually create and confirm one
-   in the deployed application. Resume by proving authenticated protected access before the
-   ordered tenant/provider/tool/agent/billing proof chain.
-2. Repository owner: enable protection for main in GitHub Settings → Branches. Require PRs,
-   strict/up-to-date `validate`, resolved conversations, apply to administrators, and disallow
-   force pushes and deletion. Leave linear-history enforcement off to support non-rewriting
-   merge commits. Use an independent required approval once a reviewer is available; a solo
-   author cannot approve their own PR. Alternatively replace BRANCH_PROTECTION_TOKEN with a
-   repository-scoped credential having Administration read/write, then correct the workflow's
-   linear-history setting and verify the resulting rules. Never share this token in chat.
-3. Compare complete production definitions/privileges/constraints/triggers with the three missing
-   history migrations. Repair only proven differences, then reconcile history with evidence.
+## Exact external actions and continuation
+
+1. Inspect OpenAI request `req_bb13af116fc64e3a892a98b27aa1bc0e` in the provider dashboard.
+   Diagnose the rejection and restore deployment credentials/quota/GPT-4o Mini access as needed.
+   Do not share secrets in chat. Resume with harmless ALLOW and full response/intent/execution proof.
+2. Replacement run expired at 2026-10-01T00:02:42Z before authentication or isolation assertions.
+   Use a fresh disposable harness and confirm its verification inbox messages. Previous addresses were `adreinmorin+nxproof-a-36793077038-1@gmail.com` and
+   `adreinmorin+nxproof-b-36793077038-1@gmail.com`. Timed-out administrative
+   confirmation has unknown outcome; inspect before repeating.
+   Do not disable global email confirmation.
+3. Owner: GitHub Settings → Branches → main. Require PRs, strict/up-to-date `validate`, resolved
+   conversations, admin enforcement, no force pushes/deletions and one independent reviewer.
+   Leave linear history off for existing merge commits. The connection lacks Administration.
+   Alternatively configure repository-scoped `BRANCH_PROTECTION_TOKEN` with Administration
+   read/write through GitHub; then manually dispatch the corrected protection workflow.
+4. Restore production database connector access and configure sandbox Paddle plus a controlled
+   live MCP fixture through deployment configuration. Complete masking, denied-call, budget,
+   tool, persistent-intent and entitlement proofs in the requested order with durable evidence.
 
 Controlled design-partner pilot readiness is NOT ESTABLISHED. Broader production readiness is
-NOT ESTABLISHED. Architecture and tests remain intact; completion requires the real-runtime proof
-chain plus enabled repository protection and migration reconciliation.
-
-A later documentation commit does not retroactively attest another deployed build. Record its
-exact resulting main SHA, CI and Lovable readback separately after integration.
+NOT ESTABLISHED. Provider execution, tenant assertions, repository protection, migration
+reconciliation and remaining runtime proofs prevent release sign-off.

@@ -1,33 +1,21 @@
 version: 2
-dependency_audit_repair:
-  status: IMPLEMENTED
-  regression_run: 36787600726
-  regression_job: 110132644341
-  repair_run: 36787823073
-  repair_artifact: 11130477483
-  lock_changes:
-    - "brace-expansion 1.1.18 -> 1.1.21"
-    - "brace-expansion 5.0.9 -> 5.0.12"
-  audit_result: success
-  production_runtime_status: NOT_VERIFIED
-  note: Full exact-head CI is required before integration; no security gate was bypassed.
 last_updated: "2026-09-30"
 repository: adreinmorin-design/nexora-guard-core-695d0312
 branch: main
 verification_baseline:
-  implementation_sha: f54b698b23e176473fac9e8eeb0c92294edbeb1a
-  observed_at: "2026-09-30T22:42:15.054Z"
-  main_ci_run: 36612760244
-  main_ci_job: 109558068871
+  implementation_sha: a60c3bfd0b14e67ff088a57f524cab3b787002ea
+  observed_at: "2026-09-30T23:57:00Z"
+  main_ci_run: 36792902422
   main_ci_conclusion: success
-  lovable_latest_commit_sha: f54b698b23e176473fac9e8eeb0c92294edbeb1a
+  lovable_latest_commit_sha: a60c3bfd0b14e67ff088a57f524cab3b787002ea
   lovable_published: true
   lovable_status: ready
   independent_http_build_attestation: NOT_VERIFIED
-  evidence_ref: docs/evidence/2026-09-30-live-inspection.json
+  evidence_ref: docs/evidence/2026-09-30-runtime-verification.json
   documentation_commit_note:
-    This ledger identifies the inspected implementation. A later documentation-only
-    commit must be verified separately before claiming deployment of that new HEAD.
+    Exact inspected production implementation above. Resolve the subsequent documentation
+    commit with git rev-parse HEAD and verify its own CI and Lovable latest_commit_sha; runtime evidence
+    retains its tested SHA.
 capabilities:
   provider_request_evidence:
     status: IMPLEMENTED
@@ -41,9 +29,11 @@ capabilities:
         value:
           tests/providers.test.mjs and tests/gateway.test.mjs cover HTTP error correlation, body failures,
           Gemini responseId, bounded validation and request/audit/trace persistence
+      - type: failed_live_provider_request
+        value: docs/evidence/2026-09-30-runtime-verification.json#/provider_redact_probe
     blocker:
-      Repair merged after exact-head CI success (36523207207), production columns read back; live
-      successful and failed provider correlation evidence remains unverified
+      Live REDACT and harmless LOG dispatches returned provider_error. One upstream request ID
+      captured; no successful response, usage/cost attribution or full intent chain proved.
     evidence_scope:
       Historical references below are retained; they do not establish current deployed application
       behavior.
@@ -72,10 +62,11 @@ capabilities:
           this test only; this verifies the valid-session boundary, not the email-verification UX
       - type: current_browser_result
         value: docs/evidence/2026-09-30-live-inspection.json#/authentication
+      - type: current_protected_access
+        value: docs/evidence/2026-09-30-runtime-verification.json#/protected_access
     blocker:
-      2026-09-30 deployed application secure sign-in returned Invalid login credentials. Needs
-      a usable disposable account and successful protected application access; signup/email confirmation
-      also remains unverified.
+      Protected existing-user session access is verified separately. Signup and public email-confirmation
+      lifecycle remain unverified.
     verification_status: NOT_VERIFIED
     evidence_scope:
       Historical references below are retained; they do not establish current deployed application
@@ -94,9 +85,12 @@ capabilities:
           run_id=36505135893; job_id=109204756222; two fresh verification users were created; run timed
           out at 2026-09-29T01:04:27Z waiting for both users to authenticate; no own-resource or cross-ID
           isolation assertion executed
+      - type: production_test_attempt
+        value: docs/evidence/2026-09-30-runtime-verification.json#/tenant_attempts
     blocker:
-      Bootstrap RLS migration is present with creator/self-membership checks, but the four real-user
-      access assertions must be rerun after successful deployed application authentication.
+      Run 36791629265 authenticated two users and inserted isolated organizations; founder membership
+      POST returned 403 before four assertions. Replacement 36793077038 awaits confirmation; RLS remains
+      unchanged.
     verification_status: NOT_VERIFIED
     evidence_scope:
       Historical references below are retained; they do not establish current deployed application
@@ -106,7 +100,11 @@ capabilities:
     evidence:
       - type: ci_gateway_tests
         value: Repository allow/enforcement behavior covered by successful main CI run 36279267631
-    blocker: Requires live governed execution with a real downstream provider response
+      - type: failed_live_provider_request
+        value: docs/evidence/2026-09-30-runtime-verification.json#/provider_redact_probe
+    blocker:
+      Live REDACT and harmless LOG dispatches returned provider_error. One upstream request ID
+      captured; no successful response, usage/cost attribution or full intent chain proved.
     verification_status: NOT_VERIFIED
     evidence_scope:
       Historical references below are retained; they do not establish current deployed application
@@ -136,7 +134,11 @@ capabilities:
     evidence:
       - type: ci_security_tests
         value: Security suite passed in main CI run 36279267631
-    blocker: Requires privileged-action negative-path live verification
+      - type: production_console_gate
+        value: docs/evidence/2026-09-30-runtime-verification.json#/injection_probe
+    blocker:
+      Console REQUIRE_APPROVAL and withheld output observed; actual privileged tool action and
+      independent zero-egress evidence remain missing.
     verification_status: NOT_VERIFIED
     evidence_scope:
       Historical references below are retained; they do not establish current deployed application
@@ -213,6 +215,22 @@ capabilities:
     evidence_scope:
       Historical references below are retained; they do not establish current deployed application
       behavior.
+  authenticated_session_protected_access:
+    status: RUNTIME_VERIFIED
+    verification_status: RUNTIME_VERIFIED
+    evidence:
+      - type: production_runtime
+        value: docs/evidence/2026-09-30-runtime-verification.json#/protected_access
+    evidence_scope:
+      Existing user signed in via manual handoff and accessed server-backed tenant-scoped
+      Requests history.
+  execution_outcome_display:
+    status: RUNTIME_VERIFIED
+    verification_status: RUNTIME_VERIFIED
+    evidence:
+      - type: production_runtime
+        value: docs/evidence/2026-09-30-runtime-verification.json#/outcome_display
+    evidence_scope: Deployed execution screen preserves FAILED/BLOCKED despite completed audit persistence.
 database_inspection:
   status: DEPLOYED
   runtime_behavior_status: NOT_VERIFIED
@@ -223,14 +241,17 @@ database_inspection:
     - "20260920000100"
     - "20260925000100"
     - "20260929000200"
-  governed_executions: 0
-  governance_audit_events: 0
-  tool_invocations: 0
-  paddle_webhook_events: 0
   evidence_ref: docs/evidence/2026-09-30-live-inspection.json
   blocker:
     Related objects exist but complete schema/history reconciliation has not been proved. Do not
     replay non-idempotent DDL based on missing history alone.
+  observed_at: "2026-09-30T22:42:15.054Z"
+  current_evidence_query_status: BLOCKED_BY_CONNECTOR_TIMEOUT
+  initial_zero_row_counts_are_historical: true
+  initial_governed_executions: 0
+  initial_governance_audit_events: 0
+  initial_tool_invocations: 0
+  initial_paddle_webhook_events: 0
 repository_controls:
   ci:
     status: IMPLEMENTED
@@ -241,6 +262,8 @@ repository_controls:
         value:
           run_id=36612760244; job_id=109558068871; head_sha=f54b698b23e176473fac9e8eeb0c92294edbeb1a;
           conclusion=success
+      - type: github_actions_run
+        value: run_id=36792902422; head_sha=a60c3bfd0b14e67ff088a57f524cab3b787002ea; conclusion=success
     note: CI validates the repository test runtime; it is not product production proof.
   main_branch_protection:
     status: FAILED
@@ -275,8 +298,9 @@ release_readiness:
   controlled_design_partner_pilots: NOT_VERIFIED
   broader_production_release: NOT_VERIFIED
   next_step:
-    Secure login or manual signup of a disposable production application account, then execute
-    the ordered live proof chain.
+    Owner inspect OpenAI upstream request req_bb13af116fc64e3a892a98b27aa1bc0e and restore valid
+    provider credentials/quota/model access through deployment secrets, then resume exact-build live proof.
+    Never share secrets in chat.
 allowed_status_values:
   - NOT_IMPLEMENTED
   - IMPLEMENTED
