@@ -1,0 +1,28 @@
+name: Format verification evidence
+on:
+  push:
+    paths: [".github/workflows/verification-format.yml"]
+permissions:
+  contents: read
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: bunx prettier --write docs/current-state.md docs/verification-ledger.yaml docs/evidence/2026-09-30-runtime-verification.json docs/evidence/2026-09-30-protected-access.json docs/evidence/2026-09-30-runtime-outcomes.json .github/workflows/configure-main-protection.yml
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: formatted-runtime-evidence
+          path: |
+            docs/current-state.md
+            docs/verification-ledger.yaml
+            docs/evidence/2026-09-30-runtime-verification.json
+            docs/evidence/2026-09-30-protected-access.json
+            docs/evidence/2026-09-30-runtime-outcomes.json
+            .github/workflows/configure-main-protection.yml
+          include-hidden-files: true
+          retention-days: 30
