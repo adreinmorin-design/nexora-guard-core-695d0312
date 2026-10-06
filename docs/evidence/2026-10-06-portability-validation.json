@@ -1,0 +1,73 @@
+{
+  "kind": "development_and_ci_portability_validation",
+  "tested_implementation_sha": "8b31ba1e9d3a3a2f4280b0d041682109e8545c09",
+  "local_smoke": {
+    "observedAt": "2026-10-06T16:58:38.943Z",
+    "kind": "local_built_server_smoke",
+    "sha": "8b31ba1e9d3a3a2f4280b0d041682109e8545c09",
+    "node": "24.19.0",
+    "probes": [
+      {
+        "path": "/api/live",
+        "status": 200,
+        "sha": "8b31ba1e9d3a3a2f4280b0d041682109e8545c09",
+        "correlationId": "c00d744c-2c48-4386-a8cd-7d56de73a20e"
+      },
+      {
+        "path": "/auth",
+        "status": 200,
+        "sha": "8b31ba1e9d3a3a2f4280b0d041682109e8545c09",
+        "correlationId": "6c271d64-e472-4d12-893d-fc75c32fa3c9"
+      },
+      {
+        "path": "/api/agent",
+        "status": 401,
+        "sha": "8b31ba1e9d3a3a2f4280b0d041682109e8545c09",
+        "correlationId": "2ec71749-2898-45d9-b4d3-d5445623bf8c"
+      },
+      {
+        "path": "/api/mcp",
+        "status": 403,
+        "sha": "8b31ba1e9d3a3a2f4280b0d041682109e8545c09",
+        "correlationId": "932796dd-d5b7-4b01-b69d-c471a182b73a"
+      }
+    ],
+    "secretSentinelAbsent": true,
+    "limitations": [
+      "synthetic backend credentials",
+      "no authenticated session",
+      "no successful backend or provider call",
+      "not production runtime verification"
+    ]
+  },
+  "local_full_validation": {
+    "checks_passed": 16,
+    "existing_tests_passed": 67,
+    "portability_tests_passed": 5,
+    "patched_dependency_audit": "no vulnerabilities found"
+  },
+  "github_actions": {
+    "repository_ci": {
+      "run_id": 37499923845,
+      "conclusion": "success"
+    },
+    "portability": {
+      "run_id": 37499923662,
+      "job_id": 112394006139,
+      "conclusion": "success",
+      "container_build": "success",
+      "container_start_and_served_revision": "success",
+      "artifact_id": 11429401453,
+      "artifact_digest": "sha256:96a9f5f8a8231cead74303310e3a8cc22e0ba586bf3cc2e8c648bb907e5cf0c8",
+      "workflow_build_sha": "c2da718b58ac70d6648f7b593f5ef9033d3a07fa",
+      "sha_note": "PR workflows build the GitHub synthetic merge revision; head SHA identifies implementation. Neither is a deployed production revision."
+    }
+  },
+  "production_mutations": false,
+  "limitations": [
+    "Synthetic backend credentials only.",
+    "No independently hosted deployment, real backend connectivity, authenticated governance, tenant isolation, successful provider forwarding, quota denial or DLP forwarding proved.",
+    "Existing Lovable production remains unchanged.",
+    "No capability promoted to RUNTIME_VERIFIED."
+  ]
+}

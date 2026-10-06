@@ -28,6 +28,8 @@ capabilities:
     evidence:
       - type: live_infrastructure_inspection
         value: docs/evidence/2026-10-06-portability-inspection.json
+      - type: development_and_ci_validation
+        value: docs/evidence/2026-10-06-portability-validation.json
       - type: implementation
         value: vite.portable.config.ts, scripts/start-portable.mjs, Dockerfile.portable
     blocker: Independent hosting account, runtime backend credentials/origin control and one provider credential unavailable. Local smoke and CI do not prove production governance.

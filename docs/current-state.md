@@ -31,7 +31,14 @@ was performed. Render paid is the lowest-cost evaluated managed host preserving
 SMTP/IMAP behavior; connected Worker hosting and Railway Hobby cannot preserve
 that transport without additional changes. No hosting account was provisioned.
 
-Evidence: `docs/evidence/2026-10-06-portability-inspection.json`.
+PR #47 implementation `8b31ba1e9d3a3a2f4280b0d041682109e8545c09` passed
+repository CI `37499923845` and portability CI `37499923662`, including container
+build/start and served revision checks. All 16 local verification checks and five
+portability tests passed. CI uses a synthetic PR merge revision and fake backend
+credentials; this remains development evidence only.
+
+Evidence: `docs/evidence/2026-10-06-portability-inspection.json` and
+`docs/evidence/2026-10-06-portability-validation.json`.
 Dependency map, ownership limitations, data inventory and separate migration
 areas: `docs/portability-assessment.md`. Build/start/rollback and acceptance
 procedure: `docs/independent-deployment.md`.
