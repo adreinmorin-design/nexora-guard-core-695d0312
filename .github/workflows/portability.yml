@@ -1,0 +1,62 @@
+name: Independent runtime portability
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_portability_fixture
+      NEXORA_BUILD_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24.19.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: bun run test:portability
+      - run: bun run build:portable
+      - run: node scripts/smoke-portable.mjs
+      - name: Build pinned container
+        run: |
+          docker build -f Dockerfile.portable -t nexora-portable \
+            --build-arg SUPABASE_URL \
+            --build-arg SUPABASE_PUBLISHABLE_KEY \
+            --build-arg NEXORA_BUILD_SHA .
+      - name: Start container and check served revision
+        run: |
+          docker run -d --name nexora-portable -p 127.0.0.1:3000:3000 \
+            -e SUPABASE_URL -e SUPABASE_PUBLISHABLE_KEY \
+            -e SUPABASE_SERVICE_ROLE_KEY=sb_secret_container_fixture nexora-portable
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/api/live > /tmp/live.json; then break; fi
+            sleep 1
+          done
+          node -e 'const fs=require("node:fs"); const v=JSON.parse(fs.readFileSync("/tmp/live.json")); if(v.sha!==process.env.NEXORA_BUILD_SHA || v.status!=="ok") process.exit(1)'
+          test "$(curl --silent -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' http://127.0.0.1:3000/api/agent)" = "401"
+      - name: Container diagnostics
+        if: ${{ always() }}
+        run: |
+          docker logs nexora-portable > /tmp/container.log 2>&1 || true
+          if grep -q sb_secret_container_fixture /tmp/container.log; then
+            echo "Runtime credential appeared in container logs"; exit 1
+          fi
+          mkdir -p artifacts/portability
+          cp /tmp/container.log artifacts/portability/container.log
+          docker rm -f nexora-portable || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: ${{ always() }}
+        with:
+          name: nexora-portability-${{ github.sha }}
+          path: artifacts/portability/
+          retention-days: 30

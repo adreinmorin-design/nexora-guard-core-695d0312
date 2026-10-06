@@ -1,5 +1,46 @@
 # Nexora Current State
 
+## Infrastructure portability assessment — 2026-10-06
+
+Provider integration is temporarily paused. Live main and Lovable latest revision
+both report `ef9bf7aa391dba7c82a6f1bc7fdbc6133bb15e67`; main CI run `36798448209`
+passed. This is control-plane evidence, not a served production SHA attestation.
+
+Read-only Lovable SQL now works as `postgres`. Current inventory: 36 RLS-enabled
+public tables, 63 policies, 23 functions, 17 triggers, 27 auth users, zero storage
+objects/buckets and zero Vault secrets. Nexora is absent from connected Supabase
+project inventory; its current API host is Lovable Cloud. Independent database
+connection/service-role credentials and auth configuration access are unavailable.
+Backend reuse from a new host is **NOT_VERIFIED**. Existing data and missing
+migration-history entries must be accounted for before any migration.
+
+An additive independent Node/Nitro build, validated start wrapper, liveness/SHA
+response, metadata logging, container definition and portability CI are prepared
+on a separate branch. The original Lovable build and governed execution code are
+preserved. Local synthetic built-server smoke checks are development evidence,
+not hosted-runtime, authentication, provider or tenant-isolation proof. No new
+capability is marked RUNTIME_VERIFIED.
+
+The inspected production lockfile now has two critical/two high advisories across
+seroval, shell-quote and source-map-js. The separate portability branch applies
+three targeted patched transitive overrides; production remains unmodified.
+A fresh dependency audit reports no vulnerabilities on the patched lockfile.
+
+No database migration, production publish, DNS change or provider-secret change
+was performed. Render paid is the lowest-cost evaluated managed host preserving
+SMTP/IMAP behavior; connected Worker hosting and Railway Hobby cannot preserve
+that transport without additional changes. No hosting account was provisioned.
+
+Evidence: `docs/evidence/2026-10-06-portability-inspection.json`.
+Dependency map, ownership limitations, data inventory and separate migration
+areas: `docs/portability-assessment.md`. Build/start/rollback and acceptance
+procedure: `docs/independent-deployment.md`.
+
+The next external boundary is an authorized independent hosting account. Backend
+service-role/origin control and one provider credential remain subsequent gates.
+Do not resume MCP/RBAC or prepare domain cutover before the independent core
+runtime proof chain passes. Earlier evidence below retains its original scope.
+
 ## Production verification — 2026-10-01 UTC
 
 This supersedes earlier baselines. Preserve Identity → Intent → Governed Execution → Policy →
