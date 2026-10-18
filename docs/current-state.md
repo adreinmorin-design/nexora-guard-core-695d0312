@@ -1,5 +1,42 @@
 # Nexora Current State
 
+## Verification — 2026-10-18 UTC / October 17 Pacific
+
+**Production readiness remains NOT ESTABLISHED.** This is a fresh, limited verification run,
+not a completed authenticated end-to-end sign-off. Evidence:
+`docs/evidence/2026-10-18-verification-report.md`,
+`docs/evidence/2026-10-18-verification.json`,
+`docs/evidence/2026-10-18-http-verification.json` and captured check logs.
+
+- GitHub main and Lovable latest SHA both report `ef9bf7aa391dba7c82a6f1bc7fdbc6133bb15e67`.
+  Lovable is published/ready. Served-binary SHA remains independently unattested.
+- Existing CI `36798448209` / job `110167161826` succeeded October 1 on that SHA;
+  it is not a new CI run. Main still reports unprotected.
+- Fresh repository validation: 67 tests pass; lint, typecheck, format and production build pass.
+  Dependency audit fails with six advisory entries (four critical, two high) across five packages.
+  Affected versions are confirmed; Nexora-specific exploitability was not demonstrated.
+- Live HTTP: six public pages return 200; missing/malformed agent bearer returns 401;
+  MCP GET returns 405, cross-origin POST 403, anonymous POST 401; unsigned Paddle webhook 401.
+  These are narrowly scoped boundary checks, not complete governance or billing proofs.
+- Secure browser sign-in returned `Invalid login credentials`; a valid protected session was
+  not established. Earlier protected-access/outcome-display proofs below remain historical.
+- Database connector initially worked: 36 public tables have RLS; no inspected public definer
+  was browser-executable. Stored request outcomes are eight provider errors and one approval;
+  three intents and three governed executions exist, with zero tool/webhook events.
+  Stored rows are not new runtime execution proofs.
+- The next database-role isolation query was not executed because the Lovable free-plan MCP
+  database-action limit was reached (retry reported in 55 minutes). Direct backend API probes
+  received HTTP 403/error code 1010, not verified PostgREST authorization responses.
+- Three migration-history gaps remain: `20260920000100`, `20260925000100`,
+  `20260929000200`. No migration or configuration was changed.
+- Public footer still says `DreEnt. LLC`, contrary to the owner's sole-proprietorship status.
+
+No fresh positive provider, tenant-isolation, tool/MCP, persistent-intent or Paddle lifecycle
+proof completed. No new product capability is RUNTIME_VERIFIED by this run. Restore valid
+protected sign-in and resume backend probes after quota reset; update affected dependencies
+before release, then rerun the exact-build acceptance chain. Full findings and reproduction
+commands are in the evidence report.
+
 ## Production verification — 2026-10-01 UTC
 
 This supersedes earlier baselines. Preserve Identity → Intent → Governed Execution → Policy →

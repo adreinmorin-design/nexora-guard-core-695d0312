@@ -1,0 +1,95 @@
+{
+  "observed_at": "2026-10-18T03:18:13Z",
+  "repository": "adreinmorin-design/nexora-guard-core-695d0312",
+  "tested_head": "ef9bf7aa391dba7c82a6f1bc7fdbc6133bb15e67",
+  "deployment": {
+    "project_id": "f46c7dc2-f8c6-4710-96bb-07ffc11e5270",
+    "latest_commit_sha": "ef9bf7aa391dba7c82a6f1bc7fdbc6133bb15e67",
+    "is_published": true,
+    "project_status": "ready",
+    "production_url": "https://nexora-guard-core.lovable.app",
+    "served_sha_attested": false
+  },
+  "ci": {
+    "run_id": 36798448209,
+    "job_id": 110167161826,
+    "conclusion": "success",
+    "date": "2026-10-01",
+    "fresh_current_run": false
+  },
+  "main_protected": false,
+  "database": {
+    "source": "Lovable project query_database; normalized observations from successful SELECT responses",
+    "observed_at": "2026-10-18T03:12:29.603023+00:00",
+    "public_tables": 36,
+    "public_rls_disabled": 0,
+    "browser_executable_public_security_definers": 0,
+    "request_statuses": {
+      "provider_error": 8,
+      "pending_approval": 1
+    },
+    "governed_executions": 3,
+    "intents": 3,
+    "tool_invocations": 0,
+    "paddle_webhook_events": 0,
+    "mcp_servers": 1,
+    "mcp_tools": 1,
+    "missing_migration_history": ["20260920000100", "20260925000100", "20260929000200"],
+    "migration_history_count": 20,
+    "later_query": {
+      "executed": false,
+      "reason": "Free-plan MCP database action limit reached; retry in 55 minutes",
+      "query_scope": "transaction-scoped authenticated role A own/cross-tenant read",
+      "tenant_isolation_proof": false
+    }
+  },
+  "browser": {
+    "observed_at": "2026-10-18",
+    "landing_load": "PASS",
+    "public_footer": "NEXORA · DreEnt. LLC",
+    "auth_request": "secure browserAuth submitted",
+    "post_submit_result": "Invalid login credentials",
+    "authenticated_session": false,
+    "credentials_captured": false
+  },
+  "setup": {
+    "direct_disposable_signup": "BLOCKED: direct backend HTTP rejection, non-JSON response; harness stopped; no created account confirmed",
+    "fixture_agent_created": false,
+    "rls_test_executed": false
+  },
+  "current_runtime_proofs": {
+    "public_pages": 6,
+    "agent_missing_invalid_bearer": "HTTP 401",
+    "mcp_get": "HTTP 405",
+    "mcp_cross_origin": "HTTP 403 Origin denied",
+    "mcp_anonymous": "HTTP 401",
+    "paddle_unsigned": "HTTP 401 Invalid signature",
+    "database_rest_probes": "BLOCKED HTTP 403 error code 1010"
+  },
+  "repository_tests": {
+    "node": "v24.19.0",
+    "bun": "1.4.2",
+    "install": "bun install --frozen-lockfile --ignore-scripts",
+    "tests": 67,
+    "passed": 67,
+    "failed": 0,
+    "lint": "PASS",
+    "typescript": "PASS",
+    "format": "PASS",
+    "build": "PASS",
+    "audit": "FAIL: 6 advisory findings (4 critical,2 high)"
+  },
+  "scope": "Repository tests and limited live negative paths; not full authenticated end-to-end product verification. No provider calls, customer charges, schema changes, policy changes or global auth weakening performed.",
+  "readiness": "NOT_ESTABLISHED",
+  "blockers": [
+    "Valid protected browser session unavailable",
+    "Database connector free-plan action quota exhausted",
+    "Direct backend API requests rejected before verified authorization",
+    "Affected locked dependencies",
+    "Main unprotected",
+    "Missing migration history reconciliation",
+    "Independent served-build SHA attestation missing",
+    "Successful provider/usage and live deny-zero-dispatch not proved",
+    "MCP/tool positive/negative, persistent multi-step and Paddle sandbox lifecycle not proved"
+  ]
+}

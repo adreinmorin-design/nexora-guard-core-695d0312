@@ -1,7 +1,53 @@
 version: 2
-last_updated: "2026-10-01"
+last_updated: "2026-10-18"
 repository: adreinmorin-design/nexora-guard-core-695d0312
 branch: main
+latest_verification_run:
+  observed_at: "2026-10-18T03:18:13Z"
+  tested_sha: ef9bf7aa391dba7c82a6f1bc7fdbc6133bb15e67
+  evidence_ref: docs/evidence/2026-10-18-verification.json
+  report_ref: docs/evidence/2026-10-18-verification-report.md
+  http_evidence_ref: docs/evidence/2026-10-18-http-verification.json
+  repository_tests: { passed: 67, failed: 0 }
+  lint: PASS
+  typecheck: PASS
+  format: PASS
+  build: PASS
+  dependency_audit:
+    status: FAILED
+    critical: 4
+    high: 2
+    note: Six advisory entries across five packages; application exploitability not demonstrated.
+    evidence_ref: docs/evidence/2026-10-18-checks/audit.log
+  live_http_checks: { passed: 12, blocked: 2, failed: 0 }
+  live_checks_scope:
+    Public availability and anonymous/malformed credential, origin, method and unsigned
+    webhook rejection only. No independent downstream zero-call proof.
+  protected_browser_session: NOT_VERIFIED
+  sign_in_observation: Invalid login credentials after secure browser submission.
+  database_inspection:
+    public_tables_with_rls: 36
+    browser_executable_public_definers: 0
+    requests: { provider_error: 8, pending_approval: 1 }
+    intents: 3
+    governed_executions: 3
+    tool_invocations: 0
+    paddle_webhook_events: 0
+    note: Persisted history and catalog inspection do not establish runtime behavior.
+  tenant_isolation_assertions_executed: false
+  database_blocker: Free-plan MCP database action limit; last query not executed; retry in 55 minutes.
+  direct_backend_api_blocker: HTTP 403 error code 1010; no verified PostgREST auth result.
+  deployment:
+    lovable_latest_commit_sha: ef9bf7aa391dba7c82a6f1bc7fdbc6133bb15e67
+    published: true
+    project_status: ready
+    independent_served_sha_attestation: NOT_VERIFIED
+  historical_ci: { run_id: 36798448209, job_id: 110167161826, conclusion: success }
+  main_protected: false
+  new_product_capabilities_runtime_verified: []
+  release_readiness: NOT_VERIFIED
+  next_step: Restore a valid protected browser session, resume backend checks after quota reset,
+    remediate affected dependencies, attest the exact build and execute all golden runtime proofs.
 verification_baseline:
   implementation_sha: 7b5f01b8b7ba8329454239c13b40d257bad5e1ea
   earlier_runtime_test_sha: a60c3bfd0b14e67ff088a57f524cab3b787002ea
@@ -220,8 +266,10 @@ capabilities:
       Historical references below are retained; they do not establish current deployed application
       behavior.
   authenticated_session_protected_access:
-    status: RUNTIME_VERIFIED
-    verification_status: RUNTIME_VERIFIED
+    status: NOT_VERIFIED
+    verification_status: NOT_VERIFIED
+    historical_verification_status: RUNTIME_VERIFIED
+    current_run_blocker: Secure browser sign-in returned Invalid login credentials on 2026-10-18 UTC.
     evidence:
       - type: production_runtime
         value: docs/evidence/2026-09-30-runtime-verification.json#/protected_access
@@ -231,8 +279,10 @@ capabilities:
       Existing user signed in via manual handoff and accessed server-backed tenant-scoped
       Requests history.
   execution_outcome_display:
-    status: RUNTIME_VERIFIED
-    verification_status: RUNTIME_VERIFIED
+    status: NOT_VERIFIED
+    verification_status: NOT_VERIFIED
+    historical_verification_status: RUNTIME_VERIFIED
+    current_run_blocker: No authenticated current-build outcome screen reached in the latest run.
     evidence:
       - type: production_runtime
         value: docs/evidence/2026-09-30-runtime-verification.json#/outcome_display
