@@ -639,13 +639,30 @@ export async function runGovernedRequest(params: {
       validateProviderIdentifier(
         error instanceof Error && "providerRequestId" in error ? error.providerRequestId : null,
       ) ?? providerRequestId;
+    // Only a real ProviderError carries a sanitized, hardcoded message (see
+    // mapUpstreamStatus in ai-gateway.server.ts). A generic/unknown thrown
+    // error must never be persisted — it could contain arbitrary internal
+    // text — so it is duck-typed strictly by name + numeric status.
+    const isClassifiedProviderError =
+      error instanceof Error && error.name === "ProviderError" && "status" in error &&
+      typeof error.status === "number";
+    const providerFailureReason = isClassifiedProviderError ? error.message : null;
+    const providerStatus = isClassifiedProviderError ? error.status : null;
     status = "provider_error";
-    finalReason = `${finalReason} · provider request failed; details withheld`;
+    finalReason = providerFailureReason
+      ? `${finalReason} · provider request failed: ${providerFailureReason}`
+      : `${finalReason} · provider request failed; details withheld`;
     await trace({
       stage: "execution",
       status: "failed",
-      summary: "Provider execution failed; upstream details withheld.",
-      detail: { providerRequestId, providerResponseId },
+      summary: providerFailureReason
+        ? "Provider execution failed; classified failure reason recorded."
+        : "Provider execution failed; upstream details withheld.",
+      detail: {
+        providerRequestId,
+        providerResponseId,
+        ...(isClassifiedProviderError ? { providerStatus, providerFailureReason } : {}),
+      },
     });
   }
 
