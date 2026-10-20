@@ -275,6 +275,37 @@ test("provider failure correlation persists in request, audit, trace and result"
   assert.equal(f.settled, 0, "ambiguous billable failure keeps its reservation");
 });
 
+test("classified provider error reason is recorded; unclassified errors stay hidden", async () => {
+  const f = fixture();
+  const events = [];
+  const result = await f.run({
+    execute: async () => {
+      throw new ProviderError(429, "Provider rate limit reached. Retry shortly.", "req_classified");
+    },
+    trace: async (event) => events.push(event),
+  });
+  assert.equal(result.status, "provider_error");
+  assert.ok(result.reason.includes("Provider rate limit reached. Retry shortly."));
+  assert.ok(
+    events.some(
+      (e) =>
+        e.status === "failed" &&
+        e.detail.providerStatus === 429 &&
+        e.detail.providerFailureReason === "Provider rate limit reached. Retry shortly.",
+    ),
+  );
+
+  const f2 = fixture();
+  const r2 = await f2.run({
+    execute: async () => {
+      throw new Error("secret-user-input");
+    },
+  });
+  assert.equal(r2.status, "provider_error");
+  assert.ok(!JSON.stringify(r2).includes("secret-user-input"));
+  assert.ok(r2.reason.includes("details withheld"));
+});
+
 test("pipeline validates identifiers at persistence boundary", async () => {
   for (const fails of [false, true]) {
     const f = fixture();
