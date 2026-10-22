@@ -103,3 +103,41 @@ this is implementation, not protection verification.
 Controlled design-partner pilot readiness is NOT ESTABLISHED. Broader production readiness is
 NOT ESTABLISHED. Provider execution, tenant assertions, repository protection, migration
 reconciliation and remaining runtime proofs prevent release sign-off.
+
+## 2026-10-20 — Fresh live verification session
+
+Repo accessed via Lovable (no GitHub connector available this session). Current HEAD confirmed as
+commit `ef9bf7a` (cosmetic favicon change only) — no functional drift from the 2026-10-01 baseline;
+the documented baseline remains substantively current.
+
+- FIXED: provider_error failures previously discarded the classified upstream failure reason
+  ("details withheld"). `pipeline.ts` now persists error.status/error.message for genuine
+  ProviderError instances (sanitized, hardcoded classification strings only) while still never
+  persisting arbitrary/unclassified error text — regression test added, 24/24 gateway tests
+  passing. This unblocks future diagnosis of provider failures.
+- RE-CONFIRMED live, unresolved: the 3 missing migration-history rows (`20260920000100`,
+  `20260925000100`, `20260929000200`) — files exist in repo, corresponding schema objects exist
+  live, but supabase_migrations.schema_migrations still has no row for any of the three. Needs
+  manual reconciliation, not a blind replay.
+- NEW FINDING: 8/8 of this organization's real historical provider dispatch attempts (2026-09-20
+  through 2026-09-30) failed with provider_error — not an isolated incident. All 8 reservations
+  remain correctly unsettled per nexora_settle's intentional "never release ambiguous spend"
+  design (not a bug). Root cause of the upstream failures themselves is still unknown (will now
+  be diagnosable on the next live attempt thanks to the fix above).
+- REVIEWED, no defect found: nexora_reserve/nexora_settle budget admission (atomic, correctly
+  accounts for in-flight reservations); dlp.ts detection engine; enforcement.ts (structurally
+  guarantees REDACT never forwards unredacted text, fail-closed); tool-policy.ts + mcp.server.ts
+  tool authorization (re-verifies capability/grant immediately before dispatch, not just upfront).
+- RE-CONFIRMED live, unresolved, re-framed: the org_members founder-bootstrap 403. Direct
+  SQL-level simulation with the real org id, real user id, and role=authenticated SUCCEEDS —
+  proving the RLS policy and private.nexora_can_bootstrap_org logic are correct. A live decoded
+  JWT from a real signup is also completely standard (role=authenticated, aud=authenticated,
+  is_anonymous=false — nothing anomalous). Yet the actual REST path still returned 403/42501 in
+  the one clean live test this session. Root cause remains open; likely needs server-side request
+  logging to resolve further, not more black-box reproduction.
+- Public signup requires email confirmation (mailer_autoconfirm=false) in production, confirmed
+  both before and after a temporary verification toggle (properly reverted and independently
+  re-verified stable via 3 delayed re-checks).
+- Still blocked: GitHub branch protection verification (no GitHub access this session). Live
+  governed end-to-end request as an authenticated real user not attempted (no browser/session
+  path available from this environment).
