@@ -317,3 +317,110 @@ allowed_status_values:
   - RUNTIME_VERIFIED
   - FAILED
   - NOT_VERIFIED
+verification_session_2026_10_20:
+  session_scope:
+    Repo accessed via Lovable (no GitHub connector this session). HEAD confirmed as ef9bf7a
+    (cosmetic favicon change only); no functional drift from the 2026-10-01 baseline.
+  provider_error_reason_persistence:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - type: implementation
+        value:
+          "pipeline.ts now persists error.status/error.message for genuine ProviderError instances
+          (sanitized, hardcoded classification strings only); unclassified errors still record
+          'details withheld' and arbitrary error text is never persisted"
+      - type: regression_tests
+        value:
+          "tests/gateway.test.mjs: 'classified provider error reason is recorded; unclassified
+          errors stay hidden' added; 24/24 gateway tests passing"
+    blocker:
+      Not yet RUNTIME_VERIFIED — needs a real live provider failure to confirm the classified
+      reason is captured end-to-end.
+  migration_history_gap:
+    status: NOT_VERIFIED
+    evidence:
+      - type: live_recheck
+        value:
+          "supabase_migrations.schema_migrations still has no row for 20260920000100,
+          20260925000100, or 20260929000200; migration files exist in repo and corresponding
+          schema objects exist live"
+    blocker:
+      Unresolved. Requires manual reconciliation of definitions/privileges/constraints before
+      recording history; do not blindly replay DDL.
+  historical_provider_dispatch_failures:
+    status: FAILED
+    evidence:
+      - type: live_query
+        value:
+          "8/8 of this organization's real historical provider dispatch attempts (2026-09-20
+          through 2026-09-30) failed with provider_error; all 8 reservations remain correctly
+          unsettled per nexora_settle's intentional never-release-ambiguous-spend design"
+    blocker:
+      Upstream failure root cause unknown; now diagnosable on the next live attempt via the
+      provider_error reason persistence fix above.
+  org_members_founder_bootstrap:
+    status: FAILED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - type: direct_sql_simulation
+        value:
+          "SQL-level simulation with the real org id, real user id, and role=authenticated
+          SUCCEEDS — RLS policy and private.nexora_can_bootstrap_org logic proven correct"
+      - type: live_decoded_jwt
+        value:
+          "Decoded JWT from a real signup is standard: role=authenticated, aud=authenticated,
+          is_anonymous=false — nothing anomalous"
+      - type: live_rest_attempt
+        value:
+          "The actual REST path still returned HTTP 403 / 42501 in the one clean live test this
+          session"
+    blocker:
+      Root cause open. Policy logic and JWT shape are both proven normal; likely needs
+      server-side request logging rather than more black-box reproduction.
+  budget_reservation_atomicity:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - type: code_review
+        value:
+          "nexora_reserve/nexora_settle reviewed: atomic admission, correctly accounts for
+          in-flight reservations; no defect found"
+    blocker:
+      Logically verified by inspection only; not RUNTIME_VERIFIED via live concurrent load.
+  pii_redaction_evidence_capture:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - type: code_review
+        value:
+          "prompt_preview/response_preview persistence in pipeline.ts confirmed to store redacted
+          (not raw) text — closes part of the prior lacked-captured-evidence gap at the code
+          level; dlp.ts detection engine and enforcement.ts fail-closed REDACT forwarding
+          reviewed, no defect found"
+    blocker:
+      Not independently RUNTIME_VERIFIED against a live redacted payload.
+  mcp_tool_authorization:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - type: code_review
+        value:
+          "tool-policy.ts + mcp.server.ts reviewed: capability/grant re-verified immediately
+          before dispatch, not just upfront; no defect found"
+      - type: live_query
+        value: tool_invocations=0 historically — no live invocation evidence exists
+    blocker:
+      Entirely NOT_VERIFIED live; no fixtures available this session.
+  email_confirmation_setting:
+    status: RUNTIME_VERIFIED
+    verification_status: RUNTIME_VERIFIED
+    evidence:
+      - type: live_settings_readback
+        value:
+          "mailer_autoconfirm=false confirmed before and after a temporary verification toggle;
+          revert independently re-verified stable via 3 delayed re-checks"
+  still_blocked:
+    - GitHub branch protection verification (no GitHub access this session)
+    - Live governed end-to-end request as an authenticated real user (no browser/session path
+      available from this environment)
