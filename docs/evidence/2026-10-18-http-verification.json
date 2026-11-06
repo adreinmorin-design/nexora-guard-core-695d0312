@@ -1,0 +1,312 @@
+{
+  "tested_sha": "ef9bf7aa391dba7c82a6f1bc7fdbc6133bb15e67",
+  "sha_scope": "repository and Lovable metadata only; served binary not attested",
+  "results": [
+    {
+      "name": "page:/",
+      "at": "2026-10-18T03:13:46.666817+00:00",
+      "method": "GET",
+      "url": "https://nexora-guard-core.lovable.app/",
+      "final_url": "https://nexora-guard-core.lovable.app/",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "content_type": "text/html; charset=utf-8",
+      "body_sha256": "fa90115aa1e752d15ffc6fed7036ca8c289a609b4a42096b734b5a708acc39fe",
+      "headers": {
+        "Cache-Control": "no-cache, must-revalidate, max-age=0",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      }
+    },
+    {
+      "name": "page:/auth",
+      "at": "2026-10-18T03:13:46.667885+00:00",
+      "method": "GET",
+      "url": "https://nexora-guard-core.lovable.app/auth",
+      "final_url": "https://nexora-guard-core.lovable.app/auth?next=%2Foverview",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "content_type": "text/html; charset=utf-8",
+      "body_sha256": "abc99bff4d6b71ab56912c29ab2d3dd2d5ad63411ab4e0e3b8bbdaf06c70edff",
+      "headers": {
+        "Cache-Control": "no-cache, must-revalidate, max-age=0",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      }
+    },
+    {
+      "name": "page:/pricing",
+      "at": "2026-10-18T03:13:46.668345+00:00",
+      "method": "GET",
+      "url": "https://nexora-guard-core.lovable.app/pricing",
+      "final_url": "https://nexora-guard-core.lovable.app/pricing",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "content_type": "text/html; charset=utf-8",
+      "body_sha256": "e79600a7aa38ec118bd2144b9c80b80f0458675e13e66a646f6c7ed5c3cd6651",
+      "headers": {
+        "Cache-Control": "no-cache, must-revalidate, max-age=0",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      }
+    },
+    {
+      "name": "page:/terms",
+      "at": "2026-10-18T03:13:46.668943+00:00",
+      "method": "GET",
+      "url": "https://nexora-guard-core.lovable.app/terms",
+      "final_url": "https://nexora-guard-core.lovable.app/terms",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "content_type": "text/html; charset=utf-8",
+      "body_sha256": "06bca02e4e95b7ac2259f39e041aedca1fb580b290397f7c8f96723bbb04180c",
+      "headers": {
+        "Cache-Control": "no-cache, must-revalidate, max-age=0",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      }
+    },
+    {
+      "name": "page:/privacy",
+      "at": "2026-10-18T03:13:51.140841+00:00",
+      "method": "GET",
+      "url": "https://nexora-guard-core.lovable.app/privacy",
+      "final_url": "https://nexora-guard-core.lovable.app/privacy",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "content_type": "text/html; charset=utf-8",
+      "body_sha256": "a0ee653d36234c49912657cbeeb8b68dcfa068b887b01f9a058c8566aee7ff3b",
+      "headers": {
+        "Cache-Control": "no-cache, must-revalidate, max-age=0",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      }
+    },
+    {
+      "name": "page:/refund",
+      "at": "2026-10-18T03:13:51.204745+00:00",
+      "method": "GET",
+      "url": "https://nexora-guard-core.lovable.app/refund",
+      "final_url": "https://nexora-guard-core.lovable.app/refund",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "content_type": "text/html; charset=utf-8",
+      "body_sha256": "fe003f7da6dc86f6eeaa7c808de9d25e2e545f841b42b01b1c79bc4da84ca853",
+      "headers": {
+        "Cache-Control": "no-cache, must-revalidate, max-age=0",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      }
+    },
+    {
+      "name": "anonymous_agent",
+      "at": "2026-10-18T03:13:51.500539+00:00",
+      "method": "POST",
+      "url": "https://nexora-guard-core.lovable.app/api/agent",
+      "final_url": "https://nexora-guard-core.lovable.app/api/agent",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "content_type": "application/json",
+      "body_sha256": "1e7762ff648a3112e0d9ad2531f74949993579560a27996879b6a8235b1ff60d",
+      "headers": {
+        "Cache-Control": "no-store",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      },
+      "body": "{\"error\":\"Valid agent bearer credential required.\"}"
+    },
+    {
+      "name": "invalid_agent",
+      "at": "2026-10-18T03:13:55.196560+00:00",
+      "method": "POST",
+      "url": "https://nexora-guard-core.lovable.app/api/agent",
+      "final_url": "https://nexora-guard-core.lovable.app/api/agent",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "content_type": "application/json",
+      "body_sha256": "1e7762ff648a3112e0d9ad2531f74949993579560a27996879b6a8235b1ff60d",
+      "headers": {
+        "Cache-Control": "no-store",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      },
+      "body": "{\"error\":\"Valid agent bearer credential required.\"}"
+    },
+    {
+      "name": "mcp_get",
+      "at": "2026-10-18T03:13:55.236220+00:00",
+      "method": "GET",
+      "url": "https://nexora-guard-core.lovable.app/api/mcp",
+      "final_url": "https://nexora-guard-core.lovable.app/api/mcp",
+      "status": 405,
+      "expected": 405,
+      "pass": true,
+      "content_type": null,
+      "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "headers": {
+        "Allow": "POST",
+        "Cache-Control": "no-store",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      },
+      "body": ""
+    },
+    {
+      "name": "mcp_cross_origin",
+      "at": "2026-10-18T03:13:55.330634+00:00",
+      "method": "POST",
+      "url": "https://nexora-guard-core.lovable.app/api/mcp",
+      "final_url": "https://nexora-guard-core.lovable.app/api/mcp",
+      "status": 403,
+      "expected": 403,
+      "pass": true,
+      "content_type": "text/plain;charset=UTF-8",
+      "body_sha256": "afd7b9597b290529fd91f83658ea8462474d06f17ca2753c0a3e4724e6a78d2e",
+      "headers": {
+        "Cache-Control": "no-store",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      },
+      "body": "Origin denied"
+    },
+    {
+      "name": "mcp_anonymous",
+      "at": "2026-10-18T03:13:55.433492+00:00",
+      "method": "POST",
+      "url": "https://nexora-guard-core.lovable.app/api/mcp",
+      "final_url": "https://nexora-guard-core.lovable.app/api/mcp",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "content_type": "application/json",
+      "body_sha256": "2ad8b532b41c19df6671140d5053263438e174cc07e68e225dd127c678441768",
+      "headers": {
+        "Cache-Control": "no-store",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      },
+      "body": "{\"error\":\"Agent authentication or admission denied.\"}"
+    },
+    {
+      "name": "unsigned_paddle",
+      "at": "2026-10-18T03:13:58.680049+00:00",
+      "method": "POST",
+      "url": "https://nexora-guard-core.lovable.app/api/paddle/webhook",
+      "final_url": "https://nexora-guard-core.lovable.app/api/paddle/webhook",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "content_type": "text/plain;charset=UTF-8",
+      "body_sha256": "97b096319f1c128b42060a680a731b8e41205641a477bc1730bfca4a5cb06c92",
+      "headers": {
+        "Cache-Control": "no-store",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://*.paddle.com\")",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      },
+      "body": "Invalid signature",
+      "initial_harness_expected": 400,
+      "passed_expectation_corrected_from_source": "src/routes/api.paddle.webhook.ts rejects invalid signature with HTTP 401"
+    },
+    {
+      "name": "invalid_user_session",
+      "at": "2026-10-18T03:13:58.705074+00:00",
+      "method": "GET",
+      "url": "https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud/rest/v1/organizations?select=id",
+      "final_url": "https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud/rest/v1/organizations?select=id",
+      "status": 403,
+      "expected": 401,
+      "pass": null,
+      "content_type": "text/plain; charset=UTF-8",
+      "body_sha256": "2938e9f1284180959e33ab1718d0793a72ff6e4cdb8108c34dcd14e69446de5c",
+      "headers": {
+        "Cache-Control": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+        "Referrer-Policy": "same-origin",
+        "X-Frame-Options": "SAMEORIGIN"
+      },
+      "body": "error code: 1010\n",
+      "outcome": "BLOCKED",
+      "blocker": "HTTP 403 body error code 1010; no verified PostgREST authorization response"
+    },
+    {
+      "name": "anonymous_orgs",
+      "at": "2026-10-18T03:13:58.895883+00:00",
+      "method": "GET",
+      "url": "https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud/rest/v1/organizations?select=id",
+      "final_url": "https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud/rest/v1/organizations?select=id",
+      "status": 403,
+      "expected": 200,
+      "pass": null,
+      "content_type": "text/plain; charset=UTF-8",
+      "body_sha256": "2938e9f1284180959e33ab1718d0793a72ff6e4cdb8108c34dcd14e69446de5c",
+      "headers": {
+        "Cache-Control": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+        "Referrer-Policy": "same-origin",
+        "X-Frame-Options": "SAMEORIGIN"
+      },
+      "body": "error code: 1010\n",
+      "outcome": "BLOCKED",
+      "blocker": "HTTP 403 body error code 1010; no verified PostgREST authorization response"
+    }
+  ],
+  "summary": {
+    "pass": 12,
+    "blocked": 2,
+    "failed": 0
+  }
+}
