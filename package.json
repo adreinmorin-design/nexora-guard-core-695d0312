@@ -22,10 +22,16 @@
     "test:monitoring": "node --import ./tests/resolve-ts.mjs --test tests/monitoring.test.mjs",
     "desktop:discover": "node scripts/nexora-desktop-discovery.mjs",
     "test:email": "node --import ./tests/resolve-ts.mjs --test tests/email.test.mjs",
-    "test:governance": "node --import ./tests/resolve-ts.mjs --test tests/governance-core.test.mjs"
+    "test:governance": "node --import ./tests/resolve-ts.mjs --test tests/governance-core.test.mjs",
+    "build:portable": "node scripts/build-portable.mjs",
+    "start:portable": "node scripts/start-portable.mjs",
+    "test:portability": "node --test tests/portability.test.mjs"
   },
   "overrides": {
-    "rolldown": "1.2.1"
+    "rolldown": "1.2.1",
+    "seroval": "1.6.3",
+    "shell-quote": "1.11.0",
+    "source-map-js": "1.2.2"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -1,5 +1,5 @@
 version: 2
-last_updated: "2026-10-01"
+last_updated: "2026-10-06"
 repository: adreinmorin-design/nexora-guard-core-695d0312
 branch: main
 verification_baseline:
@@ -21,6 +21,19 @@ verification_baseline:
     commit with git rev-parse HEAD and verify its own CI and Lovable latest_commit_sha; runtime evidence
     retains its tested SHA.
 capabilities:
+  independent_runtime_portability:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    production_deployment: NOT_VERIFIED
+    evidence:
+      - type: live_infrastructure_inspection
+        value: docs/evidence/2026-10-06-portability-inspection.json
+      - type: development_and_ci_validation
+        value: docs/evidence/2026-10-06-portability-validation.json
+      - type: implementation
+        value: vite.portable.config.ts, scripts/start-portable.mjs, Dockerfile.portable
+    blocker: Independent hosting account, runtime backend credentials/origin control and one provider credential unavailable. Local smoke and CI do not prove production governance.
+    historical_runtime_evidence_scope: Existing Lovable runtime evidence does not transfer to the independent host.
   provider_request_evidence:
     status: IMPLEMENTED
     verification_status: NOT_VERIFIED
@@ -306,10 +319,9 @@ historical_runtime_evidence:
 release_readiness:
   controlled_design_partner_pilots: NOT_VERIFIED
   broader_production_release: NOT_VERIFIED
-  next_step:
-    Owner inspect OpenAI upstream request req_bb13af116fc64e3a892a98b27aa1bc0e and restore valid
-    provider credentials/quota/model access through deployment secrets, then resume exact-build live proof.
-    Never share secrets in chat.
+  next_step: Complete the separate portability PR/CI and obtain independent hosting access.
+    Prove backend access and the one-provider governed chain on a temporary host before
+    resuming MCP/RBAC or preparing DNS cutover. Production environment remains intact.
 allowed_status_values:
   - NOT_IMPLEMENTED
   - IMPLEMENTED
