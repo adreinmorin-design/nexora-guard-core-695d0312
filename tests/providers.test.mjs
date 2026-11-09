@@ -25,6 +25,7 @@ function response(body, status = 200) {
 
 test("provider readiness never exposes secrets and recognizes native adapters", () => {
   delete process.env.OPENAI_API_KEY;
+  delete process.env.OPEN_AI_PLATFORM_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
   delete process.env.GOOGLE_AI_API_KEY;
   assert.equal(providerReadiness("openai"), "NOT_CONFIGURED");
