@@ -27,7 +27,7 @@
   "overrides": {
     "rolldown": "1.2.1",
     "launch-editor": "2.6.0",
-    "seroval": "1.6.3",
+    "seroval": "1.7.9",
     "shell-quote": "1.11.0",
     "source-map-js": "1.2.2",
     "minimatch": "11.0.1",
