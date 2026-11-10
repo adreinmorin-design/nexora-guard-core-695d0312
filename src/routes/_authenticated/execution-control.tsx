@@ -32,6 +32,13 @@ export const Route = createFileRoute("/_authenticated/execution-control")({
         content:
           "Watch governed AI requests move through identity, permissions, data protection, budget, provider and execution controls.",
       },
+      { property: "og:title", content: "Live Agent Execution — NEXORA" },
+      {
+        property: "og:description",
+        content: "Inspect governed AI execution decisions and audit evidence.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: LiveExecutionControl,

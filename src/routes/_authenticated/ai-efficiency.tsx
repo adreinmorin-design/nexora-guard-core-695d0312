@@ -9,6 +9,13 @@ export const Route = createFileRoute("/_authenticated/ai-efficiency")({
         name: "description",
         content: "Practical operating guidance for using AI more efficiently and safely.",
       },
+      { property: "og:title", content: "AI Efficiency Playbook — NEXORA" },
+      {
+        property: "og:description",
+        content: "Practical operating guidance for efficient and safe AI use.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Efficiency,

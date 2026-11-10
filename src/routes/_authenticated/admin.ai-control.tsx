@@ -28,6 +28,10 @@ export const Route = createFileRoute("/_authenticated/admin/ai-control")({
         content:
           "Organization-wide AI execution controls for providers, models, agents, budgets and emergency suspension.",
       },
+      { property: "og:title", content: "AI Administration — NEXORA" },
+      { property: "og:description", content: "Manage organization-wide AI execution controls." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AdminAiControl,

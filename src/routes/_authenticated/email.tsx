@@ -11,7 +11,25 @@ import {
   sendEmail,
 } from "@/lib/email.functions";
 
-export const Route = createFileRoute("/_authenticated/email")({ component: EmailPage });
+export const Route = createFileRoute("/_authenticated/email")({
+  head: () => ({
+    meta: [
+      { title: "Email \u2014 NEXORA" },
+      {
+        name: "description",
+        content: "Access your private NEXORA email inbox and connection settings.",
+      },
+      { property: "og:title", content: "Email \u2014 NEXORA" },
+      {
+        property: "og:description",
+        content: "Access your private NEXORA email inbox and connection settings.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: EmailPage,
+});
 const field = "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 const button = "rounded-md border border-border px-4 py-2 text-sm disabled:opacity-50";
 function EmailPage() {

@@ -9,6 +9,13 @@ export const Route = createFileRoute("/terms")({
         name: "description",
         content: "Terms governing use of the NEXORA AI security and governance service.",
       },
+      { property: "og:title", content: "Terms of Service — NEXORA" },
+      {
+        property: "og:description",
+        content: "Terms governing use of the NEXORA AI security and governance service.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Terms,

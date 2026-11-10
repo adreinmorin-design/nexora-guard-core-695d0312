@@ -23,6 +23,19 @@ export const Route = createFileRoute("/_authenticated/connect-agent")({
         ? search["code"].toUpperCase()
         : "",
   }),
+  head: () => ({
+    meta: [
+      { title: "Connect an Agent \u2014 NEXORA" },
+      { name: "description", content: "Review agent consent, capabilities and connection status." },
+      { property: "og:title", content: "Connect an Agent \u2014 NEXORA" },
+      {
+        property: "og:description",
+        content: "Review agent consent, capabilities and connection status.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: ConnectAgent,
 });
 
