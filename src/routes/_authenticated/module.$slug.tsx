@@ -12,7 +12,24 @@ import {
 } from "@/lib/nexora.functions";
 
 export const Route = createFileRoute("/_authenticated/module/$slug")({
-  head: () => ({ meta: [{ title: "NEXORA Control Plane" }] }),
+  head: ({ params }) => {
+    const label = params.slug
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+    const title = `${label} — NEXORA`;
+    const description = `NEXORA ${label.toLowerCase()} control plane and tenant-scoped governance records.`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
+    };
+  },
   component: ModulePage,
 });
 

@@ -91,7 +91,7 @@
     "launch-editor": "2.6.0",
     "minimatch": "11.0.1",
     "rolldown": "1.2.1",
-    "seroval": "1.6.3",
+    "seroval": "1.7.9",
     "shell-quote": "1.11.0",
     "source-map-js": "1.2.2",
   },
@@ -952,7 +952,7 @@
 
     "semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 
-    "seroval": ["seroval@1.6.3", "", {}, "sha512-5PwLbVPpT4DEki1hYVSSsoxWY6xCNMVucAVLK/CH0mXSDfp/I4KaAex72q80GNt5hpn7CCMGdSpIg4YGqH/wXQ=="],
+    "seroval": ["seroval@1.7.9", "", {}, "sha512-ocL7l8aqYWy/dXDHQF3Z8bt5R4Z9IBB4hASCkBDQhl3ZUclxVEzRMQNmRNshiEEIPF1g7uz+2nENDqg+9TU86A=="],
 
     "seroval-plugins": ["seroval-plugins@1.7.8", "", { "peerDependencies": { "seroval": "^1.0" } }, "sha512-SCfCNzJ8CEz3spf1jNd6XE7mrtrKMchVRMGLFNUEXjY0wIUhKl1bXhkNG3/i0X8uLCWLOhUdMjcM286JZqnCbg=="],
 

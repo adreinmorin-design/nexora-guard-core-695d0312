@@ -9,6 +9,13 @@ export const Route = createFileRoute("/refund")({
         name: "description",
         content: "NEXORA trial, cancellation and no-refund policy for digital subscriptions.",
       },
+      { property: "og:title", content: "Refund Policy — NEXORA" },
+      {
+        property: "og:description",
+        content: "NEXORA trial, cancellation and refund policy for digital subscriptions.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Refund,

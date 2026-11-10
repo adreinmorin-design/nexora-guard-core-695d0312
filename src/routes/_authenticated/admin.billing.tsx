@@ -51,7 +51,19 @@ export const Route = createFileRoute("/_authenticated/admin/billing")({
       ? (String(search["plan"]) as PlanKey)
       : undefined,
   }),
-  head: () => ({ meta: [{ title: "Plans & Billing — NEXORA" }] }),
+  head: () => ({
+    meta: [
+      { title: "Plans & Billing \u2014 NEXORA" },
+      { name: "description", content: "Manage NEXORA plans, subscription status and billing." },
+      { property: "og:title", content: "Plans & Billing \u2014 NEXORA" },
+      {
+        property: "og:description",
+        content: "Manage NEXORA plans, subscription status and billing.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Billing,
 });
 

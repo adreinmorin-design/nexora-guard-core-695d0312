@@ -51,6 +51,8 @@ export const Route = createFileRoute("/pricing")({
         property: "og:description",
         content: "Secure and govern models, agents and MCP tools from $49 per month.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Pricing,

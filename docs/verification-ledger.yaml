@@ -424,3 +424,62 @@ verification_session_2026_10_20:
     - GitHub branch protection verification (no GitHub access this session)
     - Live governed end-to-end request as an authenticated real user (no browser/session path
       available from this environment)
+verification_session_2026_11_10:
+  observed_at: "2026-11-10T13:23:36Z"
+  scope: Local preview against existing Cloud backend; no publish, cutover, schema or auth changes.
+  dependency_compatibility:
+    status: IMPLEMENTED
+    evidence:
+      - "Start 1.168.60, Router 1.170.41, router-plugin 1.168.42 installed; invalid Switch range restored to ^1.2.6."
+      - "Seroval 1.7.9 resolves missing isStream export; error boundary uses exported router props."
+      - "Harness build OK; lint passed; 11 suites, 68 tests, 68 passed, 0 failed."
+    verification_status: NOT_VERIFIED
+    blocker: No new production deployment or served-build attestation.
+  authenticated_gateway_submission:
+    status: RUNTIME_VERIFIED
+    verification_status: RUNTIME_VERIFIED
+    evidence_scope: Real local-preview session, gateway submission and tenant-scoped persisted readback only.
+    prompt: "What is 2+2?"
+    request_id: 1a4d0e5a-091a-47a5-800c-e7c35cc5380f
+    execution_id: 79e62910-11f3-4e6a-9860-a8c996c2bb92
+    request_readback_http_status: 200
+    execution_events_readback_http_status: 200
+    decision: BLOCK
+    request_status: blocked
+    reason: An active subscription is required.
+    model: openai/gpt-4.1
+    provider: null
+    provider_request_id: null
+    provider_response_id: null
+    input_tokens: 0
+    output_tokens: 0
+    cost_usd: 0
+    blocker: Subscription blocks successful provider execution; zero recorded usage is not independent zero-egress proof.
+  audit_and_schema_linkage:
+    status: FAILED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - "requests.intent_id projection returned HTTP 400 / 42703: column does not exist."
+      - "Latest execution events have null request_id; no execution or audit completion events for this execution."
+    blocker: Reconcile historical schema with governed-core implementation before release; do not blindly replay migrations.
+  migration_history:
+    status: NOT_VERIFIED
+    evidence: Drizzle inspection reports consistent history and possible pre-Drizzle schema; no repair made.
+    blocker: Historical three-version gap is not resolved by this inspection.
+  personal_backend_migration:
+    status: NOT_IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    blocker: Missing authorized destination connection and Cloud database export; destination data state unverified.
+    source_preserved: true
+  quality_and_security:
+    status: NOT_VERIFIED
+    evidence:
+      - "Format check reports pre-existing ledger, generated-types and pipeline formatting failures."
+      - "Remaining advisories: postal-mime 3.0.0, zod 3.25.76, imapflow 2.0.5, nodemailer 10.0.10."
+    blocker: Remaining advisories and format check prevent complete release sign-off.
+  still_blocked:
+    - Successful provider ALLOW and REDACT proof need valid subscription and verified provider access.
+    - Live MCP/tool allow/deny proof needs a controlled real fixture and explicit grants.
+    - Billing lifecycle proof needs configured Paddle sandbox.
+    - Two-tenant isolation proof needs two authorized confirmed test sessions.
+    - Complete current schema and critical audit linkage reconciliation.

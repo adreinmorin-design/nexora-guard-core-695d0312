@@ -9,6 +9,13 @@ export const Route = createFileRoute("/privacy")({
         name: "description",
         content: "How DreEnt. LLC collects, uses and protects information when providing NEXORA.",
       },
+      { property: "og:title", content: "Privacy Notice — NEXORA" },
+      {
+        property: "og:description",
+        content: "How NEXORA collects, uses and protects information.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Privacy,
