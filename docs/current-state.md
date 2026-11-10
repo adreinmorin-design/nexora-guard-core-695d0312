@@ -141,3 +141,59 @@ the documented baseline remains substantively current.
 - Still blocked: GitHub branch protection verification (no GitHub access this session). Live
   governed end-to-end request as an authenticated real user not attempted (no browser/session
   path available from this environment).
+
+## 2026-11-10 — Minimal repair and authenticated verification
+
+The request arrived on 2026-11-09 UTC; the sandbox clock at final verification read
+2026-11-10T13:23:36Z. These observations concern the local preview with its existing
+Cloud backend, not a newly published deployment. No publishing, auth configuration,
+schema changes, subscription overrides or backend cutover were performed.
+
+- Repaired invalid dependency declarations: the nonexistent Start override and Switch
+  major range prevented installation. Installed Start 1.168.60, Router 1.170.41 and
+  router-plugin 1.168.42. The existing Seroval 1.6.3 pin also caused a missing `isStream`
+  export; aligned it with the installed plugin's Seroval 1.7.9 dependency. Updated the
+  root error-boundary props to the router's exported type without changing behavior.
+- Fixed one test-environment defect: provider-readiness tests now clear the existing
+  alternate OpenAI credential before asserting NOT_CONFIGURED. Production credential
+  resolution was not changed. Test responses remain test fixtures, not live evidence.
+- All 11 existing suites passed: gateway 24, security 3, hardening 5, agents 3,
+  providers 13, Paddle 5, billing 2, database 2, monitoring 3, email 2, governance 6:
+  **68 tests, 68 passed, 0 failed**. Lint passed. Harness build reported `build OK`.
+  Full format check still fails on pre-existing formatting in the ledger, generated
+  types and pipeline; no unrelated formatting rewrite or generated-file edit was made.
+- Completed missing leaf-page metadata with NEXORA titles, descriptions and social
+  tags. Existing UI and governance rules were preserved.
+- Restored the requesting owner's existing session, opened `/gateway/playground`,
+  submitted the real prompt `What is 2+2?`, and opened `/gateway/requests` to read back
+  the result. The actual result was **BLOCK / blocked: An active subscription is
+  required.** The UI displayed withheld output and zero recorded usage/cost.
+- Authenticated REST readback returned HTTP 200 for request
+  `1a4d0e5a-091a-47a5-800c-e7c35cc5380f`, organization
+  `9949362e-405f-4fef-9596-12d47f4239b7`, model `openai/gpt-4.1`, provider null,
+  provider request/response IDs null, and zero input/output tokens and cost.
+  The request was created at 2026-11-10T13:22:52.344274Z. Execution-events readback
+  returned HTTP 200 for `79e62910-11f3-4e6a-9860-a8c996c2bb92`: identity, permissions,
+  PII, injection, preliminary budget and provider-selection events exist, but all
+  request links are null and execution/audit completion events are absent.
+  No independent downstream no-call proof was collected.
+- An attempted projection of `requests.intent_id` returned HTTP 400 / 42703:
+  that column does not exist in the live schema. This confirms current schema/code
+  drift remains a release blocker; successful full intent/request/audit linkage is
+  **NOT_VERIFIED**. Do not blindly replay historical migrations or add history rows.
+- Migration-history inspection reports consistent Drizzle history with possible
+  pre-Drizzle schema. This does not reconcile the three historical migration gaps.
+- Personal-backend migration is **NOT_IMPLEMENTED**: a destination URL was supplied,
+  but no authorized destination connection or Cloud database export is available.
+  Keep Cloud intact. Owner next step: More → Database → Manage → Settings → Export
+  project data → Export data → Database → Export → Start export. The database export
+  includes accounts/password hashes, not storage files, secrets or provider settings.
+  Preserve storage separately; restore into an isolated empty destination, configure
+  secrets/sign-in settings, and verify it before any cutover. Do not remove Cloud.
+- Remaining dependency advisories affect postal-mime 3.0.0, Zod 3.25.76, imapflow
+  2.0.5 and nodemailer 10.0.10. Broad/major upgrades were not attempted as part of
+  the bounded compatibility repair; release security sign-off remains blocked.
+- Successful provider execution requires valid subscription entitlement, then live
+  provider verification. MCP allow/deny needs a controlled real fixture and grants;
+  Paddle needs sandbox lifecycle configuration; two-tenant proof needs two approved
+  confirmed test sessions. None was simulated or marked complete.

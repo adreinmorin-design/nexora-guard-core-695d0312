@@ -178,3 +178,8 @@ Treat these as release blockers until resolved and verified:
 - production migration inconsistency
 - billing/entitlement bypass
 - evidence-free claims of completion
+
+## Compatibility and verification
+
+- Use the router's exported error-boundary props to preserve compatibility with unknown thrown values.
+- Keep dependency overrides compatible with their consumers; verify real page loading as well as regression tests after lockfile changes.
