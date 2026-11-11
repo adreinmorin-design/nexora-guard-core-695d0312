@@ -1,5 +1,7 @@
 # NEXORA minimal repair and verification
 
+- [ ] Add evidence-grounded failed-request summaries via AI Gateway; test sanitization/access boundaries and verify the authenticated detail flow; update verification docs.
+
 - [x] Restore installable dependency declarations and apply the targeted security update.
 - [x] Run existing regression suites; correct only reproduced minimal defects (68/68 pass).
 - [x] Exercise the actual authenticated gateway and read persisted evidence (subscription BLOCK, not successful provider execution).
