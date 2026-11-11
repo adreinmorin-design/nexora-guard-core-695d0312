@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { listCatalog, submitGatewayRequest } from "@/lib/nexora.functions";
 import { PageHeader, Panel, Tag } from "@/components/nexora/primitives";
+import { FailureSummary } from "@/components/nexora/FailureSummary";
+import { isFailedRequest } from "@/lib/nexora/failure-evidence";
 
 export const Route = createFileRoute("/_authenticated/gateway/playground")({
   head: () => ({
@@ -127,6 +129,7 @@ function Playground() {
                 ) : null}
               </div>
               <p className="text-sm">{result.reason}</p>
+              {result.requestId && isFailedRequest(result.status) && <FailureSummary key={result.requestId} requestId={result.requestId} />}
 
               {result.matchedRules?.length ? (
                 <div>

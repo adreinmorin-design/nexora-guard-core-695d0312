@@ -181,5 +181,8 @@ Treat these as release blockers until resolved and verified:
 
 ## Compatibility and verification
 
+- Failure summaries use an authenticated server function, tenant-matched administrator membership and allowlisted evidence projection before AI Gateway dispatch; advisory output cannot execute or change governance.
+- Keep failure-summary AI Gateway SDK helpers in server-only modules, using native streamed Responses with request-local correlation and no automatic retries.
+
 - Use the router's exported error-boundary props to preserve compatibility with unknown thrown values.
 - Keep dependency overrides compatible with their consumers; verify real page loading as well as regression tests after lockfile changes.
