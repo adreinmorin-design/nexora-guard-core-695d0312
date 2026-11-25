@@ -191,7 +191,8 @@ schema changes, subscription overrides or backend cutover were performed.
   Preserve storage separately; restore into an isolated empty destination, configure
   secrets/sign-in settings, and verify it before any cutover. Do not remove Cloud.
 - Production negative paths (2026-11-25): Production Smoke run `45529283939` on `1f935ed`
-  confirmed `/` and `/auth` 200, unauthenticated `/api/agent` 401 and invalid-JWT PostgREST 401.
+  confirmed `/` and `/auth` 200, unauthenticated `/api/agent` 401 and invalid-JWT PostgREST 401; run `45529531071` added
+  forged agent credential 403 and unauthenticated `/api/mcp` 401.
   **RUNTIME_VERIFIED** for these rejection paths only.
 - Founder bootstrap 403 / 42501 root cause found: `INSERT ... RETURNING` on `org_members`
   fails the SELECT policy because `private.is_org_member` cannot see the same-statement row.

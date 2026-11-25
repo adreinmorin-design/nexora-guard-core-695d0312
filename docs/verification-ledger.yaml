@@ -502,6 +502,7 @@ verification_session_2026_11_25:
       - "GET https://nexora-guard-core.lovable.app/ = 200; GET /auth = 200."
       - 'POST /api/agent without credential = 401 {"error":"Valid agent bearer credential required."}.'
       - "Production PostgREST /rest/v1/organizations with invalid JWT = 401."
+      - 'Extended smoke run 45529531071, job 138921099559, on branch head 46d06b4 against the same production host, 2026-11-25T01:58:02Z: POST /api/agent with well-formed forged nxr_ credential = 403 {"error":"Agent admission denied: check credential, status, duplicate key and rate limit."}; POST /api/mcp tools/list without credential = 401 {"error":"Agent authentication or admission denied."}.'
     note: Rejection happens before body parsing or agent lookup, so no provider can be invoked on these paths. Probes from this session's sandbox are blocked by its network policy (proxy 403), so evidence comes from GitHub Actions.
   org_members_founder_bootstrap_root_cause:
     status: IMPLEMENTED
