@@ -522,4 +522,9 @@ verification_session_2026_11_25:
       - "Live Tenant Isolation Proof run 45529945918, job 138922459855, on main 293efe2, 2026-11-25T02:01Z: disposable signups and owner-clicked email confirmations succeeded; 'Provision two isolated tenants through production RLS' failed with HTTP 403 on a PostgREST POST (organizations or org_members, return=representation); isolation step skipped."
       - "The workflow discarded the error body, so the failing table was not identified. Workflow now logs the PostgREST code/message on failure."
       - "Consistent with migration 20261125000100_org_members_read_own.sql not yet applied to the live Cloud database."
+    diagnosis_run:
+      run: 45530173809
+      job: 138923223797
+      observed_at: "2026-11-25T02:07:15Z"
+      result: "Both POST /rest/v1/organizations succeeded; POST /rest/v1/org_members (return=representation) = 403 {code: 42501, message: new row violates row-level security policy for table org_members}. Confirms the reproduced root cause live; migration 20261125000100 is not applied on Lovable Cloud."
     blocker: Apply the migration live (through Lovable), then re-run the proof. Orphan disposable organizations from this run may remain in production; removal needs service-role access.
