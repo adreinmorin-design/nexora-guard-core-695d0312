@@ -487,9 +487,31 @@ verification_session_2026_11_25:
       - "rolldown override 1.2.1 -> 1.2.19 to satisfy Vite 8.3.8's ~1.2.18 range; verify-all 16/16; vite dev page load: / and /auth HTTP 200 with rendered content and no console errors. Built Cloudflare worker not served locally (wrangler not installed)."
     blocker: Dependabot closure on GitHub, deployed build and live email (IMAP/SMTP) behavior not yet verified.
   main_workflow_repair:
-    status: IMPLEMENTED
-    verification_status: NOT_VERIFIED
+    status: RUNTIME_VERIFIED
+    verification_status: RUNTIME_VERIFIED
     evidence:
       - "main.yml run 45528044433 on c077ecf failed with 0 jobs (invalid workflow: empty top-level concurrency key); same failure since a69cfd6. ci.yml run 45528044320 on c077ecf succeeded."
       - "Fix: valid concurrency group distinct from ci.yml, bun-version pinned 1.4.2 (removed unsupported cache input), artifact path .output/ with include-hidden-files (upload-artifact v4 skips dot-paths; first PR run 45528420000 passed lint, test, audit, build and failed only on upload). bun test locally: 75 pass, 0 fail."
-    blocker: Needs a GitHub Actions run of main.yml to verify.
+      - "Merged via PR #50 at 1f935ed940f6017a14ffad2bb3fa4091a62bdb22. main.yml run 45528640338 and ci.yml run 45528640414 both concluded success on that SHA."
+  production_negative_paths:
+    status: RUNTIME_VERIFIED
+    verification_status: RUNTIME_VERIFIED
+    evidence_scope: Deployed production host, unauthenticated/forged requests only. Positive governed execution is not covered.
+    evidence:
+      - "Production Smoke workflow_dispatch run 45529283939, job 138920279949, on main 1f935ed, 2026-11-25T01:55:48Z."
+      - "GET https://nexora-guard-core.lovable.app/ = 200; GET /auth = 200."
+      - 'POST /api/agent without credential = 401 {"error":"Valid agent bearer credential required."}.'
+      - "Production PostgREST /rest/v1/organizations with invalid JWT = 401."
+      - 'Extended smoke run 45529531071, job 138921099559, on branch head 46d06b4 against the same production host, 2026-11-25T01:58:02Z: POST /api/agent with well-formed forged nxr_ credential = 403 {"error":"Agent admission denied: check credential, status, duplicate key and rate limit."}; POST /api/mcp tools/list without credential = 401 {"error":"Agent authentication or admission denied."}.'
+    note: Rejection happens before body parsing or agent lookup, so no provider can be invoked on these paths. Probes from this session's sandbox are blocked by its network policy (proxy 403), so evidence comes from GitHub Actions.
+  org_members_founder_bootstrap_root_cause:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    supersedes_open_item: verification_session_2026_10_20.org_members_founder_bootstrap
+    evidence:
+      - "PGlite reproduction with all migrations: as role authenticated, first-member INSERT INTO org_members without RETURNING succeeds; the same INSERT ... RETURNING fails 42501 'new row violates row-level security policy for table org_members'."
+      - "Cause: PostgREST return=representation issues RETURNING, which applies the SELECT policy 'members read members' (private.is_org_member) to the new row; that function cannot see a row inserted by the same statement. Matches the live HTTP 403 / 42501 while the direct SQL simulation (no RETURNING) succeeded."
+      - "Fix: migration 20261125000100_org_members_read_own.sql adds permissive SELECT policy user_id = auth.uid(); exposes only the caller's own membership rows."
+      - "Regression test tests/database.test.mjs 'first-member bootstrap with RETURNING succeeds without exposing other tenants': fails without the migration, passes with it; negative path asserts the founder reads 0 rows of another tenant's members and cannot insert into it."
+      - "App bootstrap path (nexora.functions.ts) uses the service role and was not affected."
+    blocker: Migration not applied to the live Cloud database; live REST bootstrap with return=representation not re-tested.

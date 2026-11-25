@@ -190,6 +190,15 @@ schema changes, subscription overrides or backend cutover were performed.
   includes accounts/password hashes, not storage files, secrets or provider settings.
   Preserve storage separately; restore into an isolated empty destination, configure
   secrets/sign-in settings, and verify it before any cutover. Do not remove Cloud.
+- Production negative paths (2026-11-25): Production Smoke run `45529283939` on `1f935ed`
+  confirmed `/` and `/auth` 200, unauthenticated `/api/agent` 401 and invalid-JWT PostgREST 401; run `45529531071` added
+  forged agent credential 403 and unauthenticated `/api/mcp` 401.
+  **RUNTIME_VERIFIED** for these rejection paths only.
+- Founder bootstrap 403 / 42501 root cause found: `INSERT ... RETURNING` on `org_members`
+  fails the SELECT policy because `private.is_org_member` cannot see the same-statement row.
+  Migration `20261125000100_org_members_read_own.sql` plus a positive/negative PGlite test fix it;
+  **IMPLEMENTED**, not applied live. The app's service-role bootstrap was unaffected.
+- `main.yml` workflow repaired and green on `main` (`1f935ed`, run `45528640338`): **RUNTIME_VERIFIED**.
 - Dependency advisories (2026-11-25): Zod 4.6.7, Vite 8.3.8, nodemailer 10.6.1,
   postal-mime 4.2.1 and overrides launch-editor 2.14.2 / ip-address 10.7.6 clear all
   `bun audit` findings; 68/68 tests, lint and build pass. **IMPLEMENTED**, not
