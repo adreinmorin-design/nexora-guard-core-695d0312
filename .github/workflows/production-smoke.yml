@@ -57,3 +57,37 @@ jobs:
             "$SUPABASE_URL/rest/v1/organizations?select=id&limit=1")"
           echo "invalid_user_session_http_status=$code"
           test "$code" = "401"
+
+      - name: Verify forged agent credential is denied admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          forged="nxr_$(printf '0%.0s' $(seq 1 64))"
+          code="$(curl --retry 3 --retry-all-errors --retry-delay 2 --max-time 30 \
+            --silent --show-error --output /tmp/agent-forged.json --write-out '%{http_code}' \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --header "Authorization: Bearer $forged" \
+            --data '{"kind":"model","modelKey":"openai/gpt-4.1-mini","prompt":"smoke","idempotencyKey":"00000000-0000-4000-8000-000000000002"}' \
+            "$BASE_URL/api/agent")"
+          cat /tmp/agent-forged.json
+          echo
+          echo "agent_forged_credential_http_status=$code"
+          test "$code" = "403"
+          grep -q 'Agent admission denied' /tmp/agent-forged.json
+
+      - name: Verify MCP endpoint fails closed without credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl --retry 3 --retry-all-errors --retry-delay 2 --max-time 30 \
+            --silent --show-error --output /tmp/mcp.json --write-out '%{http_code}' \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --data '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+            "$BASE_URL/api/mcp")"
+          cat /tmp/mcp.json
+          echo
+          echo "mcp_unauthenticated_http_status=$code"
+          test "$code" = "401"
+          grep -q 'Agent authentication or admission denied' /tmp/mcp.json

@@ -13,6 +13,66 @@ test("migration versions are unique", async () => {
   );
 });
 
+test("first-member bootstrap with RETURNING succeeds without exposing other tenants", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(`
+      CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
+      CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid PRIMARY KEY);
+      CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT null::uuid $$;
+      CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql AS $$ SELECT '{}'::jsonb $$;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated;
+    `);
+    for (const name of (await readdir("supabase/migrations"))
+      .filter((n) => n.endsWith(".sql"))
+      .sort()) {
+      await db.exec(await readFile("supabase/migrations/" + name, "utf8"));
+    }
+    const founder = "00000000-0000-4000-8000-000000000301";
+    const stranger = "00000000-0000-4000-8000-000000000302";
+    const founderOrg = "00000000-0000-4000-8000-000000000303";
+    const strangerOrg = "00000000-0000-4000-8000-000000000304";
+    await db.query("INSERT INTO auth.users(id) VALUES($1),($2)", [founder, stranger]);
+    // Another tenant with its own member, created outside RLS.
+    await db.query("INSERT INTO organizations(id,name,slug,created_by) VALUES($1,'s','s',$2)", [
+      strangerOrg,
+      stranger,
+    ]);
+    await db.query("INSERT INTO org_members(org_id,user_id,role) VALUES($1,$2,'org_admin')", [
+      strangerOrg,
+      stranger,
+    ]);
+    await db.exec(
+      `CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'SELECT ''${founder}''::uuid';`,
+    );
+    await db.exec("SET ROLE authenticated");
+    await db.query("INSERT INTO organizations(id,name,slug,created_by) VALUES($1,'f','f',$2)", [
+      founderOrg,
+      founder,
+    ]);
+    // PostgREST return=representation issues INSERT ... RETURNING.
+    const inserted = await db.query(
+      "INSERT INTO org_members(org_id,user_id,role) VALUES($1,$2,'org_admin') RETURNING org_id, user_id",
+      [founderOrg, founder],
+    );
+    assert.deepEqual(inserted.rows, [{ org_id: founderOrg, user_id: founder }]);
+    // Negative path: the founder still cannot read or join the other tenant.
+    const foreign = await db.query("SELECT count(*)::int AS n FROM org_members WHERE org_id=$1", [
+      strangerOrg,
+    ]);
+    assert.equal(foreign.rows[0].n, 0);
+    await assert.rejects(
+      db.query("INSERT INTO org_members(org_id,user_id,role) VALUES($1,$2,'org_admin')", [
+        strangerOrg,
+        founder,
+      ]),
+    );
+    await db.exec("RESET ROLE");
+  } finally {
+    await db.close();
+  }
+});
+
 test("migration, atomic admission, tenant separation, grants and single-use approvals", async () => {
   const db = new PGlite();
   try {
