@@ -8,11 +8,13 @@ import {
   withLovableAiGatewayRunIdHeader,
 } from "./run-id.server.ts";
 
-export const failureSummarySchema = z.object({
-  summary: z.string(),
-  nextSteps: z.array(z.string()),
-  evidenceIndices: z.array(z.number()),
-}).strict();
+export const failureSummarySchema = z
+  .object({
+    summary: z.string(),
+    nextSteps: z.array(z.string()),
+    evidenceIndices: z.array(z.number()),
+  })
+  .strict();
 
 export function createResponsesCall(
   request: Request,
@@ -52,6 +54,9 @@ export function createResponsesCall(
   return {
     result,
     response: () =>
-      withLovableAiGatewayRunIdHeader(result.toUIMessageStreamResponse({ sendReasoning: true }), runIdFetch),
+      withLovableAiGatewayRunIdHeader(
+        result.toUIMessageStreamResponse({ sendReasoning: true }),
+        runIdFetch,
+      ),
   };
 }

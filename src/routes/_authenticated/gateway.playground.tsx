@@ -129,7 +129,9 @@ function Playground() {
                 ) : null}
               </div>
               <p className="text-sm">{result.reason}</p>
-              {result.requestId && isFailedRequest(result.status) && <FailureSummary key={result.requestId} requestId={result.requestId} />}
+              {result.requestId && isFailedRequest(result.status) && (
+                <FailureSummary key={result.requestId} requestId={result.requestId} />
+              )}
 
               {result.matchedRules?.length ? (
                 <div>

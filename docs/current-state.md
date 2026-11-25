@@ -194,7 +194,7 @@ schema changes, subscription overrides or backend cutover were performed.
   postal-mime 4.2.1 and overrides launch-editor 2.14.2 / ip-address 10.7.6 clear all
   `bun audit` findings; 68/68 tests, lint and build pass. **IMPLEMENTED**, not
   deployed; live IMAP/SMTP behavior and Dependabot closure are **NOT_VERIFIED**.
-  Pre-existing `tsc` (TS4111) and format-check failures still block security sign-off.
+  The former `tsc` (TS4111) and format-check failures are fixed; `verify-all.sh` passes 16/16 locally.
 - Successful provider execution requires valid subscription entitlement, then live
   provider verification. MCP allow/deny needs a controlled real fixture and grants;
   Paddle needs sandbox lifecycle configuration; two-tenant proof needs two approved

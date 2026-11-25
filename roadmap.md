@@ -10,4 +10,4 @@
 - [ ] Complete live MCP, billing, tenant-isolation and budget proofs: dependent on appropriate real fixtures, sessions and service configuration; no simulated production results.
 - [ ] Successful provider execution: blocked by inactive subscription; no entitlement bypass.
 - [ ] Reconcile live schema/audit linkage: requires historical schema reconciliation before safe migration; requests.intent_id absent and blocked execution audit links incomplete.
-- [ ] Complete security sign-off: package advisories resolved (bun audit clean, 2026-11-25); pre-existing tsc and format-check failures and live email verification remain.
+- [ ] Complete security sign-off: package advisories resolved (bun audit clean, 2026-11-25); tsc and format-check fixed; live email verification remains.

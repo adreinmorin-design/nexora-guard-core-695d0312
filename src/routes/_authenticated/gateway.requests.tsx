@@ -5,7 +5,13 @@ import { useState } from "react";
 import { listRequests } from "@/lib/nexora.functions";
 import { DataTable, PageHeader, Tag } from "@/components/nexora/primitives";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { FailureSummary } from "@/components/nexora/FailureSummary";
 import { isFailedRequest } from "@/lib/nexora/failure-evidence";
 
@@ -65,19 +71,39 @@ function Requests() {
           </span>,
           <span className="tabular-nums">${Number(r.cost_usd).toFixed(6)}</span>,
           <span className="tabular-nums">{r.latency_ms} ms</span>,
-          <div className="space-y-2"><span className="text-xs text-muted-foreground">{r.reason}</span>
-            {isFailedRequest(r.status) && <Button variant="ghost" size="sm" onClick={() => setSelected(r)}>View failure</Button>}
+          <div className="space-y-2">
+            <span className="text-xs text-muted-foreground">{r.reason}</span>
+            {isFailedRequest(r.status) && (
+              <Button variant="ghost" size="sm" onClick={() => setSelected(r)}>
+                View failure
+              </Button>
+            )}
           </div>,
         ])}
       />
-      <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) setSelected(null); }}>
+      <Dialog
+        open={Boolean(selected)}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
+      >
         <DialogContent className="max-h-[85dvh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Request details</DialogTitle><DialogDescription>{selected ? new Date(selected.created_at).toLocaleString() : ""}</DialogDescription></DialogHeader>
-          {selected && <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2"><Tag value={selected.decision} kind="decision" /><Tag value={selected.status} /></div>
-            <p className="break-words text-sm">{selected.reason}</p>
-            <FailureSummary key={selected.id} requestId={selected.id} />
-          </div>}
+          <DialogHeader>
+            <DialogTitle>Request details</DialogTitle>
+            <DialogDescription>
+              {selected ? new Date(selected.created_at).toLocaleString() : ""}
+            </DialogDescription>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Tag value={selected.decision} kind="decision" />
+                <Tag value={selected.status} />
+              </div>
+              <p className="break-words text-sm">{selected.reason}</p>
+              <FailureSummary key={selected.id} requestId={selected.id} />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
