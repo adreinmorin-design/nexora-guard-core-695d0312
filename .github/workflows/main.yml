@@ -18,8 +18,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: latest
-          cache: true
+          bun-version: 1.4.2
 
       - name: Install Dependencies (Frozen Lockfile)
         run: bun install --frozen-lockfile
@@ -41,8 +40,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-output
-          path: |
-            dist/
-            # Add any other output paths or logs you want to preserve
-            # .next/
+          path: .output/
+          if-no-files-found: error
+          include-hidden-files: true
+
 concurrency:
+  group: main-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
