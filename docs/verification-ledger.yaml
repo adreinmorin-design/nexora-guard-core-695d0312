@@ -483,3 +483,19 @@ verification_session_2026_11_10:
     - Billing lifecycle proof needs configured Paddle sandbox.
     - Two-tenant isolation proof needs two authorized confirmed test sessions.
     - Complete current schema and critical audit linkage reconciliation.
+verification_session_2026_11_25:
+  observed_at: "2026-11-25"
+  scope: Dependency advisory remediation; local install, tests and build only. No deploy, schema or auth changes.
+  dependency_advisories:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - "Before: bun audit reported 18 advisories (5 high, 12 moderate, 1 low) across zod, vite, launch-editor, nodemailer, postal-mime and ip-address; GitHub Dependabot reported 12 on main."
+      - "Upgrades: zod ^3.25.76 -> ^4.6.7, vite 8.1.5 -> 8.3.8, nodemailer 10.0.10 -> 10.6.1, postal-mime 3.0.0 -> 4.2.1; overrides launch-editor 2.6.0 -> 2.14.2 and ip-address -> 10.7.6 (via imapflow > socks)."
+      - "Zod 4 compatibility: agent tool arguments use z.record(z.string(), z.unknown()); non-object arguments still rejected."
+      - "postal-mime 4 parse() returns subject, text and attachments with the shape mail-transport.server.ts reads."
+      - "After: bun audit reports no vulnerabilities (490 packages)."
+      - "11 suites, 68 tests, 68 passed, 0 failed; lint passed; build passed."
+      - "tsc --noEmit: 28 pre-existing TS4111 errors, unchanged from baseline; format:check: 13 pre-existing files, unchanged."
+      - "Eight bun.lock tarball URLs (Supabase packages, iceberg-js) pointed at a Lovable sandbox npm cache unreachable from this environment; repointed to the default registry after confirming identical sha512 integrity with registry.npmjs.org."
+    blocker: Dependabot closure on GitHub, deployed build and live email (IMAP/SMTP) behavior not yet verified.
