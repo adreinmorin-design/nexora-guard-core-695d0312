@@ -515,3 +515,11 @@ verification_session_2026_11_25:
       - "Regression test tests/database.test.mjs 'first-member bootstrap with RETURNING succeeds without exposing other tenants': fails without the migration, passes with it; negative path asserts the founder reads 0 rows of another tenant's members and cannot insert into it."
       - "App bootstrap path (nexora.functions.ts) uses the service role and was not affected."
     blocker: Migration not applied to the live Cloud database; live REST bootstrap with return=representation not re-tested.
+  live_tenant_isolation_proof_attempt:
+    status: FAILED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - "Live Tenant Isolation Proof run 45529945918, job 138922459855, on main 293efe2, 2026-11-25T02:01Z: disposable signups and owner-clicked email confirmations succeeded; 'Provision two isolated tenants through production RLS' failed with HTTP 403 on a PostgREST POST (organizations or org_members, return=representation); isolation step skipped."
+      - "The workflow discarded the error body, so the failing table was not identified. Workflow now logs the PostgREST code/message on failure."
+      - "Consistent with migration 20261125000100_org_members_read_own.sql not yet applied to the live Cloud database."
+    blocker: Apply the migration live (through Lovable), then re-run the proof. Orphan disposable organizations from this run may remain in production; removal needs service-role access.
