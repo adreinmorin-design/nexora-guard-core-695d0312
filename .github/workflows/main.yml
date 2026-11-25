@@ -42,6 +42,7 @@ jobs:
           name: build-output
           path: .output/
           if-no-files-found: error
+          include-hidden-files: true
 
 concurrency:
   group: main-ci-${{ github.workflow }}-${{ github.ref }}
