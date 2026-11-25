@@ -486,3 +486,10 @@ verification_session_2026_11_25:
       - "scripts/verify-all.sh locally: 16 checks passed, 0 failed (audit, format, lint, typecheck, build, 11 test suites)."
       - "rolldown override 1.2.1 -> 1.2.19 to satisfy Vite 8.3.8's ~1.2.18 range; verify-all 16/16; vite dev page load: / and /auth HTTP 200 with rendered content and no console errors. Built Cloudflare worker not served locally (wrangler not installed)."
     blocker: Dependabot closure on GitHub, deployed build and live email (IMAP/SMTP) behavior not yet verified.
+  main_workflow_repair:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - "main.yml run 45528044433 on c077ecf failed with 0 jobs (invalid workflow: empty top-level concurrency key); same failure since a69cfd6. ci.yml run 45528044320 on c077ecf succeeded."
+      - "Fix: valid concurrency group distinct from ci.yml, bun-version pinned 1.4.2 (removed unsupported cache input), artifact path .output/ (build emits no dist/). bun test locally: 75 pass, 0 fail."
+    blocker: Needs a GitHub Actions run of main.yml to verify.
