@@ -484,4 +484,5 @@ verification_session_2026_11_25:
       - "Eight bun.lock tarball URLs (Supabase packages, iceberg-js) pointed at a Lovable sandbox npm cache unreachable from this environment; repointed to the default registry after confirming identical sha512 integrity with registry.npmjs.org."
       - "Follow-up: 28 TS4111 errors fixed with bracket access in failure-evidence.ts and failure-summary.functions.ts; 12 files Prettier-formatted; generated src/integrations/supabase/types.ts added to .prettierignore alongside routeTree.gen.ts."
       - "scripts/verify-all.sh locally: 16 checks passed, 0 failed (audit, format, lint, typecheck, build, 11 test suites)."
+      - "rolldown override 1.2.1 -> 1.2.19 to satisfy Vite 8.3.8's ~1.2.18 range; verify-all 16/16; vite dev page load: / and /auth HTTP 200 with rendered content and no console errors. Built Cloudflare worker not served locally (wrangler not installed)."
     blocker: Dependabot closure on GitHub, deployed build and live email (IMAP/SMTP) behavior not yet verified.

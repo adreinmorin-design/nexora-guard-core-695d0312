@@ -25,7 +25,7 @@
     "test:governance": "node --import ./tests/resolve-ts.mjs --test tests/governance-core.test.mjs"
   },
   "overrides": {
-    "rolldown": "1.2.1",
+    "rolldown": "1.2.19",
     "launch-editor": "2.14.2",
     "seroval": "1.7.9",
     "shell-quote": "1.11.0",
