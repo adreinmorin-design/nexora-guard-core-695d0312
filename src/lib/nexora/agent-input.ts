@@ -32,7 +32,7 @@ export const agentTaskInput = z.discriminatedUnion("kind", [
       kind: z.literal("tool"),
       toolId: z.string().uuid(),
       arguments: z
-        .record(z.unknown())
+        .record(z.string(), z.unknown())
         .refine((v) => JSON.stringify(v).length <= 20000, "Tool arguments exceed the limit."),
       objective: z.string().trim().min(1).max(4000).optional(),
       intentId: z.string().uuid().optional(),

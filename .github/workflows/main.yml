@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   validate:
@@ -45,4 +45,4 @@ jobs:
             dist/
             # Add any other output paths or logs you want to preserve
             # .next/
-concurrency: 
+concurrency:

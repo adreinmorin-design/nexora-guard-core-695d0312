@@ -644,7 +644,9 @@ export async function runGovernedRequest(params: {
     // error must never be persisted — it could contain arbitrary internal
     // text — so it is duck-typed strictly by name + numeric status.
     const isClassifiedProviderError =
-      error instanceof Error && error.name === "ProviderError" && "status" in error &&
+      error instanceof Error &&
+      error.name === "ProviderError" &&
+      "status" in error &&
       typeof error.status === "number";
     const providerFailureReason = isClassifiedProviderError ? error.message : null;
     const providerStatus = isClassifiedProviderError ? error.status : null;
