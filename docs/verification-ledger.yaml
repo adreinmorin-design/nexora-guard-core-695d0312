@@ -528,3 +528,15 @@ verification_session_2026_11_25:
       observed_at: "2026-11-25T02:07:15Z"
       result: "Both POST /rest/v1/organizations succeeded; POST /rest/v1/org_members (return=representation) = 403 {code: 42501, message: new row violates row-level security policy for table org_members}. Confirms the reproduced root cause live; migration 20261125000100 is not applied on Lovable Cloud."
     blocker: Apply the migration live (through Lovable), then re-run the proof. Orphan disposable organizations from this run may remain in production; removal needs service-role access.
+  phase1_backend_foundation:
+    status: DEPLOYED
+    verification_status: NOT_VERIFIED
+    target: "Supabase project Nexora Guard (pivwdmtcfzanrcbpkdqn), owner-controlled; replaces Lovable Cloud backend at cutover"
+    evidence:
+      - "2026-11-26: all 24 repository migrations applied via Supabase connector apply_migration in version order; supabase_migrations.schema_migrations holds 24 rows matching supabase/migrations/ file stems (including 20261125000100_org_members_read_own)."
+      - "Catalog checks (read-only SQL): 36 public tables, RLS enabled on all; only anon grant is SELECT on billing_plans; no public/private function executable by anon; no public function executable by authenticated; agents.token_hash not selectable by authenticated."
+      - "billing_plans: Solo 49/490, Team 399/3990, Enterprise null (custom)."
+      - "get_advisors security: only 7 INFO 'RLS enabled, no policy' on service-role-only tables (agent_calls, agent_connections, email_deliveries, email_mailboxes, gateway_reservations, governance_audit_heads, paddle_webhook_events) - intentional."
+      - "Generated types match committed src/integrations/supabase/types.ts table-for-table and column-for-column (only PostgrestVersion 14.17 vs 14.18 differs)."
+      - "Read-only DB audit found no High/Critical issue; Medium/Low hardening items (helper search_path, invite role check, approvals.decision_token column grant, stray grants/dead policies, auth_rls_initplan) tracked for a forward migration."
+    blocker: "No application is deployed against this backend yet; live auth, RLS-through-REST, provider and tenant-isolation proofs pending (phases 2-5). Auth site/redirect URLs and email confirmation must be set by the owner in the Supabase dashboard."
