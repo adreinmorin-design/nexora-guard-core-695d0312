@@ -7,35 +7,9 @@
 // execution-trace, mcp-transport, tool-policy, native-mcp, the api.mcp route) run as-is.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import { existsSync } from "node:fs";
-import { pathToFileURL, fileURLToPath } from "node:url";
+import { installModuleStubs } from "./module-stubs.mjs";
 
-const SRC = fileURLToPath(new URL("../src/", import.meta.url));
-const SUPABASE_STUB =
-  "data:text/javascript,export const supabaseAdmin = globalThis.__nexoraFakeSupabase;";
-
-registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier === "@/integrations/supabase/client.server")
-      return { url: SUPABASE_STUB, shortCircuit: true };
-    if (specifier.startsWith("@/")) {
-      const base = SRC + specifier.slice(2);
-      for (const candidate of [base, base + ".ts", base + ".tsx"])
-        if (existsSync(candidate) && !candidate.endsWith("/"))
-          return next(pathToFileURL(candidate).href, context);
-    }
-    try {
-      return next(specifier, context);
-    } catch (error) {
-      // Server modules are named like "./gateway.server", which tests/resolve-ts.mjs
-      // treats as already having an extension; retry with ".ts".
-      if (specifier.startsWith(".") && !specifier.endsWith(".ts"))
-        return next(specifier + ".ts", context);
-      throw error;
-    }
-  },
-});
+await installModuleStubs();
 
 // ---------------------------------------------------------------------------
 // In-memory Supabase fake (subset of the PostgREST builder used by the code).
@@ -196,7 +170,7 @@ function createFakeDb(seed) {
   return db;
 }
 
-globalThis.__nexoraFakeSupabase = new Proxy(
+globalThis.__nexoraTestSupabaseAdmin = new Proxy(
   {},
   { get: (_, prop) => globalThis.__nexoraActiveDb[prop] },
 );

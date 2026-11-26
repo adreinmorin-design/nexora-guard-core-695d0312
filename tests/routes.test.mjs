@@ -11,41 +11,13 @@
 //   pipeline persistence or provider egress would be observed.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import { existsSync } from "node:fs";
-import { pathToFileURL, fileURLToPath } from "node:url";
+import { installModuleStubs } from "./module-stubs.mjs";
 
-const SRC = fileURLToPath(new URL("../src/", import.meta.url));
-
-registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier === "@/integrations/supabase/client.server")
-      return {
-        url: "data:text/javascript,export const supabaseAdmin = new Proxy({}, { get: (_, p) => globalThis.__routesFakeDb[p] });",
-        shortCircuit: true,
-      };
-    if (
-      specifier === "@supabase/supabase-js" &&
-      context.parentURL?.endsWith("/integrations/supabase/auth-middleware.ts")
-    )
-      return {
-        url: "data:text/javascript,export const createClient = (...args) => globalThis.__routesCreateClient(...args);",
-        shortCircuit: true,
-      };
-    if (specifier.startsWith("@/")) {
-      const base = SRC + specifier.slice(2);
-      for (const candidate of [base, base + ".ts", base + ".tsx"])
-        if (existsSync(candidate)) return next(pathToFileURL(candidate).href, context);
-    }
-    try {
-      return next(specifier, context);
-    } catch (error) {
-      // tests/resolve-ts.mjs treats "./x.server" as already having an extension.
-      if (specifier.startsWith(".") && !specifier.endsWith(".ts"))
-        return next(specifier + ".ts", context);
-      throw error;
-    }
-  },
+await installModuleStubs({ authCreateClient: true });
+// Bun shares one process across test files; do not leak the fakes.
+test.after(() => {
+  delete globalThis.__nexoraTestCreateClient;
+  delete globalThis.__nexoraTestSupabaseAdmin;
 });
 
 const { requestHandler } = await import("@tanstack/react-start/server");
@@ -67,7 +39,7 @@ async function runAuth(headers, getClaims) {
   process.env.SUPABASE_URL = "https://project.example.supabase.co";
   process.env.SUPABASE_PUBLISHABLE_KEY = "sb_publishable_test";
   const seen = { createClient: 0, getClaims: [], next: [] };
-  globalThis.__routesCreateClient = () => {
+  globalThis.__nexoraTestCreateClient = () => {
     seen.createClient++;
     return {
       auth: {
@@ -254,7 +226,7 @@ async function withAgentEnv(fn) {
     providers: [],
     policies: [],
   });
-  globalThis.__routesFakeDb = db;
+  globalThis.__nexoraTestSupabaseAdmin = db;
   const fetchCalls = [];
   const savedFetch = globalThis.fetch;
   const savedKey = process.env.OPENAI_API_KEY;

@@ -1,8 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import { existsSync } from "node:fs";
-import { pathToFileURL, fileURLToPath } from "node:url";
+import { installModuleStubs } from "./module-stubs.mjs";
 import { ProviderError } from "../src/lib/ai-gateway.server.ts";
 import { runGovernedRequest } from "../src/lib/nexora/pipeline.ts";
 import { executeUnderDecision } from "../src/lib/nexora/enforcement.ts";
@@ -546,29 +544,7 @@ test("PRE_RESPONSE evidence failure withholds the provider output", async () => 
 // Only the admin client is replaced; global fetch is a counting spy so any
 // provider egress would be observed.
 // ---------------------------------------------------------------------------
-const SRC = fileURLToPath(new URL("../src/", import.meta.url));
-registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier === "@/integrations/supabase/client.server")
-      return {
-        url: "data:text/javascript,export const supabaseAdmin = new Proxy({}, { get: (_, p) => globalThis.__gatewayFakeDb[p] });",
-        shortCircuit: true,
-      };
-    if (specifier.startsWith("@/")) {
-      const base = SRC + specifier.slice(2);
-      for (const candidate of [base, base + ".ts", base + ".tsx"])
-        if (existsSync(candidate)) return next(pathToFileURL(candidate).href, context);
-    }
-    try {
-      return next(specifier, context);
-    } catch (error) {
-      // tests/resolve-ts.mjs treats "./x.server" as already having an extension.
-      if (specifier.startsWith(".") && !specifier.endsWith(".ts"))
-        return next(specifier + ".ts", context);
-      throw error;
-    }
-  },
-});
+await installModuleStubs();
 
 function fakeDb(tables, rpcs) {
   const rpcCalls = [];
@@ -660,7 +636,7 @@ async function withApprovalDb({ subscription = "enterprise", decide, models } = 
   const db = fakeDb(tables, {
     nexora_decide_approval: decide ?? (() => ({ data: approvalRow(), error: null })),
   });
-  globalThis.__gatewayFakeDb = db;
+  globalThis.__nexoraTestSupabaseAdmin = db;
   const fetchCalls = [];
   const savedFetch = globalThis.fetch;
   const savedKey = process.env.OPENAI_API_KEY;
