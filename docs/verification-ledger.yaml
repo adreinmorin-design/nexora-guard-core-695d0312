@@ -540,3 +540,16 @@ verification_session_2026_11_25:
       - "Generated types match committed src/integrations/supabase/types.ts table-for-table and column-for-column (only PostgrestVersion 14.17 vs 14.18 differs)."
       - "Read-only DB audit found no High/Critical issue; Medium/Low hardening items (helper search_path, invite role check, approvals.decision_token column grant, stray grants/dead policies, auth_rls_initplan) tracked for a forward migration."
     blocker: "No application is deployed against this backend yet; live auth, RLS-through-REST, provider and tenant-isolation proofs pending (phases 2-5). Auth site/redirect URLs and email confirmation must be set by the owner in the Supabase dashboard."
+  rls_hardening_2026_11_26:
+    status: DEPLOYED
+    verification_status: NOT_VERIFIED
+    migration: supabase/migrations/20261126000100_rls_hardening.sql
+    evidence:
+      - "PGlite: tests/database.test.mjs 9/9 pass. New hardening test failed before the migration (org_admin could create a platform_admin invite; stray grants present; helpers search_path=public) and passes after; migration replays idempotently."
+      - "New coverage tests (pass before and after): expired/past_due/canceled/missing subscription denied at admission with no reservation; agent call limit 60/min (61st rejected); connection-code limit 100/min (101st rejected); Solo monthly limit 25000 (25001st denied); cross-tenant SELECT on every org_id table returns 0 rows of another tenant (sanity-checked by a temporary USING(true) policy, which the test caught)."
+      - 'Applied to Nexora Guard (pivwdmtcfzanrcbpkdqn) 2026-11-26 via apply_migration (25 migrations recorded). Read-only SQL: is_org_member/has_org_role proconfig search_path=""; authenticated UPDATE org_members, DELETE organizations/profiles/policy_versions all false; 0 of 6 dead write policies remain.'
+      - "get_advisors after apply: security = only the 7 intentional INFO rls_enabled_no_policy; performance auth_rls_initplan WARNs cleared (remaining: multiple_permissive_policies WARN, unindexed FK / unused index INFO)."
+    deferred:
+      - "L3 approvals.decision_token column grant: listApprovals (src/lib/nexora.functions.ts:421) uses select('*') through the user client; must switch to explicit columns before the column can be revoked."
+      - "planByKey Team fallback (src/lib/nexora/plans.ts:243) is display-only in admin.billing.tsx; server entitlements use planAllowsEntitlement which fails closed. Not a bypass."
+    blocker: "Live RLS through PostgREST with real user sessions not yet exercised (needs deployed app, phase 2/5)."
