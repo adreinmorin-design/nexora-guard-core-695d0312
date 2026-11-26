@@ -566,3 +566,17 @@ verification_session_2026_11_25:
     notes:
       - "Origin/credential rejection runs in connect() after the mcp.dispatch audit row is written (mcp.server.ts:713-740), so it is recorded as tool_execution_failure rather than a policy block. No request is sent; candidate refinement to check origin before writing the dispatch audit."
     blocker: "Live proof needs a deployed app plus a fixture MCP server (phase 4)."
+  pipeline_provider_route_tests:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - "verify-all.sh 19/19 (new checks: test:routes 15/15, test:failure-summary 7/7). test:gateway 39/39, test:providers 24/24."
+      - "Pipeline: pure ALLOW dispatches once and settles from provider-reported tokens (123/45) on the reserved key; budget at/over limit BLOCKs with 0 provider calls, 0 reservations, 0 settles; reserve admitted:false BLOCKs with 0 calls; injection under BLOCK policy blocked with 0 calls, under seeded default policy REQUIRE_APPROVAL with 0 calls; response inspection failure / REDACT without detections / response audit write failure all withhold output."
+      - "decideAndExecute: rejected decision, RPC refusal, missing approvals entitlement and changed model classification all perform 0 fetches."
+      - "Providers: six Gemini aliases route to generateContent with x-goog-api-key; missing/blank key for each provider = 503 NOT_CONFIGURED with 0 fetches; OpenAI-compatible base URL not allowlisted, no allowlist, http, loopback IP, embedded credentials, or OPENAI_BASE_URL outside allowlist = 503 with 0 fetches."
+      - "Routes: auth middleware rejects missing/non-Bearer/empty/non-JWT/4-part tokens without calling getClaims, and getClaims error/empty/no-sub claims without running the handler; /api/agent no or malformed credential 401, forged well-formed nxr_ 403, with no DB writes, RPCs or fetch; genuine credential 200 as harness control."
+      - "Mutation check: 21 controls removed one at a time in src; each made a test fail; src restored."
+    findings:
+      - "auth-middleware.ts:53-95 throws Error('Unauthorized') which TanStack Start returns as HTTP 500, not 401. Access is denied (no bypass); status code mapping is an open decision (file is Lovable-generated)."
+      - "Prompt injection is not blocked by the pipeline itself; blocking depends on tenant policy. Seeded 'Prompt Injection Containment' policy (catalog.ts:109-121) requires approval."
+    not_covered: "Full approved-then-executed path through runConsoleRequest (gateway.server.ts:509-534)."
