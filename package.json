@@ -23,7 +23,9 @@
     "desktop:discover": "node scripts/nexora-desktop-discovery.mjs",
     "test:email": "node --import ./tests/resolve-ts.mjs --test tests/email.test.mjs",
     "test:governance": "node --import ./tests/resolve-ts.mjs --test tests/governance-core.test.mjs",
-    "test:mcp": "node --import ./tests/resolve-ts.mjs --test tests/mcp-enforcement.test.mjs"
+    "test:mcp": "node --import ./tests/resolve-ts.mjs --test tests/mcp-enforcement.test.mjs",
+    "test:routes": "node --import ./tests/resolve-ts.mjs --test tests/routes.test.mjs",
+    "test:failure-summary": "node --import ./tests/resolve-ts.mjs --test tests/failure-summary.test.mjs"
   },
   "overrides": {
     "rolldown": "1.2.19",
