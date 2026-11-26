@@ -11,11 +11,13 @@ smoke workflow both pass against it.
 - Nitro merges the root `wrangler.jsonc` into that file. The root file pins the
   worker `name` (`nexora-guard`) and `compatibility_date`. Nitro still owns
   `main`, `assets` and the `nodejs_compat` flag.
-- The production build fails unless `VITE_SUPABASE_URL` and
-  `VITE_SUPABASE_PUBLISHABLE_KEY` are set. `SUPABASE_URL` and
-  `SUPABASE_PUBLISHABLE_KEY` are also accepted, from the process env or a local
-  `.env` file. There is no fallback project, so a build cannot silently point
-  the browser at another database.
+- Builds with `NEXORA_STRICT_PUBLIC_CONFIG=1` (set by `deploy.yml`) fail unless
+  `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_*`) are set,
+  so a Workers deploy can never point the browser at another project. Non-strict
+  builds (Lovable's hosted builds) fall back to the legacy Lovable Cloud project with
+  a loud warning, so the Lovable-connected app keeps publishing until cutover.
+- `supabase/config.toml` still names the Lovable Cloud project so Lovable's linking
+  is unchanged; the Nexora Guard project id is `pivwdmtcfzanrcbpkdqn`.
 - CI validation builds (`ci.yml`, `main.yml`) use fake placeholder values under
   `*.supabase.invalid`. Those builds are never deployed.
 

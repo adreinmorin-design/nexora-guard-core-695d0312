@@ -62,6 +62,7 @@ jobs:
         if: ${{ steps.creds.outputs.configured == 'true' }}
         # Public, browser-safe values only. The build fails if either is unset.
         env:
+          NEXORA_STRICT_PUBLIC_CONFIG: "1"
           VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
         run: bun run build

@@ -120,3 +120,25 @@ test("wrangler.jsonc pins the worker name and compatibility date", () => {
   assert.equal(json.name, "nexora-guard");
   assert.match(json.compatibility_date, /^\d{4}-\d{2}-\d{2}$/);
 });
+
+test("strict mode is opt-in and only enabled by NEXORA_STRICT_PUBLIC_CONFIG=1", async () => {
+  const { isStrictPublicConfig } =
+    await import("../src/integrations/supabase/legacy-build-fallback.ts");
+  assert.equal(isStrictPublicConfig({}), false);
+  assert.equal(isStrictPublicConfig({ NEXORA_STRICT_PUBLIC_CONFIG: "0" }), false);
+  assert.equal(isStrictPublicConfig({ NEXORA_STRICT_PUBLIC_CONFIG: "1" }), true);
+});
+
+test("legacy fallback is build-time only and the deploy workflow is strict", () => {
+  const vite = readFileSync(new URL("../vite.config.ts", import.meta.url), "utf8");
+  assert.match(vite, /!isStrictPublicConfig\(env\)/);
+  const deploy = readFileSync(new URL("../.github/workflows/deploy.yml", import.meta.url), "utf8");
+  assert.match(deploy, /NEXORA_STRICT_PUBLIC_CONFIG: "1"/);
+  for (const file of ["client.ts", "public-config.ts"]) {
+    const source = readFileSync(
+      new URL(`../src/integrations/supabase/${file}`, import.meta.url),
+      "utf8",
+    );
+    assert.doesNotMatch(source, /legacy-build-fallback/);
+  }
+});
