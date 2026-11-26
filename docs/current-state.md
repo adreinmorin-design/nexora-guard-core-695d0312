@@ -229,3 +229,7 @@ schema changes, subscription overrides or backend cutover were performed.
   withholds that column from `authenticated` (**not applied live**); MCP origin/credential
   readiness is denied before the `mcp.dispatch` audit with zero remote requests. **IMPLEMENTED**;
   runtime **NOT_VERIFIED**.
+- Workflow cleanup (2026-11-26): removed duplicate `main.yml` (its lint/audit/build/test steps are
+  covered by `ci.yml` → `verify-all.sh`; `bun test` added to `ci.yml`). Remaining workflows:
+  `ci.yml` (required `validate` check), `deploy.yml`, manual-only `production-smoke.yml` and
+  `live-tenant-isolation-proof.yml`, and manual `configure-main-protection.yml`.

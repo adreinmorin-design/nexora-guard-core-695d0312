@@ -18,8 +18,8 @@ smoke workflow both pass against it.
   a loud warning, so the Lovable-connected app keeps publishing until cutover.
 - `supabase/config.toml` still names the Lovable Cloud project so Lovable's linking
   is unchanged; the Nexora Guard project id is `pivwdmtcfzanrcbpkdqn`.
-- CI validation builds (`ci.yml`, `main.yml`) use fake placeholder values under
-  `*.supabase.invalid`. Those builds are never deployed.
+- The CI validation build (`ci.yml`) uses fake placeholder values under
+  `*.supabase.invalid`. That build is never deployed.
 
 ## GitHub configuration (repository owner)
 
@@ -43,8 +43,9 @@ required reviewers there. It deploys after a successful push run of `ci.yml`
 on `main`, or from a manual dispatch on `main`.
 
 Once the `SUPABASE_*` variables are set, `production-smoke.yml` and
-`live-tenant-isolation-proof.yml` target the new project, both on push and by
-default on dispatch. Dispatch inputs override the variables. When neither is
+`live-tenant-isolation-proof.yml` target the new project by default. Both run
+only by manual dispatch (Actions → workflow → Run workflow); they never run on
+push. Dispatch inputs override the variables. When neither is
 set, the workflows keep using the legacy Lovable Cloud values.
 
 ## Worker secrets (set out of band, never in this repo or workflow)
