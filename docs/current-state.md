@@ -235,5 +235,6 @@ schema changes, subscription overrides or backend cutover were performed.
   `live-tenant-isolation-proof.yml`, and manual `configure-main-protection.yml`.
 - Domain `nexoraguard.shop` is no longer owned (owner, 2026-11-26). Legal-page contact addresses
   now use the owner's account email; the Email page no longer pre-fills an address on that domain.
-  Hosting uses the Cloudflare `workers.dev` address until a new domain is attached. Paddle live
-  checkout requires an approved domain and stays disabled.
+  The planned Cloudflare host is a `workers.dev` address until a new domain is attached; no
+  Workers deployment has run, so that host is **NOT_VERIFIED** and smoke defaults still target
+  the Lovable host. Paddle live checkout requires an approved domain and stays disabled.
