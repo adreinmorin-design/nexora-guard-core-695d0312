@@ -3,9 +3,10 @@
 // - requireSupabaseAuth runs inside the real TanStack Start request context
 //   (requestHandler / getRequest); only @supabase/supabase-js createClient is
 //   replaced so getClaims can be controlled. The middleware signals denial by
-//   throwing "Unauthorized: ..."; these tests assert that verdict and that the
-//   protected handler (next) never runs. They do not assert an HTTP status:
-//   TanStack Start serializes thrown server-function errors itself.
+//   throwing "Unauthorized: ..." after setting the response status to 401;
+//   these tests assert that verdict and that the protected handler (next)
+//   never runs. The "over HTTP" tests dispatch a protected server function
+//   through Start's real server-function handler and assert HTTP 401.
 // - The /api/agent route handler runs as-is; only the Supabase admin client is
 //   replaced with an in-memory fake and global fetch with a counting spy, so any
 //   pipeline persistence or provider egress would be observed.
@@ -13,14 +14,22 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { installModuleStubs } from "./module-stubs.mjs";
 
-await installModuleStubs({ authCreateClient: true });
+await installModuleStubs({ authCreateClient: true, serverFnResolver: true });
 // Bun shares one process across test files; do not leak the fakes.
 test.after(() => {
   delete globalThis.__nexoraTestCreateClient;
   delete globalThis.__nexoraTestSupabaseAdmin;
+  delete globalThis.__nexoraTestGetServerFnById;
 });
 
 const { requestHandler } = await import("@tanstack/react-start/server");
+const { createServerFn } = await import("@tanstack/react-start");
+const { runWithStartContext } = await import("@tanstack/start-storage-context");
+// Start's server-function HTTP handler, reached the same way createStartHandler
+// reaches it for /_serverFn/* requests (it is not a public export).
+const { handleServerAction } = await import(
+  new URL("./server-functions-handler.js", import.meta.resolve("@tanstack/start-server-core")).href
+);
 const { requireSupabaseAuth } = await import("../src/integrations/supabase/auth-middleware.ts");
 const { Route: AgentRoute } = await import("../src/routes/api.agent.ts");
 const { hashCredential } = await import("../src/lib/nexora/agent-credentials.ts");
@@ -127,6 +136,95 @@ test("auth middleware: verified claims pass the user identity to the handler", a
   assert.deepEqual(seen.getClaims, [JWT]);
   assert.equal(seen.next.length, 1);
   assert.equal(seen.next[0].context.userId, "user-1");
+});
+
+// End-to-end: a server function protected by requireSupabaseAuth, dispatched
+// through Start's real server-function HTTP handler. Only the build-generated
+// server-function resolver is replaced (it returns this function, wired the way
+// the Start compiler wires it: createServerRpc(...) => fn.__executeServer).
+async function callProtectedServerFn(headers, getClaims) {
+  const saved = {
+    url: process.env.SUPABASE_URL,
+    key: process.env.SUPABASE_PUBLISHABLE_KEY,
+  };
+  process.env.SUPABASE_URL = "https://project.example.supabase.co";
+  process.env.SUPABASE_PUBLISHABLE_KEY = "sb_publishable_test";
+  const seen = { handler: 0 };
+  globalThis.__nexoraTestCreateClient = () => ({ auth: { getClaims } });
+  const protectedFn = createServerFn({ method: "POST" })
+    .middleware([requireSupabaseAuth])
+    .handler(
+      (opts) => protectedFn.__executeServer(opts),
+      async ({ context }) => {
+        seen.handler++;
+        return { userId: context.userId };
+      },
+    );
+  globalThis.__nexoraTestGetServerFnById = async () => (opts) => protectedFn.__executeServer(opts);
+  const handler = requestHandler((request) =>
+    runWithStartContext(
+      {
+        request,
+        startOptions: {},
+        contextAfterGlobalMiddlewares: {},
+        executedRequestMiddlewares: new Set(),
+        handlerType: "serverFn",
+      },
+      () => handleServerAction({ request, context: {}, serverFnId: "protected" }),
+    ),
+  );
+  const consoleError = console.error;
+  console.error = () => {};
+  try {
+    const response = await handler(
+      new Request("https://app.example/_serverFn/protected", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-tsr-serverFn": "true",
+          ...headers,
+        },
+        body: JSON.stringify({ t: { t: 10, i: 0, p: { k: [], v: [] }, o: 0 }, f: 63, m: [] }),
+      }),
+    );
+    return { response, body: await response.text(), seen };
+  } finally {
+    console.error = consoleError;
+    for (const [env, value] of [
+      ["SUPABASE_URL", saved.url],
+      ["SUPABASE_PUBLISHABLE_KEY", saved.key],
+    ])
+      if (value === undefined) delete process.env[env];
+      else process.env[env] = value;
+  }
+}
+
+for (const [label, headers, getClaims] of [
+  ["missing bearer", {}, validClaims],
+  ["malformed bearer", { authorization: "Bearer not-a-jwt" }, validClaims],
+  [
+    "rejected token",
+    { authorization: `Bearer ${JWT}` },
+    async () => ({ data: null, error: new Error("invalid JWT") }),
+  ],
+]) {
+  test(`auth middleware over HTTP: ${label} returns 401 and the handler never runs`, async () => {
+    const { response, body, seen } = await callProtectedServerFn(headers, getClaims);
+    assert.equal(response.status, 401);
+    assert.equal(seen.handler, 0, "handler must not run");
+    assert.match(body, /Unauthorized/);
+    assert.doesNotMatch(body, /stack|auth-middleware|node_modules/i, "no internals leaked");
+  });
+}
+
+test("auth middleware over HTTP: verified claims reach the handler with 200", async () => {
+  const { response, body, seen } = await callProtectedServerFn(
+    { authorization: `Bearer ${JWT}` },
+    validClaims,
+  );
+  assert.equal(response.status, 200);
+  assert.equal(seen.handler, 1);
+  assert.match(body, /user-1/);
 });
 
 // ---------------------------------------------------------------------------

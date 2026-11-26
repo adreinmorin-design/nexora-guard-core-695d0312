@@ -496,6 +496,27 @@ export async function executeTool(
     await finishInvocation("blocked", "BLOCK", "MCP server is inactive.");
     return finalizeBlocked("MCP server is inactive.", "DENY_ACTION", invocation.id);
   }
+  // Trusted origin and server credential are checked before any dispatch audit or
+  // remote contact (connect() re-checks the same readiness as defence in depth).
+  const readiness = mcpReadiness(server);
+  if (readiness !== "READY") {
+    const reason =
+      readiness === "ORIGIN_NOT_ALLOWED"
+        ? "MCP server origin is not trusted."
+        : "MCP server credential is not configured.";
+    await recordDecision({
+      enforcementPoint: "PRE_TOOL_INVOCATION",
+      decision: "DENY_ACTION",
+      reason,
+      policyId: null,
+      policyVersion: null,
+      ruleId: "mcp_server_readiness",
+      evaluatedContext: { serverId: server.id, toolId: tool.id, readiness },
+      attributes: {},
+    });
+    await finishInvocation("blocked", "BLOCK", reason);
+    return finalizeBlocked(reason, "DENY_ACTION", invocation.id);
+  }
 
   const rawToolText = JSON.stringify(input.arguments);
   const rawDetections = inspect(rawToolText);

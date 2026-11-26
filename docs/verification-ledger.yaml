@@ -550,7 +550,7 @@ verification_session_2026_11_25:
       - 'Applied to Nexora Guard (pivwdmtcfzanrcbpkdqn) 2026-11-26 via apply_migration (25 migrations recorded). Read-only SQL: is_org_member/has_org_role proconfig search_path=""; authenticated UPDATE org_members, DELETE organizations/profiles/policy_versions all false; 0 of 6 dead write policies remain.'
       - "get_advisors after apply: security = only the 7 intentional INFO rls_enabled_no_policy; performance auth_rls_initplan WARNs cleared (remaining: multiple_permissive_policies WARN, unindexed FK / unused index INFO)."
     deferred:
-      - "L3 approvals.decision_token column grant: listApprovals (src/lib/nexora.functions.ts:421) uses select('*') through the user client; must switch to explicit columns before the column can be revoked."
+      - "L3 approvals.decision_token column grant: addressed (IMPLEMENTED, not applied live) by migration 20261126000200; see auth_mcp_approval_fixes_2026_11_26."
       - "planByKey Team fallback (src/lib/nexora/plans.ts:243) is display-only in admin.billing.tsx; server entitlements use planAllowsEntitlement which fails closed. Not a bypass."
     blocker: "Live RLS through PostgREST with real user sessions not yet exercised (needs deployed app, phase 2/5)."
   mcp_enforcement_tests:
@@ -564,7 +564,7 @@ verification_session_2026_11_25:
       - "/api/mcp: no bearer 401 with WWW-Authenticate; forged/malformed/Basic credentials 401 without claiming an agent; cross-origin browser Origin 403; tools/list exposes exactly scope-covered tools and never another org's/agent's capabilities."
       - "Mutation check: removing each control in src (grant check, server status, IP literal, scope filter, mid-call re-check, quarantine, redirect:error) made the corresponding tests fail; src restored."
     notes:
-      - "Origin/credential rejection runs in connect() after the mcp.dispatch audit row is written (mcp.server.ts:713-740), so it is recorded as tool_execution_failure rather than a policy block. No request is sent; candidate refinement to check origin before writing the dispatch audit."
+      - "Superseded 2026-11-26 (auth_mcp_approval_fixes_2026_11_26): origin/credential readiness is now a PRE_TOOL_INVOCATION deny (rule mcp_server_readiness) before the mcp.dispatch audit."
     blocker: "Live proof needs a deployed app plus a fixture MCP server (phase 4)."
   pipeline_provider_route_tests:
     status: IMPLEMENTED
@@ -577,7 +577,7 @@ verification_session_2026_11_25:
       - "Routes: auth middleware rejects missing/non-Bearer/empty/non-JWT/4-part tokens without calling getClaims, and getClaims error/empty/no-sub claims without running the handler; /api/agent no or malformed credential 401, forged well-formed nxr_ 403, with no DB writes, RPCs or fetch; genuine credential 200 as harness control."
       - "Mutation check: 21 controls removed one at a time in src; each made a test fail; src restored."
     findings:
-      - "auth-middleware.ts:53-95 throws Error('Unauthorized') which TanStack Start returns as HTTP 500, not 401. Access is denied (no bypass); status code mapping is an open decision (file is Lovable-generated)."
+      - "Resolved 2026-11-26 (auth_mcp_approval_fixes_2026_11_26): auth-middleware denials now return HTTP 401 (installed Start 1.169.39 previously returned the serialized error with HTTP 200)."
       - "Prompt injection is not blocked by the pipeline itself; blocking depends on tenant policy. Seeded 'Prompt Injection Containment' policy (catalog.ts:109-121) requires approval."
     not_covered: "Full approved-then-executed path through runConsoleRequest (gateway.server.ts:509-534)."
   cloudflare_workers_deploy_pipeline:
@@ -590,3 +590,15 @@ verification_session_2026_11_25:
       - "tests/public-config.test.mjs (bun run test:config, verify-all check 20) 11/11 pass; actionlint 1.7.7 clean on all workflows."
       - ".github/workflows/deploy.yml (wrangler@4.164.0) added; smoke and isolation workflows parameterized via inputs > vars > legacy Lovable values."
     blocker: "No Cloudflare credentials in this session; no deploy has run. Needs CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID secrets, SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY/NEXORA_HOST vars, wrangler secrets, then a deploy.yml run and Production Smoke against the Workers host."
+  auth_mcp_approval_fixes_2026_11_26:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    migration: supabase/migrations/20261126000200_hide_approval_decision_token.sql
+    migration_applied_live: false
+    evidence:
+      - "Auth 401: requireSupabaseAuth calls setResponseStatus(401) before throwing 'Unauthorized: ...'. tests/routes.test.mjs dispatches a protected server function through Start's real server-function handler (handleServerAction; only the build-generated resolver is stubbed): missing/malformed/rejected bearer -> HTTP 401, handler never runs, body has message only (no stack); valid token -> 200. Before the fix the same tests observed HTTP 200 with a serialized error. Client behaviour unchanged (serialized error is still thrown)."
+      - "decision_token: listApprovals selects APPROVAL_LIST_COLUMNS (every column except decision_token). Migration revokes table SELECT from authenticated and grants SELECT on the 25 other columns. PGlite test: listApprovals projection works and is RLS-scoped, decision_token / * / predicate on decision_token denied, service_role still reads it, migration replays idempotently; failed with the migration emptied."
+      - "MCP readiness: executeTool checks mcpReadiness (origin allowlist + server credential) after the server-status check and before the mcp.dispatch audit; denial is blocked/BLOCK with a PRE_TOOL_INVOCATION DENY_ACTION (rule mcp_server_readiness), zero requests and no mcp.dispatch row. connect() keeps the same check as defence in depth."
+      - "Mutation checks: removing setResponseStatus(401), the REVOKE, one column grant, adding decision_token to the list, or disabling the readiness gate each made the new assertions fail."
+      - "verify-all.sh 20/20 (routes 19/19, mcp 34/34, database 10/10); bun test 175/175; lint and tsc clean."
+    blocker: "Migration not applied to any live database (owner applies). No deployed runtime proof of the 401 status or the column grant through PostgREST."

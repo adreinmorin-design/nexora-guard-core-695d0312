@@ -413,14 +413,23 @@ export const listAudit = createServerFn({ method: "POST" })
     return data ?? [];
   });
 
+// Every approvals column except decision_token.
+export const APPROVAL_LIST_COLUMNS =
+  "id, org_id, request_id, requester_id, action, target, risk, reason, policy_id, " +
+  "policy_version, status, approver_id, decided_at, expires_at, execution_result, payload, " +
+  "created_at, idempotency_key, policy_revalidated_at, consumed_at, intent_id, " +
+  "original_execution_id, approval_scope, single_use, consumed_execution_id";
+
 export const listApprovals = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }: { context: any }) => {
     const ws = await resolveWorkspace(context);
     await requireOrgEntitlement(ws.orgId, "human_approvals");
+    // Explicit columns: decision_token is withheld from authenticated by a
+    // column grant (20261126000200), so select("*") would fail with 42501.
     const { data } = await context.supabase
       .from("approvals")
-      .select("*")
+      .select(APPROVAL_LIST_COLUMNS)
       .eq("org_id", ws.orgId)
       .order("created_at", { ascending: false })
       .limit(100);

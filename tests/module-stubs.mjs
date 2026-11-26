@@ -31,9 +31,17 @@ const ADMIN_SOURCE = `export const supabaseAdmin = new Proxy({}, { get(_, prop) 
 } });`;
 const CREATE_CLIENT_SOURCE =
   "export const createClient = (...args) => globalThis.__nexoraTestCreateClient(...args);";
+// Server-function resolver: TanStack Start's build normally generates this
+// module; tests register the server function under test on the global.
+const SERVER_FN_RESOLVER_SOURCE =
+  "export const getServerFnById = (...args) => globalThis.__nexoraTestGetServerFnById(...args);";
+const SERVER_FN_RESOLVER_SPECIFIER = "#tanstack-start-server-fn-resolver";
 const dataUrl = (source) => "data:text/javascript," + encodeURIComponent(source);
 
-export async function installModuleStubs({ authCreateClient = false } = {}) {
+export async function installModuleStubs({
+  authCreateClient = false,
+  serverFnResolver = false,
+} = {}) {
   if (typeof nodeModule.registerHooks === "function") {
     nodeModule.registerHooks({
       resolve(specifier, context, next) {
@@ -45,6 +53,8 @@ export async function installModuleStubs({ authCreateClient = false } = {}) {
           context.parentURL?.endsWith("/integrations/supabase/auth-middleware.ts")
         )
           return { url: dataUrl(CREATE_CLIENT_SOURCE), shortCircuit: true };
+        if (serverFnResolver && specifier === SERVER_FN_RESOLVER_SPECIFIER)
+          return { url: dataUrl(SERVER_FN_RESOLVER_SOURCE), shortCircuit: true };
         if (specifier.startsWith("@/")) {
           const base = SRC + specifier.slice(2);
           for (const candidate of [base, base + ".ts", base + ".tsx"])
@@ -77,6 +87,17 @@ export async function installModuleStubs({ authCreateClient = false } = {}) {
         ...real,
         createClient: (...args) =>
           (globalThis.__nexoraTestCreateClient ?? realCreateClient)(...args),
+      }));
+    }
+    if (serverFnResolver) {
+      // The package-internal "#" import resolves to the fake resolver file;
+      // Bun mocks by resolved path.
+      const fake = new URL(
+        "./fake-start-server-fn-resolver.js",
+        import.meta.resolve("@tanstack/start-server-core"),
+      );
+      mock.module(fileURLToPath(fake), () => ({
+        getServerFnById: (...args) => globalThis.__nexoraTestGetServerFnById(...args),
       }));
     }
     return;

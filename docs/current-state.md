@@ -223,3 +223,9 @@ schema changes, subscription overrides or backend cutover were performed.
   legacy fallback with a warning; worker pinned to `nexora-guard` / compatibility date
   `2026-11-01` via root `wrangler.jsonc`; `deploy.yml` added; smoke and isolation workflows take
   inputs/vars. See `docs/deploy-cloudflare.md`. **IMPLEMENTED**; no deploy run, **NOT_VERIFIED**.
+- Auth/approval/MCP fixes (2026-11-26): unauthenticated server-function calls now return HTTP
+  401 (previously the serialized error was returned with HTTP 200); `listApprovals` no longer
+  selects `approvals.decision_token`, and migration `20261126000200_hide_approval_decision_token.sql`
+  withholds that column from `authenticated` (**not applied live**); MCP origin/credential
+  readiness is denied before the `mcp.dispatch` audit with zero remote requests. **IMPLEMENTED**;
+  runtime **NOT_VERIFIED**.
