@@ -218,3 +218,7 @@ schema changes, subscription overrides or backend cutover were performed.
   grants, drops six dead write policies and fixes the `auth_rls_initplan` advisories. PGlite tests
   prove fail-before/pass-after plus expired-trial, rate-limit, monthly-quota and cross-tenant
   coverage. Applied to Nexora Guard (**DEPLOYED**); live REST behavior **NOT_VERIFIED**.
+- Cloudflare Workers deploy path (2026-11-26): production builds now fail without explicit public
+  Supabase config (no Lovable fallback); worker pinned to `nexora-guard` / compatibility date
+  `2026-11-01` via root `wrangler.jsonc`; `deploy.yml` added; smoke and isolation workflows take
+  inputs/vars. See `docs/deploy-cloudflare.md`. **IMPLEMENTED**; no deploy run, **NOT_VERIFIED**.

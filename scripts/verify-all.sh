@@ -57,6 +57,7 @@ run_check "database" "Database migration tests" bun run test:database
 run_check "hardening" "Hardening/auth runtime tests" bun run test:hardening
 run_check "monitoring" "Monitoring tests" bun run test:monitoring
 run_check "email" "Email tests" bun run test:email
+run_check "config" "Public config and Workers pin tests" bun run test:config
 
 commit="${GITHUB_SHA:-$(git rev-parse HEAD)}"
 timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"

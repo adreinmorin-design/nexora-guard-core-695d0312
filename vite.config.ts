@@ -5,20 +5,38 @@
 //     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { loadEnv, type Plugin } from "vite";
+import {
+  requirePublicSupabaseBuildConfig,
+  resolvePublicSupabaseConfig,
+} from "./src/integrations/supabase/public-config.ts";
 
-// Lovable Cloud exposes the database configuration to the server runtime. Mirror
-// only the public URL + publishable key into the browser bundle at build time.
-// Never expose SUPABASE_SERVICE_ROLE_KEY here.
-const publicSupabaseUrl = process.env["VITE_SUPABASE_URL"] ?? process.env["SUPABASE_URL"] ?? "";
-const publicSupabasePublishableKey =
-  process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ?? process.env["SUPABASE_PUBLISHABLE_KEY"] ?? "";
+// Mirror only the public URL + publishable key into the bundle at build time.
+// Never expose SUPABASE_SERVICE_ROLE_KEY here. Production builds fail when
+// either value is missing so the browser can never fall back to another project.
+function publicSupabaseEnv(): Plugin {
+  return {
+    name: "nexora-public-supabase-env",
+    config(_config, { command, mode }) {
+      // .env files (any prefix) first, then real process env wins.
+      const env = { ...loadEnv(mode, process.cwd(), ""), ...process.env };
+      const { url, publishableKey } =
+        command === "build" && mode !== "development"
+          ? requirePublicSupabaseBuildConfig(env)
+          : resolvePublicSupabaseConfig(env, env);
+      return {
+        define: {
+          "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(url ?? ""),
+          "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(publishableKey ?? ""),
+        },
+      };
+    },
+  };
+}
 
 export default defineConfig({
   vite: {
-    define: {
-      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(publicSupabaseUrl),
-      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(publicSupabasePublishableKey),
-    },
+    plugins: [publicSupabaseEnv()],
   },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).

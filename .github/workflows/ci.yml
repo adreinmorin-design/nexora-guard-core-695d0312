@@ -33,6 +33,12 @@ jobs:
           bun --version
       - run: bun install --frozen-lockfile --ignore-scripts
       - name: Run complete Nexora verification
+        # Clearly fake, non-secret placeholders so the validation build passes the
+        # public Supabase config gate. This build is never deployed (deploy.yml
+        # builds separately from repo vars).
+        env:
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.invalid
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder_not_a_secret
         run: bash scripts/verify-all.sh
       - name: Upload verification evidence
         if: ${{ always() }}

@@ -34,6 +34,11 @@ jobs:
         continue-on-error: false
 
       - name: Run Build / Typecheck
+        # Fake, non-secret placeholders for the validation build only; this
+        # artifact is not deployed (deploy.yml builds from repo vars).
+        env:
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.invalid
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder_not_a_secret
         run: bun run build
 
       - name: Upload Build Artifacts

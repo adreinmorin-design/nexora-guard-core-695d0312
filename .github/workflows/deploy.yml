@@ -1,0 +1,81 @@
+name: Deploy (Cloudflare Workers)
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-cloudflare-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Deploy only from main: either a manual dispatch on main, or a successful
+    # push-triggered run of the full verification workflow (ci.yml) on main.
+    # Both ci.yml and main.yml are named "CI", so match the workflow file path.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.path == '.github/workflows/ci.yml')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: Check Cloudflare credentials
+        id: creds
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        shell: bash
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN is not configured; skipping Cloudflare Workers deploy."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ steps.creds.outputs.configured == 'true' }}
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        if: ${{ steps.creds.outputs.configured == 'true' }}
+        with:
+          bun-version: 1.4.2
+
+      - name: Install dependencies
+        if: ${{ steps.creds.outputs.configured == 'true' }}
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        if: ${{ steps.creds.outputs.configured == 'true' }}
+        # Public, browser-safe values only. The build fails if either is unset.
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: bun run build
+
+      - name: Show generated Workers config
+        if: ${{ steps.creds.outputs.configured == 'true' }}
+        run: cat .output/server/wrangler.json
+
+      - name: Deploy to Cloudflare Workers
+        if: ${{ steps.creds.outputs.configured == 'true' }}
+        # Server secrets (SUPABASE_SERVICE_ROLE_KEY, provider keys, Paddle, ...)
+        # are managed out of band with `wrangler secret put`; see
+        # docs/deploy-cloudflare.md. They are never passed through this workflow.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bunx wrangler@4.164.0 deploy --config .output/server/wrangler.json
