@@ -157,7 +157,7 @@ function Terms() {
         <h2>11. Contact</h2>
         <p>
           Questions about these Terms may be sent to{" "}
-          <a href="mailto:dre@nexoraguard.shop">dre@nexoraguard.shop</a>.
+          <a href="mailto:adreinmorin@gmail.com">adreinmorin@gmail.com</a>.
         </p>
       </section>
     </LegalPage>

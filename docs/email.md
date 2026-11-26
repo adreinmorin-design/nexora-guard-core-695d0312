@@ -25,17 +25,21 @@ not persisted by Nexora. Send reservations remain until disconnect for deduplica
 
 ## Verification and password resets
 
-This project uses Lovable Cloud Auth. Configure branded authentication email in
-Lovable project → More → Cloud → Emails, verify `nexoraguard.shop`, enable root-domain
-sender display if wanted, and configure the local sender as supported by the UI.
-Preserve Namecheap incoming MX records: a transactional sending subdomain is separate.
-Lovable's paid-plan and domain-verification requirements apply. Do not disable email
-confirmation or replace the signup/recovery flow with client-generated links.
+Branded authentication email needs a sending domain the owner controls. The former
+`nexoraguard.shop` domain is no longer owned and must not be used as a sender or verified
+domain. Until a new domain is acquired, authentication email uses the Supabase project's
+default sender.
 
-If moved to a directly managed Supabase project, configure Auth custom SMTP with host
-`mail.privateemail.com`, port 465, username/sender `dre@nexoraguard.shop`, and the
-mailbox/application password. Secrets belong in the provider's secured settings.
-Inbox connection alone does not change the authentication sender.
+- Lovable Cloud Auth: configure branded email in Lovable project → More → Cloud → Emails
+  and verify the new domain there. Lovable's paid-plan and domain-verification requirements
+  apply.
+- Directly managed Supabase project (Nexora Guard): configure Auth → SMTP with the new
+  domain's provider host, port, sender address and application password. Secrets belong in
+  the provider's secured settings.
+
+Preserve the domain's incoming MX records (a transactional sending subdomain is separate).
+Do not disable email confirmation or replace the signup/recovery flow with client-generated
+links. Inbox connection alone does not change the authentication sender.
 
 ## Operational alerts
 

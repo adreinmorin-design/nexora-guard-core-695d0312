@@ -44,7 +44,7 @@ function EmailPage() {
     queryFn: () => statusFn({}),
     retry: false,
   });
-  const [email, setEmail] = useState("dre@nexoraguard.shop");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -358,9 +358,9 @@ function EmailPage() {
           your inbox does not change their sender.
         </p>
         <p className="text-sm text-muted-foreground">
-          For this Lovable Cloud deployment, finish branded authentication delivery in Lovable →
-          More → Cloud → Emails: verify nexoraguard.shop and configure the sender. Keep email
-          confirmation enabled and preserve Namecheap’s incoming MX records.
+          Branded authentication email requires a domain you control: verify it with your email
+          provider and configure it as the Supabase Auth sender. Keep email confirmation enabled and
+          preserve the domain’s incoming MX records.
         </p>
         <p className="text-sm text-muted-foreground">
           Operational email alerts are available after the deployment’s alert mailbox is configured.

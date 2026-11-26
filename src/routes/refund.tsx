@@ -91,8 +91,8 @@ function Refund() {
         <p>
           If you believe you were charged more than once, charged the wrong amount or charged after
           a cancellation should have taken effect, contact{" "}
-          <a href="mailto:dre@nexoraguard.shop">dre@nexoraguard.shop</a>. We will review documented
-          billing errors separately from discretionary refund requests.
+          <a href="mailto:adreinmorin@gmail.com">adreinmorin@gmail.com</a>. We will review
+          documented billing errors separately from discretionary refund requests.
         </p>
       </section>
 

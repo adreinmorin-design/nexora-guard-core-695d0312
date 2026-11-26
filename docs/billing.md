@@ -71,8 +71,8 @@ Use the public pricing page as Paddle's default payment link once its domain is
 approved in the live Paddle account:
 
 - Lovable production host: `https://nexora-guard-core.lovable.app/pricing`
-- Custom domain, once it resolves to this deployment and is approved by Paddle:
-  `https://nexoraguard.shop/pricing`
+- Custom domain: none at present (`nexoraguard.shop` is no longer owned). Add the new
+  domain's `/pricing` URL here once it resolves to this deployment and Paddle approves it.
 
 The pricing page initializes Paddle.js only when
 `PADDLE_ENVIRONMENT=production` and `PADDLE_CLIENT_TOKEN` begins with
