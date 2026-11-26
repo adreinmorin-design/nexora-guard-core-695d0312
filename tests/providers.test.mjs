@@ -5,6 +5,7 @@ import {
   executeProviderRequest,
   parseResponseText,
   parseUsage,
+  providerCredentialVariable,
   providerReadiness,
 } from "../src/lib/ai-gateway.server.ts";
 
@@ -210,4 +211,113 @@ test("untrusted IDs reject invalid values without truncation or affecting respon
     256,
   );
   assert.equal(new ProviderError(502, "safe", "bad\nvalue").providerRequestId, null);
+});
+
+function clearProviderEnv() {
+  for (const name of Object.keys(process.env))
+    if (
+      /^(OPENAI|OPEN_AI|ANTHROPIC|GOOGLE_AI|GEMINI|NEXORA_)/.test(name) ||
+      name === "PROVIDER_ALLOWED_ORIGINS"
+    )
+      delete process.env[name];
+}
+
+function fetchSpy(body = { output_text: "ok" }) {
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url: String(url), init });
+    return response(body);
+  };
+  return calls;
+}
+
+test("Gemini vendor aliases resolve to the native Google adapter", async () => {
+  clearProviderEnv();
+  process.env.GEMINI_API_KEY = "gemini-secret";
+  for (const alias of [
+    "gemini",
+    "GEMINI",
+    "google",
+    "google-ai",
+    "google_gemini",
+    "google-generative-ai",
+  ]) {
+    assert.equal(providerReadiness(alias), "CONFIGURED", alias);
+    assert.equal(providerCredentialVariable(alias), "GOOGLE_AI_API_KEY or GEMINI_API_KEY", alias);
+    const calls = fetchSpy({
+      candidates: [{ content: { parts: [{ text: "gemini answer" }] } }],
+      usageMetadata: { promptTokenCount: 2, candidatesTokenCount: 3 },
+    });
+    const result = await executeProviderRequest(`${alias}/gemini-2.5-flash`, "safe prompt");
+    assert.equal(calls.length, 1, alias);
+    assert.equal(
+      calls[0].url,
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+      alias,
+    );
+    assert.equal(new Headers(calls[0].init.headers).get("x-goog-api-key"), "gemini-secret");
+    assert.equal(result.text, "gemini answer");
+    assert.equal(result.inputTokens, 2);
+    assert.equal(result.outputTokens, 3);
+  }
+});
+
+for (const [modelKey, message] of [
+  ["openai/gpt-test", /OpenAI provider is NOT_CONFIGURED/],
+  ["anthropic/claude-test", /Anthropic provider is NOT_CONFIGURED/],
+  ["gemini/gemini-test", /Google provider is NOT_CONFIGURED/],
+  ["mistral/mistral-large", /mistral provider is NOT_CONFIGURED/],
+]) {
+  test(`missing API key for ${modelKey} fails clearly without any fetch`, async () => {
+    clearProviderEnv();
+    // Endpoint configured and allowlisted, only the key is missing.
+    process.env.NEXORA_MISTRAL_BASE_URL = "https://mistral.example/v1";
+    process.env.PROVIDER_ALLOWED_ORIGINS = "https://mistral.example";
+    process.env.OPENAI_API_KEY = "   ";
+    const calls = fetchSpy();
+    await assert.rejects(executeProviderRequest(modelKey, "safe"), (error) => {
+      assert.ok(error instanceof ProviderError);
+      assert.equal(error.status, 503);
+      assert.match(error.message, message);
+      return true;
+    });
+    assert.equal(calls.length, 0, "provider fetch must not be invoked");
+  });
+}
+
+for (const [label, base, allowlist] of [
+  ["not in PROVIDER_ALLOWED_ORIGINS", "https://rogue.example/v1", "https://mistral.example"],
+  ["no allowlist configured", "https://mistral.example/v1", undefined],
+  ["plain HTTP even when allowlisted", "http://mistral.example/v1", "http://mistral.example"],
+  ["loopback address", "https://127.0.0.1/v1", "https://127.0.0.1"],
+  ["embedded credentials", "https://user:pw@mistral.example/v1", "https://mistral.example"],
+]) {
+  test(`OpenAI-compatible base URL rejected (${label}) without any fetch`, async () => {
+    clearProviderEnv();
+    process.env.NEXORA_MISTRAL_API_KEY = "mistral-secret";
+    process.env.NEXORA_MISTRAL_BASE_URL = base;
+    if (allowlist) process.env.PROVIDER_ALLOWED_ORIGINS = allowlist;
+    const calls = fetchSpy();
+    await assert.rejects(executeProviderRequest("mistral/mistral-large", "safe"), (error) => {
+      assert.ok(error instanceof ProviderError);
+      assert.equal(error.status, 503);
+      assert.match(error.message, /not in PROVIDER_ALLOWED_ORIGINS/);
+      assert.ok(!error.message.includes("mistral-secret"));
+      return true;
+    });
+    assert.equal(calls.length, 0, "provider fetch must not be invoked");
+    assert.equal(providerReadiness("mistral"), "NOT_CONFIGURED");
+  });
+}
+
+test("native base URL override outside the allowlist is rejected without fetch", async () => {
+  clearProviderEnv();
+  process.env.OPENAI_API_KEY = "openai-secret";
+  process.env.OPENAI_BASE_URL = "https://rogue.example/v1";
+  const calls = fetchSpy();
+  await assert.rejects(executeProviderRequest("openai/gpt-test", "safe"), {
+    status: 503,
+    message: /not in PROVIDER_ALLOWED_ORIGINS/,
+  });
+  assert.equal(calls.length, 0);
 });

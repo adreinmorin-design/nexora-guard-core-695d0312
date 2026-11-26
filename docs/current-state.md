@@ -213,3 +213,8 @@ schema changes, subscription overrides or backend cutover were performed.
   function access, security advisor shows only intentional INFO findings. **DEPLOYED** (schema
   only); no app points at it yet, so runtime behavior is **NOT_VERIFIED**. README now documents
   Bun 1.4.2 / `bun.lock` as the only toolchain.
+- RLS hardening (2026-11-26): migration `20261126000100_rls_hardening.sql` pins tenancy-helper
+  `search_path`, blocks `platform_admin` invites by org admins, revokes four unused browser
+  grants, drops six dead write policies and fixes the `auth_rls_initplan` advisories. PGlite tests
+  prove fail-before/pass-after plus expired-trial, rate-limit, monthly-quota and cross-tenant
+  coverage. Applied to Nexora Guard (**DEPLOYED**); live REST behavior **NOT_VERIFIED**.
