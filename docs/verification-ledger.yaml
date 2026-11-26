@@ -594,7 +594,7 @@ verification_session_2026_11_25:
     status: IMPLEMENTED
     verification_status: NOT_VERIFIED
     migration: supabase/migrations/20261126000200_hide_approval_decision_token.sql
-    migration_applied_live: false
+    migration_applied_live: "Nexora Guard (pivwdmtcfzanrcbpkdqn) 2026-11-26: authenticated decision_token SELECT=false, intent_id SELECT=true, service_role decision_token=true; 26 migrations recorded. Not applied to Lovable Cloud (apply there only after the new listApprovals code is live)."
     evidence:
       - "Auth 401: requireSupabaseAuth calls setResponseStatus(401) before throwing 'Unauthorized: ...'. tests/routes.test.mjs dispatches a protected server function through Start's real server-function handler (handleServerAction; only the build-generated resolver is stubbed): missing/malformed/rejected bearer -> HTTP 401, handler never runs, body has message only (no stack); valid token -> 200. Before the fix the same tests observed HTTP 200 with a serialized error. Client behaviour unchanged (serialized error is still thrown)."
       - "decision_token: listApprovals selects APPROVAL_LIST_COLUMNS (every column except decision_token). Migration revokes table SELECT from authenticated and grants SELECT on the 25 other columns. PGlite test: listApprovals projection works and is RLS-scoped, decision_token / * / predicate on decision_token denied, service_role still reads it, migration replays idempotently; failed with the migration emptied."
