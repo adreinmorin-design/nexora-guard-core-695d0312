@@ -40,6 +40,10 @@ jobs:
           VITE_SUPABASE_URL: https://ci-placeholder.supabase.invalid
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder_not_a_secret
         run: bash scripts/verify-all.sh
+      - name: Run test suite under Bun
+        # verify-all runs every suite under Node's test runner; this also proves
+        # the same tests load and pass under the Bun runtime.
+        run: bun test
       - name: Upload verification evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

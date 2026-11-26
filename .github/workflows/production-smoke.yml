@@ -15,9 +15,6 @@ on:
         description: "Supabase publishable key (default: repo var SUPABASE_PUBLISHABLE_KEY, else the legacy Lovable Cloud key)"
         required: false
         default: ""
-  push:
-    paths:
-      - ".github/workflows/production-smoke.yml"
 
 permissions:
   contents: read

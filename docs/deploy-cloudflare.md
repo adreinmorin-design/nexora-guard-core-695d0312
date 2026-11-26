@@ -18,8 +18,8 @@ smoke workflow both pass against it.
   a loud warning, so the Lovable-connected app keeps publishing until cutover.
 - `supabase/config.toml` still names the Lovable Cloud project so Lovable's linking
   is unchanged; the Nexora Guard project id is `pivwdmtcfzanrcbpkdqn`.
-- CI validation builds (`ci.yml`, `main.yml`) use fake placeholder values under
-  `*.supabase.invalid`. Those builds are never deployed.
+- The CI validation build (`ci.yml`) uses fake placeholder values under
+  `*.supabase.invalid`. That build is never deployed.
 
 ## GitHub configuration (repository owner)
 

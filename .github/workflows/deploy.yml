@@ -18,7 +18,7 @@ jobs:
   deploy:
     # Deploy only from main: either a manual dispatch on main, or a successful
     # push-triggered run of the full verification workflow (ci.yml) on main.
-    # Both ci.yml and main.yml are named "CI", so match the workflow file path.
+    # Match the workflow file path so only the full verification run counts.
     if: >-
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_run' &&
