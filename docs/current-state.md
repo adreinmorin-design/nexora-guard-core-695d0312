@@ -233,3 +233,7 @@ schema changes, subscription overrides or backend cutover were performed.
   covered by `ci.yml` → `verify-all.sh`; `bun test` added to `ci.yml`). Remaining workflows:
   `ci.yml` (required `validate` check), `deploy.yml`, manual-only `production-smoke.yml` and
   `live-tenant-isolation-proof.yml`, and manual `configure-main-protection.yml`.
+- Domain `nexoraguard.shop` is no longer owned (owner, 2026-11-26). Legal-page contact addresses
+  now use the owner's account email; the Email page no longer pre-fills an address on that domain.
+  Hosting uses the Cloudflare `workers.dev` address until a new domain is attached. Paddle live
+  checkout requires an approved domain and stays disabled.

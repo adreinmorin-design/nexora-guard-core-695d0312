@@ -118,8 +118,8 @@ function Privacy() {
         </p>
         <p>
           To make a privacy request, contact{" "}
-          <a href="mailto:dre@nexoraguard.shop">dre@nexoraguard.shop</a>. We may need to verify the
-          request before acting on it.
+          <a href="mailto:adreinmorin@gmail.com">adreinmorin@gmail.com</a>. We may need to verify
+          the request before acting on it.
         </p>
       </section>
 
@@ -135,7 +135,7 @@ function Privacy() {
         <h2>9. Contact</h2>
         <p>
           Privacy questions may be sent to{" "}
-          <a href="mailto:dre@nexoraguard.shop">dre@nexoraguard.shop</a>.
+          <a href="mailto:adreinmorin@gmail.com">adreinmorin@gmail.com</a>.
         </p>
       </section>
     </LegalPage>
