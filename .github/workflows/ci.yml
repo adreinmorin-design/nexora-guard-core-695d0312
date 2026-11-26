@@ -40,6 +40,9 @@ jobs:
           VITE_SUPABASE_URL: https://ci-placeholder.supabase.invalid
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder_not_a_secret
         run: bash scripts/verify-all.sh
+      - name: Dependency audit (all severities)
+        # verify-all gates on high+; this keeps any new advisory a CI failure.
+        run: bun audit
       - name: Run test suite under Bun
         # verify-all runs every suite under Node's test runner; this also proves
         # the same tests load and pass under the Bun runtime.
