@@ -218,3 +218,14 @@ schema changes, subscription overrides or backend cutover were performed.
   grants, drops six dead write policies and fixes the `auth_rls_initplan` advisories. PGlite tests
   prove fail-before/pass-after plus expired-trial, rate-limit, monthly-quota and cross-tenant
   coverage. Applied to Nexora Guard (**DEPLOYED**); live REST behavior **NOT_VERIFIED**.
+- Cloudflare Workers deploy path (2026-11-26): strict builds (`NEXORA_STRICT_PUBLIC_CONFIG=1`, used by
+  `deploy.yml`) fail without explicit public Supabase config; non-strict Lovable builds keep the
+  legacy fallback with a warning; worker pinned to `nexora-guard` / compatibility date
+  `2026-11-01` via root `wrangler.jsonc`; `deploy.yml` added; smoke and isolation workflows take
+  inputs/vars. See `docs/deploy-cloudflare.md`. **IMPLEMENTED**; no deploy run, **NOT_VERIFIED**.
+- Auth/approval/MCP fixes (2026-11-26): unauthenticated server-function calls now return HTTP
+  401 (previously the serialized error was returned with HTTP 200); `listApprovals` no longer
+  selects `approvals.decision_token`, and migration `20261126000200_hide_approval_decision_token.sql`
+  withholds that column from `authenticated` (**not applied live**); MCP origin/credential
+  readiness is denied before the `mcp.dispatch` audit with zero remote requests. **IMPLEMENTED**;
+  runtime **NOT_VERIFIED**.

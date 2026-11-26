@@ -1,0 +1,9 @@
+// Merged by Nitro's cloudflare-module preset into .output/server/wrangler.json
+// at build time. Nitro owns `main`, `assets` and `compatibility_flags`
+// (nodejs_compat); only pin the worker identity and runtime date here.
+// Server secrets are NOT configured here: set them with `wrangler secret put`
+// (see docs/deploy-cloudflare.md).
+{
+  "name": "nexora-guard",
+  "compatibility_date": "2026-11-01",
+}

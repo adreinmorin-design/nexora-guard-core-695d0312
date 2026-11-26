@@ -7,22 +7,21 @@
 - Passed: **16**
 - Failed: **0**
 
-| Check | Result | Log |
-| --- | --- | --- |
-| Bun dependency audit (high) | PASS | audit.log |
-| Prettier | PASS | format.log |
-| ESLint | PASS | lint.log |
-| TypeScript | PASS | typecheck.log |
-| Production build | PASS | build.log |
-| Security tests | PASS | security.log |
-| Agent integration tests | PASS | agents.log |
-| Provider tests | PASS | providers.log |
-| Paddle tests | PASS | paddle.log |
-| Billing tests | PASS | billing.log |
-| Gateway tests | PASS | gateway.log |
-| Governance core tests | PASS | governance.log |
-| Database migration tests | PASS | database.log |
-| Hardening/auth runtime tests | PASS | hardening.log |
-| Monitoring tests | PASS | monitoring.log |
-| Email tests | PASS | email.log |
-
+| Check                        | Result | Log            |
+| ---------------------------- | ------ | -------------- |
+| Bun dependency audit (high)  | PASS   | audit.log      |
+| Prettier                     | PASS   | format.log     |
+| ESLint                       | PASS   | lint.log       |
+| TypeScript                   | PASS   | typecheck.log  |
+| Production build             | PASS   | build.log      |
+| Security tests               | PASS   | security.log   |
+| Agent integration tests      | PASS   | agents.log     |
+| Provider tests               | PASS   | providers.log  |
+| Paddle tests                 | PASS   | paddle.log     |
+| Billing tests                | PASS   | billing.log    |
+| Gateway tests                | PASS   | gateway.log    |
+| Governance core tests        | PASS   | governance.log |
+| Database migration tests     | PASS   | database.log   |
+| Hardening/auth runtime tests | PASS   | hardening.log  |
+| Monitoring tests             | PASS   | monitoring.log |
+| Email tests                  | PASS   | email.log      |

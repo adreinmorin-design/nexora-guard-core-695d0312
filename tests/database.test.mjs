@@ -942,3 +942,127 @@ test("RLS hardening: invites, stray grants, dead write policies, helper search_p
     await db.close();
   }
 });
+
+test("approvals.decision_token is withheld from authenticated; other columns and RLS remain", async () => {
+  const db = await migratedDb();
+  try {
+    // Idempotent: replaying the column-grant migration changes nothing.
+    await db.exec(
+      await readFile("supabase/migrations/20261126000200_hide_approval_decision_token.sql", "utf8"),
+    );
+    // The exact column list listApprovals sends through the authenticated client.
+    const source = await readFile("src/lib/nexora.functions.ts", "utf8");
+    const listColumns = [
+      ...source
+        .match(/APPROVAL_LIST_COLUMNS =\s*((?:"[^"]*"\s*\+?\s*)+);/)[1]
+        .matchAll(/"([^"]*)"/g),
+    ]
+      .map((m) => m[1])
+      .join("");
+    const tableColumns = (
+      await db.query(
+        "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='approvals'",
+      )
+    ).rows.map((r) => r.column_name);
+    assert.deepEqual(
+      listColumns
+        .split(",")
+        .map((c) => c.trim())
+        .sort(),
+      tableColumns.filter((c) => c !== "decision_token").sort(),
+      "listApprovals selects every approvals column except decision_token",
+    );
+    const grants = (
+      await db.query(`
+        SELECT column_name,
+          has_column_privilege('authenticated','public.approvals',column_name,'SELECT') AS auth_read,
+          has_column_privilege('service_role','public.approvals',column_name,'SELECT') AS service_read
+        FROM information_schema.columns WHERE table_schema='public' AND table_name='approvals'`)
+    ).rows;
+    for (const g of grants) {
+      assert.equal(
+        g.auth_read,
+        g.column_name !== "decision_token",
+        `authenticated ${g.column_name}`,
+      );
+      assert.equal(g.service_read, true, `service_role ${g.column_name}`);
+    }
+    const tablePriv = (
+      await db.query(`SELECT
+        has_table_privilege('authenticated','public.approvals','SELECT') AS auth_select,
+        has_table_privilege('authenticated','public.approvals','INSERT') AS auth_insert,
+        has_table_privilege('authenticated','public.approvals','UPDATE') AS auth_update,
+        has_table_privilege('service_role','public.approvals','SELECT') AS service_select,
+        has_table_privilege('service_role','public.approvals','UPDATE') AS service_update`)
+    ).rows[0];
+    assert.deepEqual(
+      { ...tablePriv },
+      {
+        auth_select: false,
+        auth_insert: false,
+        auth_update: false,
+        service_select: true,
+        service_update: true,
+      },
+    );
+
+    const member = "00000000-0000-4000-8000-000000000451";
+    const stranger = "00000000-0000-4000-8000-000000000452";
+    const org = "00000000-0000-4000-8000-000000000453";
+    const otherOrg = "00000000-0000-4000-8000-000000000454";
+    await db.query("INSERT INTO auth.users(id) VALUES($1),($2)", [member, stranger]);
+    await db.query(
+      "INSERT INTO organizations(id,name,slug,created_by) VALUES($1,'t','t',$3),($2,'o','o',$4)",
+      [org, otherOrg, member, stranger],
+    );
+    await db.query(
+      "INSERT INTO org_members(org_id,user_id,role) VALUES($1,$2,'viewer'),($3,$4,'org_admin')",
+      [org, member, otherOrg, stranger],
+    );
+    await db.query(
+      "UPDATE billing_subscriptions SET plan_key='team',status='active',trial_ends_at=NULL WHERE org_id IN ($1,$2)",
+      [org, otherOrg],
+    );
+    const own = (
+      await db.query(
+        "INSERT INTO approvals(org_id,requester_id,action) VALUES($1,$2,'gateway.execute') RETURNING id, decision_token",
+        [org, member],
+      )
+    ).rows[0];
+    await db.query(
+      "INSERT INTO approvals(org_id,requester_id,action) VALUES($1,$2,'gateway.execute')",
+      [otherOrg, stranger],
+    );
+
+    await asAuthenticated(db, member, async () => {
+      // The listApprovals projection works and is scoped to the member's org.
+      const listed = await db.query(`SELECT ${listColumns} FROM approvals`);
+      assert.equal(listed.rows.length, 1);
+      assert.equal(listed.rows[0].id, own.id);
+      assert.equal(listed.rows[0].org_id, org);
+      assert.equal("decision_token" in listed.rows[0], false);
+      // The token itself is denied, alone, via *, and in a predicate.
+      for (const sql of [
+        "SELECT decision_token FROM approvals",
+        "SELECT * FROM approvals",
+        "SELECT id FROM approvals WHERE decision_token IS NOT NULL",
+      ])
+        await assert.rejects(db.query(sql), /permission denied/, sql);
+    });
+    await asAuthenticated(db, stranger, async () => {
+      const listed = await db.query(`SELECT id, org_id FROM approvals`);
+      assert.equal(listed.rows.length, 1);
+      assert.equal(listed.rows[0].org_id, otherOrg, "RLS still scopes rows to the caller's org");
+    });
+    // The service role (gateway decide path) still reads the token.
+    await db.exec("SET ROLE service_role");
+    try {
+      const token = await db.query("SELECT decision_token FROM approvals WHERE id=$1", [own.id]);
+      assert.equal(token.rows[0].decision_token, own.decision_token);
+    } finally {
+      await db.exec("RESET ROLE");
+    }
+  } finally {
+    await db.close();
+  }
+});

@@ -2,6 +2,15 @@ name: Live Tenant Isolation Proof
 
 on:
   workflow_dispatch:
+    inputs:
+      supabase_url:
+        description: "Supabase URL (default: repo var SUPABASE_URL, else the legacy Lovable Cloud URL)"
+        required: false
+        default: ""
+      supabase_publishable_key:
+        description: "Supabase publishable key (default: repo var SUPABASE_PUBLISHABLE_KEY, else the legacy Lovable Cloud key)"
+        required: false
+        default: ""
   push:
     paths:
       - ".github/workflows/live-tenant-isolation-proof.yml"
@@ -14,8 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      SUPABASE_URL: https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud
-      SUPABASE_PUBLISHABLE_KEY: sb_publishable_eWI2U31KL-zYV8Mn_AzGlw_40-gaGMC
+      # Precedence: workflow_dispatch input > repo variable > legacy Lovable value.
+      SUPABASE_URL: ${{ inputs.supabase_url || vars.SUPABASE_URL || 'https://c--f46c7dc2-f8c6-4710-96bb-07ffc11e5270-prod.lovable.cloud' }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ inputs.supabase_publishable_key || vars.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_eWI2U31KL-zYV8Mn_AzGlw_40-gaGMC' }}
     steps:
       - name: Create disposable verification users
         id: users

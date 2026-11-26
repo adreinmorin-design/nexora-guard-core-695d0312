@@ -663,7 +663,8 @@ test("DENY mid-call: remote definition hash changed -> tools/call never sent", a
 });
 
 // ---------------------------------------------------------------------------
-// Origin / transport pinning: zero fetches.
+// Origin / transport pinning and server credential: denied as a pre-dispatch
+// policy decision -- zero fetches, no mcp.dispatch audit, deny recorded.
 // ---------------------------------------------------------------------------
 for (const [label, options] of [
   ["MCP_ALLOWED_ORIGINS missing", { env: { MCP_ALLOWED_ORIGINS: undefined } }],
@@ -702,13 +703,29 @@ for (const [label, options] of [
   test(`DENY: ${label} -> zero remote fetches`, async () => {
     await withSetup(options, async ({ db, server }) => {
       const result = await call();
-      assert.equal(result.status, "tool_error");
+      assert.equal(result.status, "blocked");
       assert.equal(result.decision, "BLOCK");
       assert.equal(server.calls.length, 0);
-      assert.ok(denyRecorded(db, "tool_execution_failure"));
+      assert.ok(denyRecorded(db, "mcp_server_readiness"));
+      assert.ok(
+        decisions(db).some(
+          (e) =>
+            e.enforcement_point === "PRE_TOOL_INVOCATION" &&
+            e.decision === "DENY_ACTION" &&
+            e.rule_id === "mcp_server_readiness",
+        ),
+        "denied as a pre-invocation policy decision",
+      );
+      assert.equal(denyRecorded(db, "tool_execution_failure"), false);
       assert.equal(
-        db.tables.audit_events.find((a) => a.action === "mcp.call").result,
-        "tool_error",
+        db.tables.audit_events.some((a) => a.action === "mcp.dispatch"),
+        false,
+        "no dispatch audit for a call that was never dispatched",
+      );
+      assert.equal(db.tables.audit_events.find((a) => a.action === "mcp.call").result, "blocked");
+      assert.equal(
+        db.tables.tool_invocations.find((r) => r.id === result.requestId).status,
+        "blocked",
       );
     });
   });
