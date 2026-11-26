@@ -56,7 +56,8 @@ policies that govern them.
 
 ## Requirements
 
-- Node.js 24+
+- Bun 1.4.2 (package manager; `bun.lock` is the committed lockfile)
+- Node.js 24+ (the test scripts run under Node's built-in test runner)
 - A Supabase project
 - At least one supported model-provider credential for live model execution
 - Paddle account and approved domain for paid checkout (optional until billing is enabled)
@@ -109,25 +110,43 @@ validation runs.
 
 ## Local development
 
+Install exactly what `bun.lock` pins, then start the dev server:
+
 ```bash
-npm install
-npm run dev
+bun install --frozen-lockfile
+bun run dev
 ```
+
+Use Bun for all dependency changes (`bun add`, `bun remove`) so `bun.lock`
+stays the single lock source. Do not commit `package-lock.json`.
 
 ## Validation
 
+Run the complete suite (the same checks CI runs):
+
 ```bash
-npm run test:gateway
-npm run test:security
-npm run test:agents
-npm run test:providers
-npm run test:paddle
-npm run test:billing
-npm run test:database
-npm run test:monitoring
-npm run lint
-npx tsc --noEmit
-npm run build
+bash scripts/verify-all.sh
+```
+
+Or run individual checks:
+
+```bash
+bun run test:gateway
+bun run test:security
+bun run test:hardening
+bun run test:agents
+bun run test:governance
+bun run test:providers
+bun run test:paddle
+bun run test:billing
+bun run test:database
+bun run test:monitoring
+bun run test:email
+bun audit
+bun run lint
+bun run format:check
+bunx tsc --noEmit
+bun run build
 ```
 
 The database test runs every repository migration in PGlite. It does not

@@ -208,3 +208,8 @@ schema changes, subscription overrides or backend cutover were performed.
   provider verification. MCP allow/deny needs a controlled real fixture and grants;
   Paddle needs sandbox lifecycle configuration; two-tenant proof needs two approved
   confirmed test sessions. None was simulated or marked complete.
+- Phase 1 backend foundation (2026-11-26): all 24 migrations applied to the owner's Supabase
+  project Nexora Guard (`pivwdmtcfzanrcbpkdqn`); RLS on all 36 public tables, no anonymous
+  function access, security advisor shows only intentional INFO findings. **DEPLOYED** (schema
+  only); no app points at it yet, so runtime behavior is **NOT_VERIFIED**. README now documents
+  Bun 1.4.2 / `bun.lock` as the only toolchain.

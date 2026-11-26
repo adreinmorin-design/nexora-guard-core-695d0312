@@ -4,7 +4,7 @@ The console and approval execution now use the same policy pipeline.
 
 ## Deploy
 
-1. Run `npm run test:gateway`, `npm run test:database`, `npm run test:security`, `npx tsc --noEmit`, and `npm run build` (Node 24+ for tests).
+1. Run `bun run test:gateway`, `bun run test:database`, `bun run test:security`, `bunx tsc --noEmit`, and `bun run build` (Node 24+ for tests).
 2. Deploy the application and apply `20260917000100_gateway_admission.sql` in the same maintenance window. The migration revokes direct browser writes to requests, findings, approvals and audit; the previous application must not keep serving traffic afterward.
 3. The server requires `SUPABASE_SERVICE_ROLE_KEY` plus the existing Supabase URL/publishable key. OpenAI requires `OPENAI_API_KEY` or `OPEN_AI_PLATFORM_API_KEY`. Never put these server secrets in VITE variables.
 4. Verify a non-sensitive live request, a blocked request, and approval by a second authorized account. Existing pending approvals without an executable sanitized payload must be resubmitted.

@@ -114,7 +114,12 @@ jobs:
               --header "Authorization: Bearer $token" \
               --header "Content-Type: application/json" \
               --header "Prefer: return=representation" \
-              --data "$json" > "$outfile"
+              --data "$json" > "$outfile" || {
+              echo "POST /rest/v1/$table failed; PostgREST error body:" >&2
+              jq -c '{code, message, hint}' "$outfile" >&2 || cat "$outfile" >&2
+              return 1
+            }
+            echo "POST /rest/v1/$table succeeded."
           }
 
           post "$TOKEN_A" organizations \
