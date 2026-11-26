@@ -553,3 +553,16 @@ verification_session_2026_11_25:
       - "L3 approvals.decision_token column grant: listApprovals (src/lib/nexora.functions.ts:421) uses select('*') through the user client; must switch to explicit columns before the column can be revoked."
       - "planByKey Team fallback (src/lib/nexora/plans.ts:243) is display-only in admin.billing.tsx; server entitlements use planAllowsEntitlement which fails closed. Not a bypass."
     blocker: "Live RLS through PostgREST with real user sessions not yet exercised (needs deployed app, phase 2/5)."
+  mcp_enforcement_tests:
+    status: IMPLEMENTED
+    verification_status: NOT_VERIFIED
+    evidence:
+      - "tests/mcp-enforcement.test.mjs (bun run test:mcp, wired into verify-all as check 17): 34/34 pass. Runs real mcp.server, agents, governance-runtime, ai-controls, entitlements, execution-trace, mcp-transport, tool-policy, native-mcp and api.mcp route code; only the Supabase service client and global fetch are faked."
+      - "ALLOW: granted active tool on allowlisted origin gets exactly one tools/call with MCP_TOKEN bearer and redirect:error; invocation completed, mcp.dispatch + mcp.call audit linked to execution and intent, policy version recorded."
+      - "DENY with zero remote requests: no grant, cross-org grant, missing capability, draft tool, inactive/disabled/draft server, quarantined intent (by id and by objective match), AI controls off (agents/execution), policy BLOCK, high-risk without approval (pending_approval), approval definition-hash mismatch, and every origin rule (missing allowlist, unlisted, IP literal, localhost, credentials in URL, http, missing token, redirect target never fetched)."
+      - "Mid-call revocation of grant/capability and changed remote definition: tools/call never sent (handshake requests do reach the remote; re-check runs after initialize, mcp.server.ts:733-750)."
+      - "/api/mcp: no bearer 401 with WWW-Authenticate; forged/malformed/Basic credentials 401 without claiming an agent; cross-origin browser Origin 403; tools/list exposes exactly scope-covered tools and never another org's/agent's capabilities."
+      - "Mutation check: removing each control in src (grant check, server status, IP literal, scope filter, mid-call re-check, quarantine, redirect:error) made the corresponding tests fail; src restored."
+    notes:
+      - "Origin/credential rejection runs in connect() after the mcp.dispatch audit row is written (mcp.server.ts:713-740), so it is recorded as tool_execution_failure rather than a policy block. No request is sent; candidate refinement to check origin before writing the dispatch audit."
+    blocker: "Live proof needs a deployed app plus a fixture MCP server (phase 4)."
