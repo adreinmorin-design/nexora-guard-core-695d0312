@@ -608,8 +608,8 @@ verification_session_2026_11_25:
       status: RUNTIME_VERIFIED
       evidence:
         - "Live Tenant Isolation Proof workflow_dispatch run 45903065086, job 140193223345, 2026-11-26T22:10:38Z, inputs supabase_url=https://pivwdmtcfzanrcbpkdqn.supabase.co."
-        - "Two disposable signups through Supabase Auth; email confirmation enforced (email_confirmed_at 28s and 33s after created_at, set by owner clicking the confirmation links)."
-        - "Founder bootstrap through PostgREST with return=representation: POST organizations x2 and POST org_members x2 succeeded (the 42501 seen on Lovable Cloud is fixed by 20261125000100 on this backend). Each user has exactly one org_admin membership and a trialing subscription created by the provisioning trigger."
+        - "Workflow-observed: two disposable signups through Supabase Auth; the run waited for email confirmation before authenticating; POST organizations x2 and POST org_members x2 with return=representation succeeded (the 42501 seen on Lovable Cloud does not occur on this backend, which has 20261125000100)."
+        - "Separate read-only SQL via the Supabase connector after the run (2026-11-27T00:2xZ, not asserted by the workflow): auth.users email_confirmed_at 28s and 33s after created_at (owner clicked the links); each user has exactly one org_members row with role org_admin; each org has a billing_subscriptions row with status trialing created by the provisioning trigger."
         - "Positive: each tenant sees exactly its own organization (count 1). Negative: direct id=eq probes for the other tenant's organization return 0 rows in both directions."
     live_postgrest_negative_path:
       status: RUNTIME_VERIFIED
