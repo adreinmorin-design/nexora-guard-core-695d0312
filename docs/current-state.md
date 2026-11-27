@@ -238,3 +238,14 @@ schema changes, subscription overrides or backend cutover were performed.
   The planned Cloudflare host is a `workers.dev` address until a new domain is attached; no
   Workers deployment has run, so that host is **NOT_VERIFIED** and smoke defaults still target
   the Lovable host. Paddle live checkout requires an approved domain and stays disabled.
+- End-to-end verification (2026-11-26/27):
+  - **RUNTIME_VERIFIED on Nexora Guard:** live tenant isolation (run `45903065086`). Real sign-ups
+    are email-confirmed; founder bootstrap through PostgREST works; each tenant sees only its own
+    organization, and cross-tenant probes return 0 rows. A forged JWT gets 401 from PostgREST
+    (run `45903070728`).
+  - **Local only:** the built Worker ran in local workerd (`wrangler dev --local`) and Playwright
+    loaded every public page. Protected routes redirect to sign-in, and agent/MCP APIs return 401
+    without a credential.
+  - **Not deployed:** Cloudflare deploy is still blocked on repo secrets/variables, so signed-in,
+    provider, agent, MCP and Paddle live proofs are still **NOT_VERIFIED**.
+  - **Owner action:** the Supabase advisor flags leaked-password protection as disabled.
