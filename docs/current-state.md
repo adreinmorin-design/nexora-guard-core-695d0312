@@ -249,3 +249,6 @@ schema changes, subscription overrides or backend cutover were performed.
   - **Not deployed:** Cloudflare deploy is still blocked on repo secrets/variables, so signed-in,
     provider, agent, MCP and Paddle live proofs are still **NOT_VERIFIED**.
   - **Owner action:** the Supabase advisor flags leaked-password protection as disabled.
+- First Cloudflare Workers deployment (2026-11-28): `https://nexora-guard.adreinmorin.workers.dev`
+  (run `46096722266`), **DEPLOYED**. Production Smoke against it passed (run `46097045267`).
+  Server secrets are not yet set, so signed-in and admission flows are still **NOT_VERIFIED**.
