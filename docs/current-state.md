@@ -258,3 +258,7 @@ schema changes, subscription overrides or backend cutover were performed.
   run `46098500894` still passed, but Supabase edge logs showed no agent lookup from the Worker,
   so the forged-credential 403 came from the missing config, not the credential check.
   `deploy.yml` now passes both as runtime vars; a regression test covers this.
+- Live Worker agent admission is **RUNTIME_VERIFIED** (2026-11-28). Diagnostics run `46100094460`
+  shows `SUPABASE_SERVICE_ROLE_KEY` on `nexora-guard`. Supabase edge logs show the Worker looking
+  up a forged credential's hash in `agents` (02:51:57Z) and then denying it with 403. Cloudflare
+  Git-integration builds are disconnected; `deploy.yml` is the only deploy path.
