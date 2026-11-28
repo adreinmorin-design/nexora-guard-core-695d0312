@@ -589,7 +589,7 @@ verification_session_2026_11_25:
       - "Root wrangler.jsonc merged by Nitro: generated .output/server/wrangler.json has name nexora-guard and compatibility_date 2026-11-01 (nodejs_compat kept)."
       - "tests/public-config.test.mjs (bun run test:config, verify-all check 20) 11/11 pass; actionlint 1.7.7 clean on all workflows."
       - ".github/workflows/deploy.yml (wrangler@4.164.0) added; smoke and isolation workflows parameterized via inputs > vars > legacy Lovable values."
-    blocker: "No Cloudflare credentials in this session; no deploy has run. Needs CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID secrets, SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY/NEXORA_HOST vars, wrangler secrets, then a deploy.yml run and Production Smoke against the Workers host."
+    blocker: "Superseded by cloudflare_workers_first_deploy (2026-11-28): repo secrets/variables were added, deploy.yml run 46096722266 deployed nexora-guard and Production Smoke run 46097045267 passed. Remaining: Worker secrets (SUPABASE_SERVICE_ROLE_KEY, provider keys)."
   auth_mcp_approval_fixes_2026_11_26:
     status: IMPLEMENTED
     verification_status: NOT_VERIFIED
@@ -634,7 +634,7 @@ verification_session_2026_11_25:
         - "get_advisors security: 7 intentional INFO rls_enabled_no_policy; 1 WARN auth_leaked_password_protection (owner must enable in Supabase Auth settings)."
     local_suite: "verify-all.sh 20/20, bun test 175/175 on main 0dddbec."
     not_verified_blockers:
-      - "Cloudflare deployment: needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets plus SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY repo variables."
+      - "Cloudflare deployment: resolved 2026-11-28, see cloudflare_workers_first_deploy."
       - "Signed-in app flows, provider ALLOW/REDACT/BLOCK/budget, agent consent, MCP allow/deny against a fixture server, Paddle sandbox: need the deployed Worker plus SUPABASE_SERVICE_ROLE_KEY and provider keys as Worker secrets."
     test_data: "Disposable proof tenants 8407d804-89c1-430e-a8b2-6d7b41aaa4af and f0874be2-45ae-4472-ba1d-2ac86e74899f with their two users remain in Nexora Guard."
   cloudflare_workers_first_deploy:
