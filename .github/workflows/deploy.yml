@@ -76,7 +76,21 @@ jobs:
         # Server secrets (SUPABASE_SERVICE_ROLE_KEY, provider keys, Paddle, ...)
         # are managed out of band with `wrangler secret put`; see
         # docs/deploy-cloudflare.md. They are never passed through this workflow.
+        # The public Supabase URL and publishable key are also needed at runtime
+        # (server client and auth middleware read process.env), so pass them as
+        # plain Worker vars alongside the build-time VITE_* copies.
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: bunx wrangler@4.164.0 deploy --config .output/server/wrangler.json
+          RUNTIME_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          RUNTIME_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$RUNTIME_SUPABASE_URL" ] || [ -z "$RUNTIME_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY repo variables are required at runtime."
+            exit 1
+          fi
+          bunx wrangler@4.164.0 deploy --config .output/server/wrangler.json \
+            --var "SUPABASE_URL:$RUNTIME_SUPABASE_URL" \
+            --var "SUPABASE_PUBLISHABLE_KEY:$RUNTIME_SUPABASE_PUBLISHABLE_KEY" \
+            --var "NEXORA_ENVIRONMENT:production"

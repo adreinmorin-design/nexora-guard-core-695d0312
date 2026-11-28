@@ -21,6 +21,12 @@ smoke workflow both pass against it.
 - The CI validation build (`ci.yml`) uses fake placeholder values under
   `*.supabase.invalid`. That build is never deployed.
 
+- `deploy.yml` also passes `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and
+  `NEXORA_ENVIRONMENT=production` to the Worker as plain runtime vars. The server
+  Supabase client and the auth middleware read them from `process.env`; the
+  build-time `VITE_*` copies only reach the browser bundle. Secrets such as
+  `SUPABASE_SERVICE_ROLE_KEY` are never passed this way.
+
 ## GitHub configuration (repository owner)
 
 Repository variables (Settings → Secrets and variables → Actions → Variables):

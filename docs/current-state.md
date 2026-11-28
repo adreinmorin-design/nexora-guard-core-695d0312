@@ -252,3 +252,9 @@ schema changes, subscription overrides or backend cutover were performed.
 - First Cloudflare Workers deployment (2026-11-28): `https://nexora-guard.adreinmorin.workers.dev`
   (run `46096722266`), **DEPLOYED**. Production Smoke against it passed (run `46097045267`).
   Server secrets are not yet set, so signed-in and admission flows are still **NOT_VERIFIED**.
+- Runtime config gap found on the live Worker (2026-11-28): the server Supabase client and auth
+  middleware read `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` from `process.env`, but the first
+  deploy only provided them at build time. After the owner set `SUPABASE_SERVICE_ROLE_KEY`, smoke
+  run `46098500894` still passed, but Supabase edge logs showed no agent lookup from the Worker,
+  so the forged-credential 403 came from the missing config, not the credential check.
+  `deploy.yml` now passes both as runtime vars; a regression test covers this.
