@@ -637,3 +637,14 @@ verification_session_2026_11_25:
       - "Cloudflare deployment: needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets plus SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY repo variables."
       - "Signed-in app flows, provider ALLOW/REDACT/BLOCK/budget, agent consent, MCP allow/deny against a fixture server, Paddle sandbox: need the deployed Worker plus SUPABASE_SERVICE_ROLE_KEY and provider keys as Worker secrets."
     test_data: "Disposable proof tenants 8407d804-89c1-430e-a8b2-6d7b41aaa4af and f0874be2-45ae-4472-ba1d-2ac86e74899f with their two users remain in Nexora Guard."
+  cloudflare_workers_first_deploy:
+    status: DEPLOYED
+    verification_status: NOT_VERIFIED
+    host: https://nexora-guard.adreinmorin.workers.dev
+    evidence:
+      - "deploy.yml workflow_dispatch run 46096722266, job 140829658706, main 757d390, 2026-11-28T02:10Z: strict build with repo vars SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY succeeded; wrangler@4.164.0 uploaded 56 assets and deployed worker nexora-guard, version 93989365-4dc8-47a4-abe7-114a922464c1."
+      - "Production Smoke run 46097045267, job 140830696295, BASE_URL from repo var NEXORA_HOST: host / 200, /auth 200, POST /api/agent without credential 401, Nexora Guard PostgREST invalid JWT 401, forged nxr_ agent credential 403 'Agent admission denied', POST /api/mcp without credential 401."
+    caveats:
+      - "Worker secrets (SUPABASE_SERVICE_ROLE_KEY, provider keys) were not yet set at smoke time. The forged-credential 403 proves the endpoint fails closed, not that the credential lookup ran; re-run after the service-role key is set."
+      - "A separate Cloudflare Git-integration worker nexora-guard-core-695d0312 also exists on the account (built without Nexora Guard values, so it uses the legacy Lovable fallback); owner to delete it and disconnect its Git build."
+    next: "Owner sets Worker secret SUPABASE_SERVICE_ROLE_KEY and Supabase Auth Site URL/redirects to the workers.dev host; then signed-in flows, providers, agents, MCP."
