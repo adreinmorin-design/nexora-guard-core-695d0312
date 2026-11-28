@@ -142,3 +142,12 @@ test("legacy fallback is build-time only and the deploy workflow is strict", () 
     assert.doesNotMatch(source, /legacy-build-fallback/);
   }
 });
+
+test("deploy passes the public Supabase config to the Worker runtime", () => {
+  // client.server.ts and auth-middleware.ts read process.env at runtime;
+  // build-time VITE_* values alone leave the server unable to reach Supabase.
+  const deploy = readFileSync(new URL("../.github/workflows/deploy.yml", import.meta.url), "utf8");
+  assert.match(deploy, /--var "SUPABASE_URL:\$RUNTIME_SUPABASE_URL"/);
+  assert.match(deploy, /--var "SUPABASE_PUBLISHABLE_KEY:\$RUNTIME_SUPABASE_PUBLISHABLE_KEY"/);
+  assert.doesNotMatch(deploy, /SERVICE_ROLE_KEY:/);
+});
