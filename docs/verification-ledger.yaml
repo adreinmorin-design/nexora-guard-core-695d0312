@@ -648,3 +648,15 @@ verification_session_2026_11_25:
       - "Worker secrets (SUPABASE_SERVICE_ROLE_KEY, provider keys) were not yet set at smoke time. The forged-credential 403 proves the endpoint fails closed, not that the credential lookup ran; re-run after the service-role key is set."
       - "A separate Cloudflare Git-integration worker nexora-guard-core-695d0312 also exists on the account (built without Nexora Guard values, so it uses the legacy Lovable fallback); owner to delete it and disconnect its Git build."
     next: "Owner sets Worker secret SUPABASE_SERVICE_ROLE_KEY and Supabase Auth Site URL/redirects to the workers.dev host; then signed-in flows, providers, agents, MCP."
+  live_worker_agent_admission:
+    status: DEPLOYED
+    verification_status: NOT_VERIFIED
+    scope_verified: "RUNTIME_VERIFIED for the negative path only: live Worker reaches Supabase and denies an unknown credential after a token_hash lookup. A valid credential reaching claim/admission (positive path) is not yet verified, so admission as a whole stays NOT_VERIFIED."
+    host: https://nexora-guard.adreinmorin.workers.dev
+    evidence:
+      - "deploy.yml run 46099759575 (main 36b12fc, 2026-11-28T02:47Z) deployed nexora-guard with runtime vars SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, NEXORA_ENVIRONMENT (bindings listed in run 46098873387 output)."
+      - "Worker Diagnostics run 46100094460, job 140840341734 (2026-11-28T02:51Z): wrangler secret list shows SUPABASE_SERVICE_ROLE_KEY on nexora-guard; forged nxr_ credential POST /api/agent = 403 'Agent admission denied'; wrangler tail shows outcome ok with no console errors or exceptions."
+      - "Supabase edge log at 2026-11-28T02:51:57.583Z: GET /rest/v1/agents?select=id&token_hash=eq.4232b3b3... = 200 (no row), i.e. the Worker hashed the forged credential and looked it up with the service role before denying. Positive: live Worker reaches Supabase. Negative: unknown credential denied with no claim, reservation or provider call."
+    history:
+      - "Smoke runs 46098500894, 46099330201 and 46099379543 passed but produced no Worker lookup in Supabase edge logs: the first deploy lacked runtime vars (fixed in PR #59), and a Cloudflare Git integration attached to nexora-guard was building outside deploy.yml. The owner disconnected it on 2026-11-28; deploys now come only from deploy.yml."
+    next: "Positive path: complete agent consent on the live host, then POST /api/agent with the issued credential and observe a successful claim (nexora_claim_agent) and governed execution. Then signed-in browser flows, provider ALLOW/REDACT/BLOCK/budget and MCP allow/deny."
