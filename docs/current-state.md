@@ -263,3 +263,6 @@ schema changes, subscription overrides or backend cutover were performed.
   shows `SUPABASE_SERVICE_ROLE_KEY` on `nexora-guard`. Supabase edge logs show the Worker looking
   up a forged credential's hash in `agents` (02:51:57Z) and then denying it with 403. Cloudflare
   Git-integration builds are disconnected; `deploy.yml` is the only deploy path.
+- Live sign-up, email confirmation, sign-in and first-organization bootstrap on the Worker are
+  **RUNTIME_VERIFIED** (2026-11-28). Supabase edge logs show the full sequence, and the new org
+  has a Team trial ending 2026-12-12.
