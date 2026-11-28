@@ -1,0 +1,50 @@
+name: Worker Diagnostics
+
+# Manual, read-only diagnostics for the deployed nexora-guard Worker.
+# Lists binding/secret NAMES (never values) and captures the Worker's own
+# runtime logs while sending one forged agent request, so a fail-closed 403
+# can be attributed to its real cause (missing config vs. credential check).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      BASE_URL: ${{ vars.NEXORA_HOST }}
+    steps:
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+
+      - name: Worker secret names (values are never shown)
+        run: bunx wrangler@4.164.0 secret list --name nexora-guard --format pretty
+
+      - name: Capture Worker logs during one forged agent request
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BASE_URL"
+          bunx wrangler@4.164.0 tail nexora-guard --format json > tail.json 2> tail.err &
+          tail_pid=$!
+          sleep 15
+          forged="nxr_$(printf '0%.0s' $(seq 1 64))"
+          curl --silent --show-error --output agent.json --write-out 'status=%{http_code}\n' \
+            --request POST --header 'Content-Type: application/json' \
+            --header "Authorization: Bearer $forged" \
+            --data '{"kind":"model","modelKey":"openai/gpt-4.1-mini","prompt":"diagnostics","idempotencyKey":"00000000-0000-4000-8000-0000000000d1"}' \
+            "$BASE_URL/api/agent"
+          cat agent.json; echo
+          sleep 10
+          kill "$tail_pid" || true
+          wait "$tail_pid" 2>/dev/null || true
+          echo "--- Worker console output and exceptions ---"
+          jq -c 'select(.event.request.url? // "" | test("/api/agent")) | {outcome, logs: [.logs[]? | {level, message}], exceptions: [.exceptions[]? | {name, message}]}' tail.json || cat tail.json
+          echo "--- tail stderr ---"
+          tail -n 20 tail.err || true

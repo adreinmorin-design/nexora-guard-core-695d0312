@@ -27,6 +27,10 @@ smoke workflow both pass against it.
   build-time `VITE_*` copies only reach the browser bundle. Secrets such as
   `SUPABASE_SERVICE_ROLE_KEY` are never passed this way.
 
+- `worker-diagnostics.yml` (manual only) lists the deployed Worker's secret
+  names (never values) and captures its runtime logs during one forged agent
+  request, to tell a missing-config failure apart from a credential rejection.
+
 ## GitHub configuration (repository owner)
 
 Repository variables (Settings → Secrets and variables → Actions → Variables):
