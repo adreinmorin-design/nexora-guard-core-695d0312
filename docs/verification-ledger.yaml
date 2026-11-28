@@ -660,3 +660,12 @@ verification_session_2026_11_25:
     history:
       - "Smoke runs 46098500894, 46099330201 and 46099379543 passed but produced no Worker lookup in Supabase edge logs: the first deploy lacked runtime vars (fixed in PR #59), and a Cloudflare Git integration attached to nexora-guard was building outside deploy.yml. The owner disconnected it on 2026-11-28; deploys now come only from deploy.yml."
     next: "Positive path: complete agent consent on the live host, then POST /api/agent with the issued credential and observe a successful claim (nexora_claim_agent) and governed execution. Then signed-in browser flows, provider ALLOW/REDACT/BLOCK/budget and MCP allow/deny."
+  live_signup_signin_bootstrap:
+    status: RUNTIME_VERIFIED
+    host: https://nexora-guard.adreinmorin.workers.dev
+    evidence:
+      - "Owner signed up and in through the live site on 2026-11-28. Supabase edge logs: 04:43:27Z POST /auth/v1/signup with redirect_to=https://nexora-guard.adreinmorin.workers.dev/auth; 04:43:58Z GET /auth/v1/verify (303)."
+      - "Server-side (Worker) at 04:44:02-04Z: GET /auth/v1/.well-known/jwks.json (session verification), POST profiles, then first-org bootstrap: POST organizations, org_members, providers, models, policies, policy_versions, budgets, audit_events. All 201."
+      - "04:44:05Z: dashboard reads scoped to the new org: org_members, policies, approvals, budgets, security_findings, requests, agents."
+      - "Read-only SQL: user 524cc78e-... email_confirmed_at set, last_sign_in_at 04:43:58Z; org 'Gmail Organization' (81111325-...) with org_admin, security_admin, governance_admin, agent_admin roles; billing_subscriptions plan team, status trialing, trial_ends_at 2026-12-12T04:44:03Z."
+    negative_paths_covered_elsewhere: "Unauthenticated protected routes redirect to /auth (local workerd run); invalid JWT rejected by PostgREST (smoke); auth-middleware rejections unit-tested (tests/routes.test.mjs)."
